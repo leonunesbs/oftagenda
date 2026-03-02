@@ -1,12 +1,14 @@
 import Link from "next/link";
 
-import { HomeAvailability } from "@/components/home-availability";
+import { BookingForm } from "@/components/booking-form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { auth } from "@clerk/nextjs/server";
 import { isClerkConfigured } from "@/lib/access";
 
 export default async function HomePage() {
   const clerkEnabled = isClerkConfigured();
+  const userId = clerkEnabled ? (await auth()).userId : null;
 
   return (
     <section className="relative mx-auto flex w-full max-w-6xl flex-col gap-6 pt-6 md:pt-10">
@@ -17,8 +19,8 @@ export default async function HomePage() {
           <p className="text-sm text-muted-foreground">Área exclusiva do paciente</p>
           <CardTitle className="text-3xl tracking-tight md:text-5xl">Minha Agenda</CardTitle>
           <CardDescription className="max-w-2xl text-sm text-muted-foreground md:text-base">
-            Organize consultas com uma experiência fluida: escolha a data no calendário e selecione os
-            horários disponíveis em segundos.
+            Organize consultas com uma experiência fluida: escolha o local de atendimento e veja em
+            seguida as datas e horários disponíveis.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -38,7 +40,7 @@ export default async function HomePage() {
             </Button>
           </div>
 
-          <HomeAvailability />
+          <BookingForm isAuthenticated={Boolean(userId)} clerkEnabled={clerkEnabled} />
 
           {!clerkEnabled ? (
             <p className="text-xs text-muted-foreground">

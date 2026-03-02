@@ -2,8 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 
-import type { Id } from "../../../../convex/_generated/dataModel";
-import { api } from "../../../../convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
+import { api } from "@convex/_generated/api";
 import { getAuthenticatedConvexHttpClient } from "@/lib/convex-server";
 import { requireAdmin } from "@/lib/access";
 

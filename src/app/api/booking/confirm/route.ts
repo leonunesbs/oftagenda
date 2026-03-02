@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { api } from "../../../../../convex/_generated/api";
+import { api } from "@convex/_generated/api";
 import { bookingSchema } from "@/domain/booking/schema";
 import { setBookingConfirmedCookie } from "@/domain/booking/state";
 import { getAuthenticatedConvexHttpClient } from "@/lib/convex-server";

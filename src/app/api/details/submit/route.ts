@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 
-import { api } from "../../../../../convex/_generated/api"
+import { api } from "@convex/_generated/api"
 import { triageSchema } from "@/domain/triage/schema"
 import { getAuthenticatedConvexHttpClient } from "@/lib/convex-server"
 

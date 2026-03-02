@@ -27,7 +27,8 @@
     /* Path Aliases */
     "paths": {
       "@/*": ["./src/*"],
-      "@/public/*": ["./public/*"]
+      "@/public/*": ["./public/*"],
+      "@convex/*": ["./convex/*"]
     }
   },
   "exclude": ["node_modules"],

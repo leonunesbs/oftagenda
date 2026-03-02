@@ -7,7 +7,7 @@ export default async function AgendarPage() {
   const userId = clerkEnabled ? (await auth()).userId : null;
 
   return (
-    <section className="mx-auto w-full max-w-3xl">
+    <section className="mx-auto w-full max-w-5xl">
       <BookingForm isAuthenticated={Boolean(userId)} clerkEnabled={clerkEnabled} />
     </section>
   );

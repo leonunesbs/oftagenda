@@ -49,6 +49,8 @@ npx convex dev
 npm run dev
 ```
 
+> `npm run dev` agora sobe Next.js + Convex juntos (`convex dev --run-sh "next dev"`).
+
 Opcional (fluxo original do template):
 
 ```bash
@@ -97,6 +99,20 @@ pnpm dev
 - Flag atual: `BILLING_ENABLED=false`
 - TODO: validar entitlements do Clerk quando habilitar billing
 - Nenhum SDK Stripe/webhook no MVP
+
+## Deploy unico na Vercel (Next.js + Convex)
+
+1. No dashboard do Convex, gere um **Deploy Key** para o projeto.
+2. Na Vercel, configure as variaveis de ambiente de Production:
+   - `CONVEX_DEPLOY_KEY`
+   - `NEXT_PUBLIC_CONVEX_URL`
+   - `NEXT_PUBLIC_CONVEX_SITE_URL`
+   - `CLERK_SECRET_KEY`
+   - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
+   - `CLERK_JWT_ISSUER_DOMAIN`
+3. Faça deploy normal pela Vercel (git push / Deploy).
+
+No build de producao, o script `npm run build` publica automaticamente o Convex e em seguida executa o `next build`.
 
 ## TODOs de produto
 

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { api } from "@convex/_generated/api";
 import { bookingLocationSchema } from "@/domain/booking/schema";
 import { getConvexHttpClient } from "@/lib/convex-server";
 
@@ -21,13 +22,10 @@ export async function GET(request: Request) {
 
   try {
     const client = getConvexHttpClient();
-    const options = await client.query(
-      "appointments:getBookingOptionsByLocation" as never,
-      {
-        location: parsedLocation.data,
-        daysAhead: Number.isNaN(daysAheadParam) ? 14 : daysAheadParam,
-      } as never,
-    );
+    const options = await client.query(api.appointments.getBookingOptionsByLocation, {
+      location: parsedLocation.data,
+      daysAhead: Number.isNaN(daysAheadParam) ? 14 : daysAheadParam,
+    });
 
     return NextResponse.json({ ok: true, options });
   } catch (error) {

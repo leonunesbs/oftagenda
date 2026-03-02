@@ -92,6 +92,21 @@ List of websites that started off with Next.js TypeScript Starter:
 
 ## Documentation
 
+### UI Stack and Components
+
+This project now includes a `shadcn` + Tailwind CSS v4 UI foundation with generated components under `src/components/ui`.
+
+- `components.json` stores the `shadcn` generator configuration (style, aliases, CSS entrypoint, and icon library).
+- `src/app/globals.css` contains theme variables and shared design tokens used by the generated UI components.
+- `src/lib/utils.ts` exposes `cn()`, the shared className merge helper used by UI primitives.
+- `src/components/component-example.tsx` and `src/components/example.tsx` demonstrate how to compose and use the UI primitives in pages.
+
+To add new UI components with the same conventions:
+
+```bash
+pnpm dlx shadcn@latest add <component-name>
+```
+
 ### Requirements
 
 - Node.js >= 24

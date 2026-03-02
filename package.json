@@ -1,0 +1,60 @@
+{
+  "name": "typescript-nextjs-starter",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A TypeScript starter for Next.js that includes all you need to build amazing projects",
+  "keywords": [
+    "nextjs",
+    "starter",
+    "typescript"
+  ],
+  "license": "MIT",
+  "author": "João Pedro Schmitz (@jpedroschmitz)",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "type-check": "next typegen && tsc --noEmit",
+    "build:analyze": "next build && next experimental-analyze",
+    "lint": "oxlint --type-aware",
+    "lint:fix": "oxlint --fix --type-aware",
+    "format": "oxfmt --write",
+    "format:check": "oxfmt --check",
+    "format:ci": "oxfmt --list-different .",
+    "postinstall": "husky"
+  },
+  "dependencies": {
+    "@t3-oss/env-nextjs": "0.13.10",
+    "babel-plugin-react-compiler": "1.0.0",
+    "next": "16.1.6",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "zod": "4.3.6"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "20.4.2",
+    "@commitlint/config-conventional": "20.4.2",
+    "@types/node": "25.3.2",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "husky": "9.1.7",
+    "lint-staged": "16.2.7",
+    "oxfmt": "0.35.0",
+    "oxlint": "1.50.0",
+    "oxlint-tsgolint": "0.15.0",
+    "typescript": "5.9.3"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,mjs,cjs}": [
+      "oxlint --fix",
+      "oxfmt --write --no-error-on-unmatched-pattern"
+    ]
+  },
+  "pnpm": {
+    "overrides": {
+      "@types/react": "19.2.14",
+      "@types/react-dom": "19.2.3"
+    }
+  }
+}

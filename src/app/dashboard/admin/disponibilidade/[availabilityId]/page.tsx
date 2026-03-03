@@ -1,33 +1,8 @@
 import Link from "next/link";
-
-import { api } from "@convex/_generated/api";
+import { buildAvailabilityGroups, getAdminSnapshot } from "@/app/dashboard/admin/_lib/admin-dashboard";
 import { AdminAvailabilityEditor } from "@/components/admin-availability-editor";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getAuthenticatedConvexHttpClient } from "@/lib/convex-server";
-
-function timeToMinutes(time: string) {
-  const parts = time.split(":");
-  const hours = Number(parts[0] ?? "0");
-  const minutes = Number(parts[1] ?? "0");
-  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) {
-    return 0;
-  }
-  return hours * 60 + minutes;
-}
-
-function resolveAvailabilityGroupName(availability: { _id: string; name?: string }) {
-  const normalized = availability.name?.trim();
-  if (normalized && normalized.length > 0) {
-    return normalized;
-  }
-  return `Disponibilidade-${availability._id}`;
-}
-
-async function getAdminSnapshot() {
-  const { client } = await getAuthenticatedConvexHttpClient();
-  return client.query(api.admin.getManagementSnapshot, {});
-}
 
 export default async function AvailabilityDetailsPage({
   params,
@@ -36,46 +11,7 @@ export default async function AvailabilityDetailsPage({
 }) {
   const { availabilityId } = await params;
   const data = await getAdminSnapshot();
-
-  const availabilityGroupsMap = new Map<
-    string,
-    {
-      name: string;
-      representativeId: string;
-      linkedEventsCount: number;
-      slots: (typeof data.availabilities)[number][];
-    }
-  >();
-
-  for (const availability of data.availabilities) {
-    const groupName = resolveAvailabilityGroupName({
-      _id: String(availability._id),
-      name: availability.name,
-    });
-    const current =
-      availabilityGroupsMap.get(groupName) ??
-      {
-        name: groupName,
-        representativeId: String(availability._id),
-        linkedEventsCount: 0,
-        slots: [],
-      };
-    current.slots.push(availability);
-    current.linkedEventsCount = Math.max(current.linkedEventsCount, availability.linkedEventsCount ?? 0);
-    availabilityGroupsMap.set(groupName, current);
-  }
-
-  const availabilityGroups = [...availabilityGroupsMap.values()]
-    .map((group) => ({
-      ...group,
-      slots: [...group.slots].sort((a, b) => {
-        if (a.weekday !== b.weekday) {
-          return a.weekday - b.weekday;
-        }
-        return timeToMinutes(a.startTime) - timeToMinutes(b.startTime);
-      }),
-    }))
-    .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+  const availabilityGroups = buildAvailabilityGroups(data);
 
   const selectedGroup =
     availabilityGroups.find((group) => group.slots.some((slot) => String(slot._id) === availabilityId)) ?? null;
@@ -86,7 +22,7 @@ export default async function AvailabilityDetailsPage({
         <div className="flex items-center justify-between gap-2">
           <h1 className="text-lg font-semibold">Disponibilidade nao encontrada</h1>
           <Button asChild variant="outline" size="sm">
-            <Link href="/dashboard/admin">Voltar</Link>
+            <Link href="/dashboard/admin/disponibilidade">Voltar</Link>
           </Button>
         </div>
       </section>
@@ -133,7 +69,7 @@ export default async function AvailabilityDetailsPage({
           <p className="text-xs text-muted-foreground">{selectedGroup.name}</p>
         </div>
         <Button asChild variant="outline" size="sm">
-          <Link href="/dashboard/admin">Voltar ao admin</Link>
+          <Link href="/dashboard/admin/disponibilidade">Voltar para disponibilidade</Link>
         </Button>
       </div>
 

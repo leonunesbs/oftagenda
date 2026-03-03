@@ -12,7 +12,7 @@ export default function AdminAvailabilityCreatePage() {
       open
       onOpenChange={(open) => {
         if (!open) {
-          router.push("/dashboard/admin");
+          router.push("/dashboard/admin/disponibilidade");
         }
       }}
     />

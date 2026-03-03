@@ -29,14 +29,19 @@ export const createCheckoutDraft = mutation({
     const slotTimestamp = parseIsoDateAndTimeToTimestamp(args.date, args.time);
 
     const eventType = await resolveActiveEventType(ctx, args.location);
-    if (!eventType.stripePriceId?.trim()) {
-      throw new Error("Evento sem Stripe Price ID configurado.");
-    }
+    const rawStripePriceId = eventType.stripePriceId?.trim() || readStripePriceIdFromEnv();
+    const stripePriceId = normalizeStripePriceId(rawStripePriceId);
+    const amountCentsFromEvent =
+      normalizeAmountCents(eventType.priceCents) ??
+      parseLegacyAmountCentsFromStripePriceId(rawStripePriceId);
+    const amountCents = amountCentsFromEvent ?? (stripePriceId ? 1 : undefined);
     if (!eventType.availabilityId) {
       throw new Error("Evento sem disponibilidade configurada.");
     }
-    if (!eventType.priceCents || eventType.priceCents <= 0) {
-      throw new Error("Evento sem valor válido para pagamento.");
+    if (!amountCents || amountCents <= 0) {
+      throw new Error(
+        "Evento sem valor válido para pagamento. Configure `priceCents` em centavos (ex.: 24700) no evento ou use um valor numérico válido no campo legado de preço.",
+      );
     }
 
     await assertSlotIsAvailable(ctx, eventType, args.date, args.time);
@@ -85,7 +90,7 @@ export const createCheckoutDraft = mutation({
     if (existingPayment && existingPayment.status === "pending") {
       paymentId = existingPayment._id;
       await ctx.db.patch(existingPayment._id, {
-        amountCents: eventType.priceCents,
+        amountCents,
         currency: "BRL",
         method: "card",
         status: "pending",
@@ -97,7 +102,7 @@ export const createCheckoutDraft = mutation({
       paymentId = await ctx.db.insert("payments", {
         clerkUserId: identity.subject,
         reservationId,
-        amountCents: eventType.priceCents,
+        amountCents,
         currency: "BRL",
         method: "card",
         status: "pending",
@@ -110,8 +115,8 @@ export const createCheckoutDraft = mutation({
     return {
       reservationId,
       paymentId,
-      stripePriceId: eventType.stripePriceId,
-      amountCents: eventType.priceCents,
+      stripePriceId,
+      amountCents,
       currency: "BRL",
       eventTypeSlug: eventType.slug,
       eventTypeName: eventType.name ?? eventType.title,
@@ -126,6 +131,7 @@ export const attachCheckoutSession = mutation({
     paymentId: v.id("payments"),
     checkoutSessionId: v.string(),
     paymentIntentId: v.optional(v.string()),
+    amountCents: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -144,6 +150,10 @@ export const attachCheckoutSession = mutation({
 
     const now = Date.now();
     await ctx.db.patch(args.paymentId, {
+      amountCents:
+        typeof args.amountCents === "number" && Number.isFinite(args.amountCents) && args.amountCents > 0
+          ? Math.round(args.amountCents)
+          : payment.amountCents,
       externalId: args.checkoutSessionId.trim(),
       notes: args.paymentIntentId
         ? `Checkout Stripe iniciado (payment_intent: ${args.paymentIntentId}).`
@@ -455,15 +465,26 @@ async function findPaymentByWebhook(
 }
 
 async function resolveActiveEventType(ctx: MutationCtx, location: string) {
+  const normalizedInput = location.trim().toLowerCase();
   const activeEventTypes = await ctx.db
     .query("event_types")
     .withIndex("by_active", (q) => q.eq("active", true))
     .collect();
-  const eventType = activeEventTypes.find((item) => item.slug === location.trim());
-  if (!eventType) {
-    throw new Error("Evento selecionado não encontrado.");
+
+  const candidates = activeEventTypes.filter(
+    (item) => item.slug.trim().toLowerCase() === normalizedInput,
+  );
+
+  if (candidates.length === 0) {
+    throw new Error(`Evento selecionado não encontrado para slug "${location.trim()}".`);
   }
-  return eventType;
+  if (candidates.length > 1) {
+    throw new Error(
+      `Mais de um evento ativo encontrado para slug "${location.trim()}". Mantenha apenas um evento ativo por slug.`,
+    );
+  }
+
+  return candidates[0]!;
 }
 
 async function assertSlotIsAvailable(
@@ -676,5 +697,68 @@ function inferPreferredPeriod(timestamp: number) {
     return "tarde" as const;
   }
   return "noite" as const;
+}
+
+function readStripePriceIdFromEnv() {
+  const value = process.env.STRIPE_PRICE_ID?.trim();
+  if (!value) {
+    return undefined;
+  }
+  return value;
+}
+
+function normalizeStripePriceId(value: string | undefined) {
+  if (!value) {
+    return undefined;
+  }
+  const normalized = value.trim();
+  if (!normalized) {
+    return undefined;
+  }
+  return normalized.startsWith("price_") ? normalized : undefined;
+}
+
+function normalizeAmountCents(value: number | undefined) {
+  if (typeof value !== "number") {
+    return undefined;
+  }
+  if (!Number.isFinite(value) || value <= 0) {
+    return undefined;
+  }
+  if (!Number.isInteger(value)) {
+    if (value >= 1000) {
+      return Math.round(value);
+    }
+    return Math.round(value * 100);
+  }
+  if (value >= 1000) {
+    return value;
+  }
+  return value * 100;
+}
+
+function parseLegacyAmountCentsFromStripePriceId(value: string | undefined) {
+  if (!value) {
+    return undefined;
+  }
+  const normalized = value.trim();
+  if (!normalized || normalized.startsWith("price_")) {
+    return undefined;
+  }
+  if (/^\d+$/.test(normalized)) {
+    const parsedInteger = Number(normalized);
+    if (!Number.isFinite(parsedInteger) || parsedInteger <= 0) {
+      return undefined;
+    }
+    if (normalized.length >= 4) {
+      return parsedInteger;
+    }
+    return parsedInteger * 100;
+  }
+  const parsed = Number(normalized.replace(/\./g, "").replace(",", "."));
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return undefined;
+  }
+  return Math.round(parsed * 100);
 }
 

@@ -1,17 +1,12 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 
+import { api } from "@convex/_generated/api";
 import { getConvexHttpClient } from "@/lib/convex-server";
 import { getStripeClient, getStripeWebhookSecret } from "@/lib/stripe";
 
 type ReconcileStatus = "paid" | "failed" | "expired" | "refunded";
 export const runtime = "nodejs";
-
-const reconcileStripeEventRef = {
-  _type: "mutation",
-  _visibility: "public",
-  _functionName: "stripe:reconcileStripeEvent",
-} as const;
 
 export async function POST(request: Request) {
   const signature = request.headers.get("stripe-signature");
@@ -37,7 +32,7 @@ export async function POST(request: Request) {
 
   try {
     const client = getConvexHttpClient();
-    await client.mutation(reconcileStripeEventRef as any, normalized);
+    await client.mutation(api.stripe.reconcileStripeEvent, normalized);
     return NextResponse.json({ ok: true });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Falha ao reconciliar webhook.";

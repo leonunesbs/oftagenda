@@ -97,7 +97,12 @@ export const getBookingOptionsByLocation = query({
       .withIndex("by_active", (q) => q.eq("active", true))
       .collect();
 
-    const eventTypes = activeEventTypes.filter((item) => item.slug === args.location);
+    const eventTypes = activeEventTypes.filter(
+      (item) =>
+        item.slug === args.location &&
+        Boolean(item.availabilityId) &&
+        hasCheckoutPricingConfigured(item),
+    );
     if (eventTypes.length === 0) {
       return { location: args.location, dates: [] };
     }
@@ -259,7 +264,11 @@ export const getActiveBookingLocations = query({
       .withIndex("by_active", (q) => q.eq("active", true))
       .collect();
     return [...eventTypes]
-      .filter((eventType) => Boolean(eventType.availabilityId))
+      .filter(
+        (eventType) =>
+          Boolean(eventType.availabilityId) &&
+          hasCheckoutPricingConfigured(eventType),
+      )
       .sort((a, b) => (a.name ?? a.title).localeCompare(b.name ?? b.title, "pt-BR"))
       .map((eventType) => ({
         value: eventType.slug,
@@ -433,4 +442,41 @@ function resolveAvailabilityGroupName(availability: { name?: string; _id?: unkno
     return normalized;
   }
   return `Disponibilidade-${String(availability._id ?? "sem-id")}`;
+}
+
+function hasCheckoutPricingConfigured(eventType: { stripePriceId?: string; priceCents?: number }) {
+  const stripePriceId = eventType.stripePriceId?.trim();
+  if (stripePriceId?.startsWith("price_")) {
+    return true;
+  }
+  const normalizedPriceCents = normalizeAmountCents(eventType.priceCents);
+  if (typeof normalizedPriceCents === "number" && normalizedPriceCents > 0) {
+    return true;
+  }
+  if (!stripePriceId) {
+    return false;
+  }
+
+  if (/^\d+$/.test(stripePriceId)) {
+    const parsedInteger = Number(stripePriceId);
+    return Number.isFinite(parsedInteger) && parsedInteger > 0;
+  }
+  const parsed = Number(stripePriceId.replace(/\./g, "").replace(",", "."));
+  return Number.isFinite(parsed) && parsed > 0;
+}
+
+function normalizeAmountCents(value: number | undefined) {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
+    return undefined;
+  }
+  if (!Number.isInteger(value)) {
+    if (value >= 1000) {
+      return Math.round(value);
+    }
+    return Math.round(value * 100);
+  }
+  if (value >= 1000) {
+    return value;
+  }
+  return value * 100;
 }

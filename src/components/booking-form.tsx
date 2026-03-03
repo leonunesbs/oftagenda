@@ -444,8 +444,8 @@ export function BookingForm({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
-        <div className="grid gap-4 lg:grid-cols-5 lg:grid-rows-[auto_auto] lg:gap-5">
-          <section className="h-fit self-start space-y-4 rounded-xl border border-border/70 p-4 lg:col-span-3">
+        <div className="grid gap-4 md:grid-cols-5 md:grid-rows-[auto_auto] md:gap-5">
+          <section className="h-fit self-start space-y-4 rounded-xl border border-border/70 p-4 md:col-span-3">
             <div className="space-y-1">
               <Label>1. Escolha o evento</Label>
               <p className="text-xs text-muted-foreground">
@@ -466,7 +466,7 @@ export function BookingForm({
             ) : locations.length > 0 ? (
               <div
                 ref={locationListRef}
-                className="max-h-88 overflow-y-auto pr-1 lg:max-h-96"
+                className="max-h-88 overflow-y-auto pr-1 md:max-h-96"
               >
                 <RadioGroup className="space-y-2">
                   {locations.map((item) => (
@@ -506,7 +506,7 @@ export function BookingForm({
           <section
             ref={dateSectionRef}
             className={cn(
-              "scroll-mt-24 space-y-4 rounded-xl border border-border/70 p-4 lg:col-span-2 lg:row-span-2",
+              "scroll-mt-24 space-y-4 rounded-xl border border-border/70 p-4 md:col-span-2 md:row-span-2",
               !hasLocation && "opacity-60",
             )}
             aria-busy={isLoadingAvailability}
@@ -586,8 +586,8 @@ export function BookingForm({
             className={cn(
               "scroll-mt-24 overflow-hidden transition-[max-height,opacity] duration-300 ease-in-out",
               isLocationOverflowing
-                ? "lg:col-span-5 lg:row-start-3"
-                : "lg:col-span-3 lg:row-start-2",
+                ? "md:col-span-5 md:row-start-3"
+                : "md:col-span-3 md:row-start-2",
               shouldShowTimeCard ? "max-h-[1000px] opacity-100" : "pointer-events-none max-h-0 opacity-0",
             )}
           >

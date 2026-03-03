@@ -221,6 +221,14 @@ export default async function AdminDashboardPage() {
                       />
                     </div>
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="event-stripe-price-id">Stripe Price ID</Label>
+                    <Input
+                      id="event-stripe-price-id"
+                      name="stripePriceId"
+                      placeholder="price_..."
+                    />
+                  </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-2">
                       <Label htmlFor="event-kind">Tipo</Label>
@@ -307,6 +315,11 @@ export default async function AdminDashboardPage() {
                         min={0}
                         step="0.01"
                         defaultValue={((eventType.priceCents ?? 0) / 100).toFixed(2)}
+                      />
+                      <Input
+                        name="stripePriceId"
+                        placeholder="price_..."
+                        defaultValue={eventType.stripePriceId ?? ""}
                       />
                       <input type="hidden" name="location" value={eventType.location} />
                       <select

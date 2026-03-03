@@ -282,7 +282,8 @@ export const createEventType = mutation({
     if (args.durationMinutes <= 0) {
       throw new Error("Duracao deve ser maior que zero");
     }
-    if (args.priceCents < 0) {
+    const normalizedPriceCents = normalizePriceCentsInput(args.priceCents);
+    if (normalizedPriceCents < 0) {
       throw new Error("Valor deve ser maior ou igual a zero");
     }
     if (!args.name.trim() || !args.address.trim()) {
@@ -304,7 +305,7 @@ export const createEventType = mutation({
       notes: args.notes?.trim(),
       kind: args.kind,
       durationMinutes: args.durationMinutes,
-      priceCents: args.priceCents,
+      priceCents: normalizedPriceCents,
       stripePriceId: args.stripePriceId?.trim() || undefined,
       location: args.location,
       availabilityId: args.availabilityId,
@@ -353,7 +354,8 @@ export const updateEventType = mutation({
     if (args.durationMinutes <= 0) {
       throw new Error("Duracao deve ser maior que zero");
     }
-    if (args.priceCents < 0) {
+    const normalizedPriceCents = normalizePriceCentsInput(args.priceCents);
+    if (normalizedPriceCents < 0) {
       throw new Error("Valor deve ser maior ou igual a zero");
     }
     if (!args.name.trim() || !args.address.trim()) {
@@ -374,7 +376,7 @@ export const updateEventType = mutation({
       notes: args.notes?.trim(),
       kind: args.kind,
       durationMinutes: args.durationMinutes,
-      priceCents: args.priceCents,
+      priceCents: normalizedPriceCents,
       stripePriceId: args.stripePriceId?.trim() || undefined,
       location: args.location,
       availabilityId: args.availabilityId,
@@ -1272,4 +1274,23 @@ function slotMatchesAvailability(
   } catch {
     return false;
   }
+}
+
+function normalizePriceCentsInput(value: number) {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+  if (value < 0) {
+    return value;
+  }
+  if (!Number.isInteger(value)) {
+    if (value >= 1000) {
+      return Math.round(value);
+    }
+    return Math.round(value * 100);
+  }
+  if (value >= 1000) {
+    return value;
+  }
+  return value * 100;
 }

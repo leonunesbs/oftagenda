@@ -1,29 +1,12 @@
 import { NextResponse } from "next/server";
 
+import { api } from "@convex/_generated/api";
 import { bookingCheckoutSchema } from "@/domain/booking/schema";
 import { getAuthenticatedConvexHttpClient } from "@/lib/convex-server";
 import { requireMemberApiAccess } from "@/lib/access";
 import { getStripeClient } from "@/lib/stripe";
 
 export const runtime = "nodejs";
-
-const createCheckoutDraftRef = {
-  _type: "mutation",
-  _visibility: "public",
-  _functionName: "stripe:createCheckoutDraft",
-} as const;
-
-const attachCheckoutSessionRef = {
-  _type: "mutation",
-  _visibility: "public",
-  _functionName: "stripe:attachCheckoutSession",
-} as const;
-
-const releaseCheckoutDraftRef = {
-  _type: "mutation",
-  _visibility: "public",
-  _functionName: "stripe:releaseCheckoutDraft",
-} as const;
 
 export async function POST(request: Request) {
   try {
@@ -49,7 +32,7 @@ export async function POST(request: Request) {
 
   try {
     const { client, userId } = await getAuthenticatedConvexHttpClient();
-    const draft = await client.mutation(createCheckoutDraftRef as any, parsed.data);
+    const draft = await client.mutation(api.stripe.createCheckoutDraft, parsed.data);
 
     const stripe = getStripeClient();
     const origin = new URL(request.url).origin;
@@ -61,9 +44,24 @@ export async function POST(request: Request) {
     });
 
     try {
+      const lineItems = draft.stripePriceId
+        ? [{ price: draft.stripePriceId, quantity: 1 }]
+        : [
+            {
+              price_data: {
+                currency: draft.currency.toLowerCase(),
+                unit_amount: draft.amountCents,
+                product_data: {
+                  name: draft.eventTypeName || "Consulta oftalmologica",
+                },
+              },
+              quantity: 1,
+            },
+          ];
+
       const session = await stripe.checkout.sessions.create({
         mode: "payment",
-        line_items: [{ price: draft.stripePriceId, quantity: 1 }],
+        line_items: lineItems,
         payment_intent_data: {
           metadata: {
             reservationId: String(draft.reservationId),
@@ -88,12 +86,16 @@ export async function POST(request: Request) {
         },
       });
 
-      await client.mutation(attachCheckoutSessionRef as any, {
+      await client.mutation(api.stripe.attachCheckoutSession, {
         reservationId: draft.reservationId,
         paymentId: draft.paymentId,
         checkoutSessionId: session.id,
         paymentIntentId:
           typeof session.payment_intent === "string" ? session.payment_intent : undefined,
+        amountCents:
+          typeof session.amount_total === "number" && session.amount_total > 0
+            ? session.amount_total
+            : draft.amountCents,
       });
 
       if (!session.url) {
@@ -105,7 +107,7 @@ export async function POST(request: Request) {
         url: session.url,
       });
     } catch (stripeError) {
-      await client.mutation(releaseCheckoutDraftRef as any, {
+      await client.mutation(api.stripe.releaseCheckoutDraft, {
         reservationId: draft.reservationId,
         paymentId: draft.paymentId,
         reason:

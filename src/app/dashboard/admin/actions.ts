@@ -44,6 +44,8 @@ export async function createEventTypeAction(formData: FormData) {
     kind: (toStringValue(formData.get("kind")) || "consulta") as "consulta" | "procedimento" | "exame",
     durationMinutes: toNumber(formData.get("durationMinutes"), 30),
     priceCents: toCentsFromReais(formData.get("priceReais"), 0),
+    stripePriceId:
+      toStringValue(formData.get("stripePriceId")) || toStringValue(formData.get("priceId")) || undefined,
     availabilityId: toStringValue(formData.get("availabilityId")) as Id<"availabilities">,
     location: (toStringValue(formData.get("location")) || "fortaleza") as
       | "fortaleza"
@@ -75,6 +77,8 @@ export async function updateEventTypeAction(formData: FormData) {
     kind: (toStringValue(formData.get("kind")) || "consulta") as "consulta" | "procedimento" | "exame",
     durationMinutes: toNumber(formData.get("durationMinutes"), 30),
     priceCents: toCentsFromReais(formData.get("priceReais"), 0),
+    stripePriceId:
+      toStringValue(formData.get("stripePriceId")) || toStringValue(formData.get("priceId")) || undefined,
     availabilityId: toStringValue(formData.get("availabilityId")) as Id<"availabilities">,
     location: (toStringValue(formData.get("location")) || "fortaleza") as
       | "fortaleza"

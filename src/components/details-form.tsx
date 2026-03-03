@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo, useState, useTransition } from "react"
 
 import { calculateDilatationGuidance } from "@/domain/triage/dilatation"
 import type { TriagePayload } from "@/domain/triage/schema"
@@ -57,7 +57,7 @@ export function DetailsForm() {
   const [selectedSymptoms, setSelectedSymptoms] = useState<TriagePayload["symptoms"]>([])
   const [lastDilation, setLastDilation] = useState<TriagePayload["lastDilation"]>("unknown")
   const [oneSentenceSummary, setOneSentenceSummary] = useState("")
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isSubmitting, startSubmittingTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [submittedPayload, setSubmittedPayload] = useState<TriagePayload | null>(null)
   const [serverResult, setServerResult] = useState<{
@@ -91,30 +91,29 @@ export function DetailsForm() {
       return
     }
 
-    setIsSubmitting(true)
-    try {
-      const response = await fetch("/api/details/submit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(parsed.data),
-      })
+    startSubmittingTransition(async () => {
+      try {
+        const response = await fetch("/api/details/submit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(parsed.data),
+        })
 
-      if (!response.ok) {
-        throw new Error("Não foi possível salvar os detalhes.")
-      }
-      const data = (await response.json()) as {
-        result?: { score: number; level: "ALTA" | "POSSIVEL" | "BAIXA"; advisory: string }
-      }
+        if (!response.ok) {
+          throw new Error("Não foi possível salvar os detalhes.")
+        }
+        const data = (await response.json()) as {
+          result?: { score: number; level: "ALTA" | "POSSIVEL" | "BAIXA"; advisory: string }
+        }
 
-      setSubmittedPayload(parsed.data)
-      setServerResult(data.result ?? null)
-      toast("Detalhes enviados com sucesso.")
-    } catch (submitError) {
-      const message = submitError instanceof Error ? submitError.message : "Falha ao enviar."
-      setError(message)
-    } finally {
-      setIsSubmitting(false)
-    }
+        setSubmittedPayload(parsed.data)
+        setServerResult(data.result ?? null)
+        toast("Detalhes enviados com sucesso.")
+      } catch (submitError) {
+        const message = submitError instanceof Error ? submitError.message : "Falha ao enviar."
+        setError(message)
+      }
+    })
   }
 
   return (

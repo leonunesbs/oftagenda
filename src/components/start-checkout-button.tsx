@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
 
@@ -17,7 +17,7 @@ export function StartCheckoutButton({
   time,
   label = "Ir para pagamento",
 }: StartCheckoutButtonProps) {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, startCheckoutTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
   async function handleStartCheckout() {
@@ -25,27 +25,26 @@ export function StartCheckoutButton({
       return;
     }
     setError(null);
-    setIsLoading(true);
-
-    try {
-      const response = await fetch("/api/stripe/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ location, date, time }),
-      });
-      const data = await response.json();
-      if (!response.ok || !data?.ok || typeof data.url !== "string") {
-        throw new Error(data?.error ?? "Não foi possível iniciar o checkout.");
+    startCheckoutTransition(async () => {
+      try {
+        const response = await fetch("/api/stripe/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ location, date, time }),
+        });
+        const data = await response.json();
+        if (!response.ok || !data?.ok || typeof data.url !== "string") {
+          throw new Error(data?.error ?? "Não foi possível iniciar o checkout.");
+        }
+        window.location.href = data.url;
+      } catch (checkoutError) {
+        setError(
+          checkoutError instanceof Error
+            ? checkoutError.message
+            : "Falha ao redirecionar para o pagamento.",
+        );
       }
-      window.location.href = data.url;
-    } catch (checkoutError) {
-      setError(
-        checkoutError instanceof Error
-          ? checkoutError.message
-          : "Falha ao redirecionar para o pagamento.",
-      );
-      setIsLoading(false);
-    }
+    });
   }
 
   return (

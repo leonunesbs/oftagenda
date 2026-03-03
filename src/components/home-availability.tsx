@@ -68,7 +68,7 @@ export function HomeAvailability() {
   const [activeSlide, setActiveSlide] = React.useState(0);
   const hadLocationRef = React.useRef(false);
   const hadSelectedDateRef = React.useRef(false);
-  const [isLoadingAvailability, setIsLoadingAvailability] = React.useState(false);
+  const [isLoadingAvailability, startAvailabilityTransition] = React.useTransition();
   const [availabilityError, setAvailabilityError] = React.useState<string | null>(null);
   const [timeZone, setTimeZone] = React.useState<string | undefined>(undefined);
 
@@ -157,8 +157,7 @@ export function HomeAvailability() {
 
     let cancelled = false;
 
-    async function loadAvailability() {
-      setIsLoadingAvailability(true);
+    startAvailabilityTransition(async () => {
       setAvailabilityError(null);
 
       try {
@@ -181,14 +180,8 @@ export function HomeAvailability() {
         setAvailabilityError(
           loadError instanceof Error ? loadError.message : "Falha ao carregar disponibilidade.",
         );
-      } finally {
-        if (!cancelled) {
-          setIsLoadingAvailability(false);
-        }
       }
-    }
-
-    loadAvailability();
+    });
 
     return () => {
       cancelled = true;

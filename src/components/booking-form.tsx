@@ -8,10 +8,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { ptBR } from "date-fns/locale";
 
 import type { BookingPayload } from "@/domain/booking/schema";
+import type {
+  BookingLocationOption,
+  LocationAvailabilityResponse,
+} from "@/lib/booking-bootstrap";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -23,40 +27,29 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useRouter, useSearchParams } from "next/navigation";
 
-type BookingLocationOption = {
-  value: BookingPayload["location"];
-  label: string;
-  eventTypesCount?: number;
-};
-
 const DRAFT_STORAGE_KEY = "oftagenda:booking-draft:v1";
-
-type LocationAvailabilityDate = {
-  isoDate: string;
-  label: string;
-  weekdayLabel: string;
-  times: string[];
-};
-
-type LocationAvailabilityResponse = {
-  location: BookingPayload["location"];
-  dates: LocationAvailabilityDate[];
-};
 
 type BookingFormProps = {
   isAuthenticated: boolean;
   clerkEnabled: boolean;
   embedMode?: boolean;
+  initialLocations: BookingLocationOption[];
+  initialLocationsError?: string | null;
+  initialAvailabilityByLocation: Record<string, LocationAvailabilityResponse>;
+  initialAvailabilityErrorsByLocation: Record<string, string>;
 };
 
 export function BookingForm({
   isAuthenticated,
   clerkEnabled,
   embedMode = false,
+  initialLocations,
+  initialLocationsError = null,
+  initialAvailabilityByLocation,
+  initialAvailabilityErrorsByLocation,
 }: BookingFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -71,19 +64,16 @@ export function BookingForm({
   const [selectedTime, setSelectedTime] = useState("");
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [availability, setAvailability] =
-    useState<LocationAvailabilityResponse | null>(null);
-  const [isLoadingAvailability, setIsLoadingAvailability] = useState(false);
-  const [availabilityError, setAvailabilityError] = useState<string | null>(null);
-  const [locations, setLocations] = useState<BookingLocationOption[]>([]);
-  const [isLoadingLocations, setIsLoadingLocations] = useState(true);
-  const [locationsError, setLocationsError] = useState<string | null>(null);
+  const [locations] = useState<BookingLocationOption[]>(initialLocations);
   const [isEmbedded, setIsEmbedded] = useState(embedMode);
   const [isLocationOverflowing, setIsLocationOverflowing] = useState(false);
-  const [isStartingBooking, setIsStartingBooking] = useState(false);
+  const [isStartingBooking, startStartingBookingTransition] = useTransition();
 
   const selectedLocation = locations.find((item) => item.value === location);
   const hasLocation = Boolean(location);
+  const availability = location ? initialAvailabilityByLocation[location] ?? null : null;
+  const availabilityError = location ? initialAvailabilityErrorsByLocation[location] ?? null : null;
+  const locationsError = initialLocationsError;
   const availableDates = availability?.dates ?? [];
   const selectedDateOption = useMemo(
     () => availableDates.find((item) => item.isoDate === selectedDate) ?? null,
@@ -102,26 +92,21 @@ export function BookingForm({
 
   function handleLocationChange(nextLocation: BookingPayload["location"]) {
     setLocation(nextLocation);
-    setAvailability(null);
     setSelectedDate("");
     setSelectedTime("");
     setIsConfirmDialogOpen(false);
-    setIsStartingBooking(false);
-    setAvailabilityError(null);
     setError(null);
     scrollToSection(dateSectionRef);
   }
 
   function handleDateChange(nextDate: string) {
     setSelectedDate(nextDate);
-    setIsStartingBooking(false);
     setError(null);
     scrollToSection(timeSectionRef);
   }
 
   function handleTimeSelect(slot: string) {
     setSelectedTime(slot);
-    setIsStartingBooking(false);
     setError(null);
   }
 
@@ -137,46 +122,6 @@ export function BookingForm({
   }
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function loadLocations() {
-      setIsLoadingLocations(true);
-      try {
-        const response = await fetch("/api/booking/locations");
-        const data = await response.json();
-        if (!response.ok || !data?.ok) {
-          throw new Error(data?.error ?? "Nao foi possivel carregar os locais.");
-        }
-
-        const locationsResponse = Array.isArray(data.locations) ? data.locations : [];
-        if (!cancelled) {
-          if (locationsResponse.length > 0) {
-            setLocations(locationsResponse as BookingLocationOption[]);
-          }
-          setLocationsError(null);
-        }
-      } catch (loadError) {
-        if (cancelled) {
-          return;
-        }
-        setLocations([]);
-        setLocationsError(
-          loadError instanceof Error ? loadError.message : "Falha ao carregar eventos disponiveis.",
-        );
-      } finally {
-        if (!cancelled) {
-          setIsLoadingLocations(false);
-        }
-      }
-    }
-
-    loadLocations();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
     if (!location) {
       return;
     }
@@ -186,55 +131,8 @@ export function BookingForm({
       setLocation("");
       setSelectedDate("");
       setSelectedTime("");
-      setAvailability(null);
     }
   }, [location, locations]);
-
-  useEffect(() => {
-    if (!location) {
-      setAvailability(null);
-      setAvailabilityError(null);
-      return;
-    }
-
-    let cancelled = false;
-    async function loadAvailability() {
-      setIsLoadingAvailability(true);
-      setAvailabilityError(null);
-
-      try {
-        const response = await fetch(`/api/booking/options?location=${location}`);
-        const data = await response.json();
-        if (!response.ok || !data?.ok) {
-          throw new Error(data?.error ?? "Nao foi possivel carregar datas e horarios.");
-        }
-
-        if (!cancelled) {
-          setAvailability((data.options ?? null) as LocationAvailabilityResponse | null);
-        }
-      } catch (loadError) {
-        if (cancelled) {
-          return;
-        }
-        setAvailability(null);
-        setAvailabilityError(
-          loadError instanceof Error
-            ? loadError.message
-            : "Falha ao carregar disponibilidade.",
-        );
-      } finally {
-        if (!cancelled) {
-          setIsLoadingAvailability(false);
-        }
-      }
-    }
-
-    loadAvailability();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [location]);
 
   useEffect(() => {
     if (!selectedDate) {
@@ -400,8 +298,6 @@ export function BookingForm({
       return;
     }
 
-    setIsStartingBooking(true);
-
     const summaryUrl = buildPreBookingSummaryUrl({
       location,
       locationLabel: selectedLocation?.label ?? location,
@@ -417,16 +313,19 @@ export function BookingForm({
     if (!isAuthenticated) {
       if (!clerkEnabled) {
         setError("Nao foi possivel iniciar o login agora. Tente novamente em instantes.");
-        setIsStartingBooking(false);
         return;
       }
-      router.push(`/sign-in?redirect_url=${encodeURIComponent(summaryUrl)}`);
+      startStartingBookingTransition(() => {
+        router.push(`/sign-in?redirect_url=${encodeURIComponent(summaryUrl)}`);
+      });
       return;
     }
 
     window.localStorage.removeItem(DRAFT_STORAGE_KEY);
     setIsConfirmDialogOpen(false);
-    router.push(summaryUrl);
+    startStartingBookingTransition(() => {
+      router.push(summaryUrl);
+    });
   }
 
   return (
@@ -452,18 +351,7 @@ export function BookingForm({
                 Escolha o local onde voce deseja ser atendido para visualizar as datas e horarios disponiveis. Estamos aqui para tornar seu agendamento simples, rapido e tranquilo.
               </p>
             </div>
-            {isLoadingLocations ? (
-              <div className="space-y-3">
-                <p className="text-xs text-muted-foreground" aria-live="polite">
-                  Carregando eventos disponiveis...
-                </p>
-                <div className="space-y-2">
-                  {Array.from({ length: 4 }).map((_, index) => (
-                    <Skeleton key={index} className="h-14 rounded-xl" />
-                  ))}
-                </div>
-              </div>
-            ) : locations.length > 0 ? (
+            {locations.length > 0 ? (
               <div
                 ref={locationListRef}
                 className="max-h-88 overflow-y-auto pr-1 md:max-h-96"
@@ -509,29 +397,17 @@ export function BookingForm({
               "min-w-0 scroll-mt-24 space-y-4 rounded-xl border border-border/70 p-4 md:col-span-2 md:row-span-2",
               !hasLocation && "opacity-60",
             )}
-            aria-busy={isLoadingAvailability}
           >
             <div className="space-y-1">
               <Label>2. Escolha a data</Label>
               <p className="text-xs text-muted-foreground">
                 {hasLocation
-                    ? isLoadingAvailability
-                      ? "Carregando datas e horarios disponiveis..."
-                      : "Selecione no calendario um dia disponivel para este local."
+                    ? "Selecione no calendario um dia disponivel para este local."
                   : "Primeiro selecione o evento."}
               </p>
             </div>
 
-            {!hasLocation ? null : isLoadingAvailability ? (
-              <div className="space-y-3">
-                <Skeleton className="h-[280px] w-full rounded-xl" />
-                <div className="grid grid-cols-2 gap-2">
-                  {Array.from({ length: 4 }).map((_, index) => (
-                    <Skeleton key={index} className="h-9 rounded-md" />
-                  ))}
-                </div>
-              </div>
-            ) : (
+            {!hasLocation ? null : (
               <div className="space-y-3">
                 <div className="rounded-xl border border-border/70 bg-muted/10 p-2">
                   <Calendar
@@ -573,7 +449,7 @@ export function BookingForm({
             )}
 
             {availabilityError ? <p className="text-xs text-destructive">{availabilityError}</p> : null}
-            {hasLocation && !isLoadingAvailability && !availabilityError && availableDates.length === 0 ? (
+            {hasLocation && !availabilityError && availableDates.length === 0 ? (
               <p className="text-xs text-muted-foreground">
                 Nao ha datas disponiveis para este local.
               </p>
@@ -596,7 +472,6 @@ export function BookingForm({
                 "space-y-4 rounded-xl border border-border/70 p-4",
                 !canPickTime && "opacity-60",
               )}
-              aria-busy={isLoadingAvailability}
             >
               <div className="space-y-1">
                 <Label>3. Escolha o horario</Label>
@@ -607,32 +482,19 @@ export function BookingForm({
                 </p>
               </div>
 
-              {isLoadingAvailability ? (
-                <div className="space-y-3">
-                  <p className="text-xs text-muted-foreground" aria-live="polite">
-                    Atualizando horarios para a data selecionada...
-                  </p>
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                    {Array.from({ length: 8 }).map((_, index) => (
-                      <Skeleton key={index} className="h-9 rounded-md" />
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                  {currentTimeSlots.map((slot) => (
-                    <Button
-                      key={slot}
-                      type="button"
-                      variant={selectedTime === slot ? "default" : "outline"}
-                      className="transition-all"
-                      onClick={() => handleTimeSelect(slot)}
-                    >
-                      {slot}
-                    </Button>
-                  ))}
-                </div>
-              )}
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {currentTimeSlots.map((slot) => (
+                  <Button
+                    key={slot}
+                    type="button"
+                    variant={selectedTime === slot ? "default" : "outline"}
+                    className="transition-all"
+                    onClick={() => handleTimeSelect(slot)}
+                  >
+                    {slot}
+                  </Button>
+                ))}
+              </div>
 
               {canPickTime && currentTimeSlots.length === 0 ? (
                 <p className="text-xs text-muted-foreground">

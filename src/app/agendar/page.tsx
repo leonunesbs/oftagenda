@@ -1,6 +1,8 @@
-import { BookingForm } from "@/components/booking-form";
+import { Suspense } from "react";
 import { auth } from "@clerk/nextjs/server";
 import { isClerkConfigured } from "@/lib/access";
+import { BookingFormContainer } from "@/components/booking-form-container";
+import { BookingFormFallback } from "@/components/booking-form-fallback";
 
 export default async function AgendarPage() {
   const clerkEnabled = isClerkConfigured();
@@ -8,7 +10,12 @@ export default async function AgendarPage() {
 
   return (
     <section className="mx-auto w-full max-w-5xl">
-      <BookingForm isAuthenticated={Boolean(userId)} clerkEnabled={clerkEnabled} />
+      <Suspense fallback={<BookingFormFallback />}>
+        <BookingFormContainer
+          isAuthenticated={Boolean(userId)}
+          clerkEnabled={clerkEnabled}
+        />
+      </Suspense>
     </section>
   );
 }

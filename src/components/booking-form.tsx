@@ -447,9 +447,9 @@ export function BookingForm({
         <div className="grid min-w-0 gap-4 md:grid-cols-5 md:grid-rows-[auto_auto] md:gap-5">
           <section className="min-w-0 h-fit self-start space-y-4 rounded-xl border border-border/70 p-4 md:col-span-3">
             <div className="space-y-1">
-              <Label>1. Escolha o evento</Label>
+              <Label>1. Escolha o local de atendimento</Label>
               <p className="text-xs text-muted-foreground">
-                Selecione o evento para ver as datas disponiveis.
+                Escolha o local onde voce deseja ser atendido para visualizar as datas e horarios disponiveis. Estamos aqui para tornar seu agendamento simples, rapido e tranquilo.
               </p>
             </div>
             {isLoadingLocations ? (

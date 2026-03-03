@@ -342,7 +342,7 @@ export function BookingForm({
           Selecione local, data e horario. Em seguida, revise no resumo antes de concluir.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-5 overflow-x-hidden">
+      <CardContent className="space-y-5">
         <div className="grid min-w-0 gap-4 md:grid-cols-5 md:grid-rows-[auto_auto] md:gap-5">
           <section className="min-w-0 h-fit self-start space-y-4 rounded-xl border border-border/70 p-4 md:col-span-3">
             <div className="space-y-1">
@@ -361,22 +361,22 @@ export function BookingForm({
                     <label
                       key={item.value}
                       className={cn(
-                        "flex cursor-pointer items-center justify-between gap-3 rounded-xl border px-4 py-3 transition-colors",
+                        "flex flex-wrap cursor-pointer items-center justify-between gap-3 rounded-xl border px-4 py-3 transition-colors sm:flex-nowrap",
                         location === item.value
                           ? "border-primary bg-primary/5"
                           : "border-border hover:bg-muted/30",
                       )}
                     >
-                      <div className="flex items-center gap-3">
+                      <div className="flex min-w-0 items-center gap-3">
                         <RadioGroupItem
                           name="location"
                           value={item.value}
                           checked={location === item.value}
                           onChange={() => handleLocationChange(item.value)}
                         />
-                        <span>{item.label}</span>
+                        <span className="min-w-0 wrap-break-word">{item.label}</span>
                       </div>
-                      <span className="text-xs text-muted-foreground">
+                      <span className="w-full pl-8 text-left text-xs text-muted-foreground sm:w-auto sm:pl-0 sm:text-right">
                         {item.eventTypesCount ? `${item.eventTypesCount} tipos` : "Evento ativo"}
                       </span>
                     </label>

@@ -135,7 +135,7 @@ export default async function HomePage() {
       </section>
 
       <section id="agendamento" aria-labelledby="home-agendamento" className="scroll-mt-24">
-        <div className="space-y-3">
+        <div className="mx-auto w-full max-w-5xl space-y-3">
           <h2 id="home-agendamento" className="text-xl font-semibold tracking-tight md:text-2xl">
             Agendamento
           </h2>
@@ -143,7 +143,7 @@ export default async function HomePage() {
             Escolha local, data e horário e avance para o resumo.
           </p>
         </div>
-        <div className="mt-4">
+        <div className="mx-auto mt-4 w-full max-w-5xl">
           <Suspense fallback={<BookingFormFallback />}>
             <BookingFormContainer
               isAuthenticated={Boolean(userId)}
@@ -152,7 +152,7 @@ export default async function HomePage() {
           </Suspense>
         </div>
         {!clerkEnabled ? (
-          <p className="mt-3 text-xs text-muted-foreground">
+          <p className="mx-auto mt-3 w-full max-w-5xl text-xs text-muted-foreground">
             Configure as chaves do Clerk no `.env.local` para habilitar a autenticação.
           </p>
         ) : null}

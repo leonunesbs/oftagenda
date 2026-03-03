@@ -65,6 +65,11 @@ const availabilityStatusValidator = v.union(
   v.literal("active"),
   v.literal("inactive"),
 );
+const availabilityOverrideSlotValidator = v.object({
+  startTime: v.string(),
+  endTime: v.string(),
+  status: availabilityStatusValidator,
+});
 
 const reservationStatusValidator = v.union(
   v.literal("pending"),
@@ -87,22 +92,36 @@ const paymentMethodValidator = v.union(
   v.literal("transfer"),
 );
 
+const adminEventKindValidator = v.union(
+  v.literal("consulta"),
+  v.literal("procedimento"),
+  v.literal("exame"),
+);
+
 export default defineSchema({
   event_types: defineTable({
     slug: v.string(),
     title: v.string(),
     description: v.optional(v.string()),
+    name: v.optional(v.string()),
+    address: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    kind: v.optional(adminEventKindValidator),
     durationMinutes: v.number(),
+    priceCents: v.optional(v.number()),
+    stripePriceId: v.optional(v.string()),
     location: locationValidator,
+    availabilityId: v.optional(v.id("availabilities")),
     active: v.boolean(),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_slug", ["slug"])
-    .index("by_active", ["active"]),
+    .index("by_active", ["active"])
+    .index("by_availability_id", ["availabilityId"]),
 
   availabilities: defineTable({
-    eventTypeId: v.id("event_types"),
+    name: v.optional(v.string()),
     weekday: v.number(),
     startTime: v.string(),
     endTime: v.string(),
@@ -111,8 +130,20 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   })
-    .index("by_event_type_id", ["eventTypeId"])
-    .index("by_event_type_id_and_weekday", ["eventTypeId", "weekday"]),
+    .index("by_weekday", ["weekday"])
+    .index("by_status", ["status"]),
+
+  availability_overrides: defineTable({
+    groupName: v.string(),
+    date: v.string(),
+    timezone: v.string(),
+    allDayUnavailable: v.boolean(),
+    slots: v.array(availabilityOverrideSlotValidator),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_group_name", ["groupName"])
+    .index("by_group_name_and_date", ["groupName", "date"]),
 
   reservations: defineTable({
     clerkUserId: v.string(),
@@ -139,13 +170,32 @@ export default defineSchema({
     method: paymentMethodValidator,
     status: paymentStatusValidator,
     externalId: v.optional(v.string()),
+    lastStripeEventId: v.optional(v.string()),
     notes: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_clerk_user_id", ["clerkUserId"])
     .index("by_reservation_id", ["reservationId"])
+    .index("by_external_id", ["externalId"])
     .index("by_status", ["status"]),
+
+  stripe_webhook_events: defineTable({
+    eventId: v.string(),
+    eventType: v.string(),
+    paymentId: v.optional(v.id("payments")),
+    reservationId: v.optional(v.id("reservations")),
+    status: v.union(
+      v.literal("ignored"),
+      v.literal("processed"),
+      v.literal("duplicate"),
+      v.literal("failed"),
+    ),
+    details: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_event_id", ["eventId"])
+    .index("by_created_at", ["createdAt"]),
 
   patients: defineTable({
     clerkUserId: v.string(),

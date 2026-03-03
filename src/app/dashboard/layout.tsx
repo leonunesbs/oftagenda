@@ -1,10 +1,10 @@
-import { requireAuthenticated } from "@/lib/access";
+import { requireMember } from "@/lib/access";
 
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  await requireAuthenticated("/dashboard");
+  await requireMember("/dashboard");
   return children;
 }

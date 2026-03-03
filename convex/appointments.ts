@@ -4,11 +4,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 import type { MutationCtx } from "./_generated/server";
 
-const locationValidator = v.union(
-  v.literal("fortaleza"),
-  v.literal("sao_domingos_do_maranhao"),
-  v.literal("fortuna"),
-);
+const bookingLocationValidator = v.string();
 
 const periodValidator = v.union(
   v.literal("manha"),
@@ -22,7 +18,7 @@ export const confirmBooking = mutation({
     name: v.string(),
     phone: v.string(),
     email: v.string(),
-    location: locationValidator,
+    location: bookingLocationValidator,
     preferredPeriod: periodValidator,
     reason: v.optional(v.string()),
   },
@@ -36,13 +32,22 @@ export const confirmBooking = mutation({
     const clerkUserId = identity.subject;
     const patient = await findOrCreatePatient(ctx, clerkUserId, args.name, args.phone, args.email, now);
 
+    const activeEventTypes = await ctx.db
+      .query("event_types")
+      .withIndex("by_active", (q) => q.eq("active", true))
+      .collect();
+    const selectedEventType = activeEventTypes.find((item) => item.slug === args.location);
+    if (!selectedEventType) {
+      throw new Error("Local selecionado nao encontrado");
+    }
+
     const appointmentId = await ctx.db.insert("appointments", {
       clerkUserId,
       patientId: patient._id,
       name: args.name,
       phone: args.phone,
       email: args.email,
-      location: args.location,
+      location: selectedEventType.location,
       preferredPeriod: args.preferredPeriod,
       reason: args.reason,
       status: "confirmed",
@@ -82,7 +87,7 @@ export const hasConfirmedBooking = query({
 
 export const getBookingOptionsByLocation = query({
   args: {
-    location: locationValidator,
+    location: bookingLocationValidator,
     daysAhead: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
@@ -92,40 +97,80 @@ export const getBookingOptionsByLocation = query({
       .withIndex("by_active", (q) => q.eq("active", true))
       .collect();
 
-    const eventTypes = activeEventTypes.filter((item) => item.location === args.location);
+    const eventTypes = activeEventTypes.filter((item) => item.slug === args.location);
     if (eventTypes.length === 0) {
       return { location: args.location, dates: [] };
     }
 
-    const eventTypeIds = new Set(eventTypes.map((item) => item._id));
+    const [allAvailabilities, allOverrides] = await Promise.all([
+      ctx.db.query("availabilities").collect(),
+      ctx.db.query("availability_overrides").collect(),
+    ]);
+    const availabilityById = new Map(allAvailabilities.map((item) => [String(item._id), item]));
     const durationByEventType = new Map(eventTypes.map((item) => [item._id, item.durationMinutes]));
+    const availabilityGroupsByEventType = new Map(
+      eventTypes.map((eventType) => [
+        String(eventType._id),
+        eventType.availabilityId
+          ? resolveAvailabilityGroupName(availabilityById.get(String(eventType.availabilityId)))
+          : null,
+      ]),
+    );
+    const activeGroupNames = new Set(
+      [...availabilityGroupsByEventType.values()].filter(
+        (groupName): groupName is string => typeof groupName === "string" && groupName.length > 0,
+      ),
+    );
+    if (activeGroupNames.size === 0) {
+      return { location: args.location, dates: [] };
+    }
 
-    const allAvailabilities = await ctx.db.query("availabilities").collect();
+    const eventTypeByGroupName = new Map<string, (typeof eventTypes)[number]>();
+    for (const eventType of eventTypes) {
+      const groupName = availabilityGroupsByEventType.get(String(eventType._id));
+      if (groupName && !eventTypeByGroupName.has(groupName)) {
+        eventTypeByGroupName.set(groupName, eventType);
+      }
+    }
+
     const availabilities = allAvailabilities.filter(
-      (item) => item.status === "active" && eventTypeIds.has(item.eventTypeId),
+      (item) => item.status === "active" && activeGroupNames.has(resolveAvailabilityGroupName(item)),
     );
 
     if (availabilities.length === 0) {
       return { location: args.location, dates: [] };
     }
 
-    const availabilityById = new Map(availabilities.map((item) => [item._id, item]));
+    const availabilityByGroup = new Map<string, typeof availabilities>();
+    for (const availability of availabilities) {
+      const groupName = resolveAvailabilityGroupName(availability);
+      const current = availabilityByGroup.get(groupName) ?? [];
+      current.push(availability);
+      availabilityByGroup.set(groupName, current);
+    }
+
+    const relevantOverrides = allOverrides.filter((override) => activeGroupNames.has(override.groupName));
+    const overrideByGroupDate = new Map(
+      relevantOverrides.map((override) => [buildOverrideKey(override.groupName, override.date), override]),
+    );
+
     const allReservations = await ctx.db.query("reservations").collect();
     const reservations = allReservations.filter(
       (item) =>
-        eventTypeIds.has(item.eventTypeId) &&
+        eventTypes.some((eventType) => eventType._id === item.eventTypeId) &&
         (item.status === "pending" || item.status === "confirmed"),
     );
 
     const reservedSlots = new Set<string>();
     for (const reservation of reservations) {
-      const availability = availabilityById.get(reservation.availabilityId);
+      const availability = availabilityById.get(String(reservation.availabilityId));
       if (!availability) {
         continue;
       }
+      const groupName = resolveAvailabilityGroupName(availability);
       const dateKey = formatDateInTimezone(reservation.startsAt, availability.timezone);
       const timeKey = formatTimeInTimezone(reservation.startsAt, availability.timezone);
-      reservedSlots.add(buildSlotKey(String(reservation.availabilityId), dateKey, timeKey));
+      reservedSlots.add(buildSlotKey(groupName, dateKey, timeKey));
     }
 
     const today = new Date();
@@ -144,23 +189,49 @@ export const getBookingOptionsByLocation = query({
       const weekday = day.getDay();
       const daySlots = new Set<string>();
 
-      for (const availability of availabilities) {
-        if (availability.weekday !== weekday) {
+      for (const groupName of activeGroupNames) {
+        const assignedEventType = eventTypeByGroupName.get(groupName);
+        const duration = assignedEventType ? durationByEventType.get(assignedEventType._id) ?? 30 : 30;
+
+        const override = overrideByGroupDate.get(buildOverrideKey(groupName, isoDate));
+        if (override) {
+          if (override.allDayUnavailable) {
+            continue;
+          }
+          const activeOverrideSlots = override.slots.filter((slot) => slot.status === "active");
+          for (const overrideSlot of activeOverrideSlots) {
+            const generatedSlots = buildSlotsWithinRange(
+              overrideSlot.startTime,
+              overrideSlot.endTime,
+              duration,
+            );
+            for (const slot of generatedSlots) {
+              const key = buildSlotKey(groupName, isoDate, slot);
+              if (reservedSlots.has(key)) {
+                continue;
+              }
+              daySlots.add(slot);
+            }
+          }
           continue;
         }
 
-        const duration = durationByEventType.get(availability.eventTypeId) ?? 30;
-        const slots = buildSlotsWithinRange(availability.startTime, availability.endTime, duration);
-        for (const slot of slots) {
-          const key = buildSlotKey(String(availability._id), isoDate, slot);
-          if (reservedSlots.has(key)) {
-            continue;
+        const weeklySlots = (availabilityByGroup.get(groupName) ?? []).filter(
+          (availability) => availability.weekday === weekday,
+        );
+        for (const availability of weeklySlots) {
+          const slots = buildSlotsWithinRange(availability.startTime, availability.endTime, duration);
+          for (const slot of slots) {
+            const key = buildSlotKey(groupName, isoDate, slot);
+            if (reservedSlots.has(key)) {
+              continue;
+            }
+            daySlots.add(slot);
           }
-          daySlots.add(slot);
         }
       }
 
-      const times = [...daySlots].sort((a, b) => a.localeCompare(b));
+      const times = [...daySlots].sort((a, b) => parseTimeToMinutes(a) - parseTimeToMinutes(b));
       if (times.length === 0) {
         continue;
       }
@@ -177,6 +248,23 @@ export const getBookingOptionsByLocation = query({
     }
 
     return { location: args.location, dates };
+  },
+});
+
+export const getActiveBookingLocations = query({
+  args: {},
+  handler: async (ctx) => {
+    const eventTypes = await ctx.db
+      .query("event_types")
+      .withIndex("by_active", (q) => q.eq("active", true))
+      .collect();
+    return [...eventTypes]
+      .filter((eventType) => Boolean(eventType.availabilityId))
+      .sort((a, b) => (a.name ?? a.title).localeCompare(b.name ?? b.title, "pt-BR"))
+      .map((eventType) => ({
+        value: eventType.slug,
+        label: `${eventType.name ?? eventType.title}${eventType.address ? ` - ${eventType.address}` : ""}`,
+      }));
   },
 });
 
@@ -328,6 +416,21 @@ function formatTimeInTimezone(timestamp: number, timezone: string) {
   }).format(new Date(timestamp));
 }
 
-function buildSlotKey(availabilityId: string, isoDate: string, time: string) {
-  return `${availabilityId}|${isoDate}|${time}`;
+function buildSlotKey(groupName: string, isoDate: string, time: string) {
+  return `${groupName}|${isoDate}|${time}`;
+}
+
+function buildOverrideKey(groupName: string, isoDate: string) {
+  return `${groupName}|${isoDate}`;
+}
+
+function resolveAvailabilityGroupName(availability: { name?: string; _id?: unknown } | undefined) {
+  if (!availability) {
+    return "Disponibilidade";
+  }
+  const normalized = availability.name?.trim();
+  if (normalized && normalized.length > 0) {
+    return normalized;
+  }
+  return `Disponibilidade-${String(availability._id ?? "sem-id")}`;
 }

@@ -4,8 +4,18 @@ import { api } from "@convex/_generated/api";
 import { bookingSchema } from "@/domain/booking/schema";
 import { setBookingConfirmedCookie } from "@/domain/booking/state";
 import { getAuthenticatedConvexHttpClient } from "@/lib/convex-server";
+import { requireMemberApiAccess } from "@/lib/access";
 
 export async function POST(request: Request) {
+  try {
+    await requireMemberApiAccess();
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Falha de autorização para confirmar agendamento.";
+    const status = message === "Not authenticated" ? 401 : message === "Not authorized" ? 403 : 500;
+    return NextResponse.json({ ok: false, error: message }, { status });
+  }
+
   const body = await request.json().catch(() => null);
   const parsed = bookingSchema.safeParse(body);
 

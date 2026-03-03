@@ -24,12 +24,12 @@ MVP de agendamento oftalmologico com foco em **agendar primeiro, detalhes depois
 cp .env.example .env.local
 ```
 
-2. No Clerk, crie o JWT template `convex` e copie o issuer domain (Frontend API URL).
+2. No Clerk, ative a integração Convex e copie o Frontend API URL.
 
 3. Preencha no `.env.local`:
    - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
    - `CLERK_SECRET_KEY`
-   - `CLERK_JWT_ISSUER_DOMAIN`
+   - `CLERK_FRONTEND_API_URL`
 
 4. Instale dependencias:
 
@@ -46,16 +46,16 @@ npx convex dev
 6. Rode o app:
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
-> `npm run dev` agora sobe Next.js + Convex juntos (`convex dev --run-sh "next dev"`).
+> `pnpm dev` agora abre um painel com logs separados de Convex e Next.js.
 
-Opcional (fluxo original do template):
+Diagnostico rapido:
 
 ```bash
-pnpm install
-pnpm dev
+pnpm run dev:convex # apenas Convex
+pnpm run dev:next   # apenas Next.js
 ```
 
 ## Rotas principais
@@ -63,6 +63,7 @@ pnpm dev
 ### Publicas
 
 - `/` landing do Minha Agenda
+- `/status` diagnostico de conectividade (Convex, Clerk e APIs internas)
 - `/sign-in` autenticacao Clerk
 - `/sign-up` cadastro Clerk
 
@@ -100,19 +101,24 @@ pnpm dev
 - TODO: validar entitlements do Clerk quando habilitar billing
 - Nenhum SDK Stripe/webhook no MVP
 
-## Deploy unico na Vercel (Next.js + Convex)
+## Deploy na Vercel (Next.js + Convex)
 
-1. No dashboard do Convex, gere um **Deploy Key** para o projeto.
-2. Na Vercel, configure as variaveis de ambiente de Production:
+1. No dashboard do Convex, gere um **Deploy Key** de producao.
+2. Na Vercel (Project Settings -> Environment Variables), configure em **Production**:
    - `CONVEX_DEPLOY_KEY`
    - `NEXT_PUBLIC_CONVEX_URL`
    - `NEXT_PUBLIC_CONVEX_SITE_URL`
    - `CLERK_SECRET_KEY`
    - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
-   - `CLERK_JWT_ISSUER_DOMAIN`
-3. Faça deploy normal pela Vercel (git push / Deploy).
+   - `CLERK_FRONTEND_API_URL`
+   - `STRIPE_SECRET_KEY`
+   - `STRIPE_WEBHOOK_SECRET`
+3. Confira os comandos de build do projeto:
+   - Install Command: `pnpm install --frozen-lockfile`
+   - Build Command: `pnpm build`
+4. Faça o deploy normal pela Vercel (git push ou botão Deploy).
 
-No build de producao, o script `npm run build` publica automaticamente o Convex e em seguida executa o `next build`.
+No build de producao, `pnpm build` faz deploy do Convex automaticamente quando `CONVEX_DEPLOY_KEY` estiver presente; caso contrario, roda apenas `next build`.
 
 ## TODOs de produto
 

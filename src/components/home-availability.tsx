@@ -22,10 +22,13 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
-const locations: Array<{
+type BookingLocationOption = {
   value: BookingPayload["location"];
   label: string;
-}> = [
+  eventTypesCount?: number;
+};
+
+const fallbackLocations: BookingLocationOption[] = [
   { value: "fortaleza", label: "Fortaleza" },
   { value: "sao_domingos_do_maranhao", label: "São Domingos do Maranhão" },
   { value: "fortuna", label: "Fortuna" },
@@ -57,6 +60,7 @@ function parseIsoDate(isoDate: string) {
 
 export function HomeAvailability() {
   const [location, setLocation] = React.useState<BookingPayload["location"] | "">("");
+  const [locations, setLocations] = React.useState<BookingLocationOption[]>(fallbackLocations);
   const [availability, setAvailability] = React.useState<LocationAvailabilityResponse | null>(null);
   const [selectedDate, setSelectedDate] = React.useState("");
   const [selectedTime, setSelectedTime] = React.useState<string | null>(null);
@@ -93,6 +97,48 @@ export function HomeAvailability() {
   React.useEffect(() => {
     setTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone);
   }, []);
+
+  React.useEffect(() => {
+    let cancelled = false;
+
+    async function loadLocations() {
+      try {
+        const response = await fetch("/api/booking/locations");
+        const data = await response.json();
+        if (!response.ok || !data?.ok) {
+          throw new Error(data?.error ?? "Nao foi possivel carregar locais.");
+        }
+
+        const locationsResponse = Array.isArray(data.locations) ? data.locations : [];
+        if (!cancelled && locationsResponse.length > 0) {
+          setLocations(locationsResponse as BookingLocationOption[]);
+        }
+      } catch {
+        if (!cancelled) {
+          setLocations(fallbackLocations);
+        }
+      }
+    }
+
+    loadLocations();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  React.useEffect(() => {
+    if (!location) {
+      return;
+    }
+
+    const exists = locations.some((item) => item.value === location);
+    if (!exists) {
+      setLocation("");
+      setSelectedDate("");
+      setSelectedTime(null);
+      setAvailability(null);
+    }
+  }, [location, locations]);
 
   function handleLocationChange(nextLocation: BookingPayload["location"]) {
     setLocation(nextLocation);

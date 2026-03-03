@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import { ConvexHttpClient } from "convex/browser";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -26,61 +26,72 @@ export function isClerkConfigured() {
   return publishableKey.startsWith("pk_") && secretKey.startsWith("sk_");
 }
 
-const ADMIN_PERMISSION = "org:admin:oftagenda";
-const ADMIN_ROLES = new Set(["admin", "org:admin"]);
+export type UserRole = "member" | "admin";
+const ROLE_LEVEL: Record<UserRole, number> = {
+  member: 1,
+  admin: 2,
+};
 
-function toStringArray(value: unknown) {
-  if (!Array.isArray(value)) {
-    return [];
+function normalizeUserRole(value: unknown): UserRole | null {
+  if (typeof value !== "string") {
+    return null;
   }
-  return value.filter((item): item is string => typeof item === "string");
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "admin") {
+    return "admin";
+  }
+  if (normalized === "member") {
+    return "member";
+  }
+  return null;
 }
 
-function readClaim(claims: Record<string, unknown>, path: string[]) {
-  let current: unknown = claims;
-  for (const key of path) {
-    if (!current || typeof current !== "object") {
-      return undefined;
-    }
-    current = (current as Record<string, unknown>)[key];
+function readRoleFromMetadata(metadata: unknown): UserRole | null {
+  if (!metadata || typeof metadata !== "object") {
+    return null;
   }
-  return current;
+  return normalizeUserRole((metadata as Record<string, unknown>).role);
 }
 
-function isAdminFromClaims(claims: unknown) {
-  if (!claims || typeof claims !== "object") {
-    return false;
+async function ensureDefaultRoleMetadata(userId: string) {
+  const clerk = await clerkClient();
+  const user = await clerk.users.getUser(userId);
+
+  if (readRoleFromMetadata(user.publicMetadata)) {
+    return;
   }
 
-  const map = claims as Record<string, unknown>;
-  const roleCandidates = [
-    readClaim(map, ["org_role"]),
-    readClaim(map, ["role"]),
-    readClaim(map, ["metadata", "role"]),
-    readClaim(map, ["public_metadata", "role"]),
-    readClaim(map, ["private_metadata", "role"]),
-  ];
-
-  if (roleCandidates.some((value) => typeof value === "string" && ADMIN_ROLES.has(value))) {
-    return true;
-  }
-
-  const permissions = [
-    ...toStringArray(readClaim(map, ["org_permissions"])),
-    ...toStringArray(readClaim(map, ["permissions"])),
-    ...toStringArray(readClaim(map, ["metadata", "permissions"])),
-    ...toStringArray(readClaim(map, ["public_metadata", "permissions"])),
-    ...toStringArray(readClaim(map, ["private_metadata", "permissions"])),
-  ];
-
-  return permissions.includes(ADMIN_PERMISSION);
+  const publicMetadata =
+    user.publicMetadata && typeof user.publicMetadata === "object"
+      ? (user.publicMetadata as Record<string, unknown>)
+      : {};
+  await clerk.users.updateUserMetadata(userId, {
+    publicMetadata: {
+      ...publicMetadata,
+      role: "member",
+    },
+  });
 }
 
-export function isAdminFromClerkAuth(authData: { userId: string | null; sessionClaims?: unknown }) {
+export async function getUserRoleFromClerkAuth(authData: { userId: string | null }) {
   if (!authData.userId) {
+    return null;
+  }
+  const clerk = await clerkClient();
+  const user = await clerk.users.getUser(authData.userId);
+  return readRoleFromMetadata(user.publicMetadata);
+}
+
+function canAccessRole(role: UserRole | null, requiredRole: UserRole) {
+  if (!role) {
     return false;
   }
-  return isAdminFromClaims(authData.sessionClaims);
+  return ROLE_LEVEL[role] >= ROLE_LEVEL[requiredRole];
+}
+
+export async function isAdminFromClerkAuth(authData: { userId: string | null }) {
+  const role = await getUserRoleFromClerkAuth(authData);
+  return canAccessRole(role, "admin");
 }
 
 export async function requireAuthenticated(returnBackUrl: string) {
@@ -93,6 +104,7 @@ export async function requireAuthenticated(returnBackUrl: string) {
     return redirectToSignIn({ returnBackUrl });
   }
 
+  await ensureDefaultRoleMetadata(userId);
   return userId;
 }
 
@@ -104,8 +116,43 @@ export async function requireAdmin(returnBackUrl: string) {
     return authData.redirectToSignIn({ returnBackUrl });
   }
 
-  if (!isAdminFromClerkAuth(authData)) {
+  await ensureDefaultRoleMetadata(userId);
+  const role = await getUserRoleFromClerkAuth(authData);
+  if (!canAccessRole(role, "admin")) {
     redirect("/dashboard");
+  }
+
+  return userId;
+}
+
+export async function requireMember(returnBackUrl: string) {
+  const authData = await auth();
+  const userId = authData.userId;
+
+  if (!userId) {
+    return authData.redirectToSignIn({ returnBackUrl });
+  }
+
+  await ensureDefaultRoleMetadata(userId);
+  const role = await getUserRoleFromClerkAuth(authData);
+  if (!canAccessRole(role, "member")) {
+    redirect("/");
+  }
+
+  return userId;
+}
+
+export async function requireMemberApiAccess() {
+  const authData = await auth();
+  const userId = authData.userId;
+  if (!userId) {
+    throw new Error("Not authenticated");
+  }
+
+  await ensureDefaultRoleMetadata(userId);
+  const role = await getUserRoleFromClerkAuth(authData);
+  if (!canAccessRole(role, "member")) {
+    throw new Error("Not authorized");
   }
 
   return userId;

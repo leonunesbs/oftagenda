@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
+import { StartCheckoutButton } from "@/components/start-checkout-button";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,21 +13,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-const locationLabels: Record<string, string> = {
-  fortaleza: "Fortaleza",
-  sao_domingos_do_maranhao: "Sao Domingos do Maranhao",
-  fortuna: "Fortuna",
-};
-
 export default function ResumoInterceptPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const location = searchParams.get("location") ?? "";
+  const locationLabelFromParams = searchParams.get("locationLabel") ?? "";
   const date = searchParams.get("date") ?? "";
   const time = searchParams.get("time") ?? "";
 
-  const locationLabel = locationLabels[location] ?? "Local nao informado";
+  const locationLabel = locationLabelFromParams || location || "Local nao informado";
   const dateLabel = date ? formatDateLabel(date) : "Data nao informada";
   const timeLabel = time || "Horario nao informado";
 
@@ -42,9 +37,9 @@ export default function ResumoInterceptPage() {
     >
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Resumo do pre-agendamento</DialogTitle>
+          <DialogTitle>Resumo do agendamento</DialogTitle>
           <DialogDescription>
-            Confira os dados selecionados antes de seguir para a confirmacao.
+            Confira os dados selecionados antes de confirmar.
           </DialogDescription>
         </DialogHeader>
 
@@ -64,9 +59,12 @@ export default function ResumoInterceptPage() {
           <Button type="button" variant="outline" onClick={() => router.back()}>
             Editar agendamento
           </Button>
-          <Button asChild>
-            <Link href="/dashboard">Seguir para o painel</Link>
-          </Button>
+          <StartCheckoutButton
+            location={location}
+            date={date}
+            time={time}
+            label="Seguir para pagamento"
+          />
         </DialogFooter>
       </DialogContent>
     </Dialog>

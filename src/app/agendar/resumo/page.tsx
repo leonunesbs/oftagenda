@@ -1,35 +1,40 @@
 import Link from "next/link";
 
+import { StartCheckoutButton } from "@/components/start-checkout-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-
-const locationLabels: Record<string, string> = {
-  fortaleza: "Fortaleza",
-  sao_domingos_do_maranhao: "São Domingos do Maranhão",
-  fortuna: "Fortuna",
-};
 
 type ResumoPageProps = {
   searchParams?:
     | Promise<{
         location?: string;
+        locationLabel?: string;
+        locationTypeLabel?: string;
         date?: string;
         time?: string;
+        payment?: string;
       }>
     | {
         location?: string;
+        locationLabel?: string;
+        locationTypeLabel?: string;
         date?: string;
         time?: string;
+        payment?: string;
       };
 };
 
 export default async function ResumoPreAgendamentoPage({ searchParams }: ResumoPageProps) {
   const params = (await searchParams) ?? {};
   const location = params.location ?? "";
+  const locationLabelFromParams = params.locationLabel ?? "";
+  const locationTypeLabel = params.locationTypeLabel ?? "";
   const date = params.date ?? "";
   const time = params.time ?? "";
+  const payment = params.payment ?? "";
 
-  const locationLabel = locationLabels[location] ?? "Local não informado";
+  const locationLabel = locationLabelFromParams || location || "Local não informado";
+  const locationType = locationTypeLabel || "Tipo não informado";
   const dateLabel = date ? formatDateLabel(date) : "Data não informada";
   const timeLabel = time || "Horário não informado";
 
@@ -48,6 +53,9 @@ export default async function ResumoPreAgendamentoPage({ searchParams }: ResumoP
               <span className="font-medium text-foreground">Local:</span> {locationLabel}
             </p>
             <p>
+              <span className="font-medium text-foreground">Tipo de local:</span> {locationType}
+            </p>
+            <p>
               <span className="font-medium text-foreground">Data:</span> {dateLabel}
             </p>
             <p>
@@ -59,10 +67,18 @@ export default async function ResumoPreAgendamentoPage({ searchParams }: ResumoP
             <Button asChild variant="outline">
               <Link href="/agendar">Editar agendamento</Link>
             </Button>
-            <Button asChild>
-              <Link href="/dashboard">Seguir para o painel</Link>
-            </Button>
+            <StartCheckoutButton
+              location={location}
+              date={date}
+              time={time}
+              label="Seguir para pagamento"
+            />
           </div>
+          {payment === "cancelled" ? (
+            <p className="text-sm text-destructive">
+              O checkout foi cancelado. Você pode tentar novamente quando quiser.
+            </p>
+          ) : null}
         </CardContent>
       </Card>
     </section>

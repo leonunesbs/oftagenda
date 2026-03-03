@@ -1,13 +1,18 @@
 import Link from "next/link";
+import { auth } from "@clerk/nextjs/server";
 
 import { api } from "../../../convex/_generated/api";
-import { hasConfirmedBooking } from "@/lib/access";
+import { getUserRoleFromClerkAuth, hasConfirmedBooking } from "@/lib/access";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { getAuthenticatedConvexHttpClient } from "@/lib/convex-server";
 
 export default async function DashboardPage() {
+  const authData = await auth();
+  const role = await getUserRoleFromClerkAuth(authData);
+  const isAdmin = role === "admin";
+
   let dashboardState: {
     hasConfirmedBooking: boolean;
     nextAppointment: {
@@ -55,9 +60,25 @@ export default async function DashboardPage() {
       <Card className="border-border/70">
         <CardHeader>
           <CardTitle>Status do agendamento</CardTitle>
-          <CardDescription>Fluxo pensado para ser rápido e sem atrito.</CardDescription>
+          <CardDescription>
+            {isAdmin
+              ? "Você está em modo administrador. Use o atalho abaixo para gestão."
+              : "Fluxo pensado para ser rápido e sem atrito."}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
+          {isAdmin ? (
+            <div className="space-y-3 rounded-xl border border-border p-4">
+              <h3 className="font-medium">Acesso administrativo</h3>
+              <p className="text-sm text-muted-foreground">
+                Sua conta possui <code>publicMetadata.role = "admin"</code>.
+              </p>
+              <Button variant="secondary" asChild>
+                <Link href="/dashboard/admin">Abrir painel admin</Link>
+              </Button>
+            </div>
+          ) : null}
+
           {bookingConfirmed ? (
             <div className="space-y-4 rounded-xl border border-border p-4">
               <h3 className="font-medium">Próxima consulta</h3>
@@ -88,7 +109,7 @@ export default async function DashboardPage() {
           <div className="space-y-3">
             <Button variant="secondary" asChild>
               <a
-                href="https://wa.me/5585996212996?text=Ol%C3%A1!%20Vim%20pela%20Minha%20Agenda%20e%20gostaria%20de%20confirmar/reagendar%20minha%20consulta."
+                href="https://wa.me/5585999853811?text=Ol%C3%A1!%20Vim%20pela%20Minha%20Agenda%20e%20gostaria%20de%20confirmar/reagendar%20minha%20consulta."
                 target="_blank"
                 rel="noreferrer"
               >

@@ -443,9 +443,9 @@ export function BookingForm({
           Selecione local, data e horario. Em seguida, revise no resumo antes de concluir.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-5">
-        <div className="grid gap-4 md:grid-cols-5 md:grid-rows-[auto_auto] md:gap-5">
-          <section className="h-fit self-start space-y-4 rounded-xl border border-border/70 p-4 md:col-span-3">
+      <CardContent className="space-y-5 overflow-x-hidden">
+        <div className="grid min-w-0 gap-4 md:grid-cols-5 md:grid-rows-[auto_auto] md:gap-5">
+          <section className="min-w-0 h-fit self-start space-y-4 rounded-xl border border-border/70 p-4 md:col-span-3">
             <div className="space-y-1">
               <Label>1. Escolha o evento</Label>
               <p className="text-xs text-muted-foreground">
@@ -506,7 +506,7 @@ export function BookingForm({
           <section
             ref={dateSectionRef}
             className={cn(
-              "scroll-mt-24 space-y-4 rounded-xl border border-border/70 p-4 md:col-span-2 md:row-span-2",
+              "min-w-0 scroll-mt-24 space-y-4 rounded-xl border border-border/70 p-4 md:col-span-2 md:row-span-2",
               !hasLocation && "opacity-60",
             )}
             aria-busy={isLoadingAvailability}
@@ -562,7 +562,7 @@ export function BookingForm({
                       key={dateOption.isoDate}
                       type="button"
                       variant={selectedDate === dateOption.isoDate ? "default" : "outline"}
-                      className="justify-start transition-all"
+                      className="h-auto w-full min-w-0 justify-start whitespace-normal py-2 text-left leading-tight transition-all"
                       onClick={() => handleDateChange(dateOption.isoDate)}
                     >
                       {dateOption.weekdayLabel}, {dateOption.label}
@@ -584,7 +584,7 @@ export function BookingForm({
             ref={timeSectionRef}
             aria-hidden={!shouldShowTimeCard}
             className={cn(
-              "scroll-mt-24 overflow-hidden transition-[max-height,opacity] duration-300 ease-in-out",
+              "min-w-0 scroll-mt-24 overflow-hidden transition-[max-height,opacity] duration-300 ease-in-out",
               isLocationOverflowing
                 ? "md:col-span-5 md:row-start-3"
                 : "md:col-span-3 md:row-start-2",
@@ -612,14 +612,14 @@ export function BookingForm({
                   <p className="text-xs text-muted-foreground" aria-live="polite">
                     Atualizando horarios para a data selecionada...
                   </p>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                     {Array.from({ length: 8 }).map((_, index) => (
                       <Skeleton key={index} className="h-9 rounded-md" />
                     ))}
                   </div>
                 </div>
               ) : (
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                   {currentTimeSlots.map((slot) => (
                     <Button
                       key={slot}

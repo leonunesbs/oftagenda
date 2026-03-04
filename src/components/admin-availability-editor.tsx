@@ -610,8 +610,7 @@ export function AdminAvailabilityEditor({
                 locale={ptBR}
                 selected={overrideDates}
                 onSelect={handleOverrideDatesChange}
-                className="w-full [--cell-size:2.1rem]"
-                classNames={{ root: "w-full" }}
+                className="w-full [--cell-size:clamp(1.95rem,6vw,2.5rem)]"
               />
               {overrideDates.length > 0 ? (
                 <p className="text-xs text-muted-foreground">

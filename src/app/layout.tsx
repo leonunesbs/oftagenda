@@ -95,9 +95,17 @@ export default function RootLayout({
     <html lang="pt-BR" className={`${inter.variable} dark`}>
       <body className={geistSans.variable}>
         <script
+          id="website-schema"
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify([websiteSchema, medicalClinicSchema]),
+            __html: JSON.stringify(websiteSchema),
+          }}
+        />
+        <script
+          id="medical-clinic-schema"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(medicalClinicSchema),
           }}
         />
         {clerkEnabled ? (

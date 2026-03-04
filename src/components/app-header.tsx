@@ -100,7 +100,6 @@ export async function AppHeader({ clerkEnabled }: AppHeaderProps) {
 
         <div className="flex items-center gap-2 md:hidden">
           <ColorModeToggle />
-          {clerkEnabled && userId ? <ClerkUserButtonWithLoading /> : null}
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="outline" size="icon-sm" aria-label="Abrir menu">
@@ -149,6 +148,7 @@ export async function AppHeader({ clerkEnabled }: AppHeaderProps) {
               </nav>
             </SheetContent>
           </Sheet>
+          {clerkEnabled && userId ? <ClerkUserButtonWithLoading /> : null}
         </div>
       </div>
     </header>

@@ -58,9 +58,21 @@ const clinicSchema = {
   medicalSpecialty: ["Ophthalmology"],
   areaServed: ["Fortaleza - CE", "Sao Domingos do Maranhao - MA", "Fortuna - MA"],
   availableService: [
-    { "@type": "MedicalProcedure", name: "Consulta oftalmológica completa" },
-    { "@type": "MedicalProcedure", name: "Avaliação de retina" },
-    { "@type": "MedicalProcedure", name: "Avaliação para cirurgia de catarata" },
+    {
+      "@context": "https://schema.org",
+      "@type": "MedicalProcedure",
+      name: "Consulta oftalmológica completa",
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "MedicalProcedure",
+      name: "Avaliação de retina",
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "MedicalProcedure",
+      name: "Avaliação para cirurgia de catarata",
+    },
   ],
 };
 
@@ -73,9 +85,17 @@ export default async function HomePage() {
     <div className="relative mx-auto flex w-full max-w-6xl flex-col gap-6 pt-4 md:gap-8 md:pt-8">
       <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-80 bg-[radial-gradient(circle_at_top,rgba(120,148,255,0.18),transparent_58%)] blur-2xl" />
       <script
+        id="physician-schema"
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify([physicianSchema, clinicSchema]),
+          __html: JSON.stringify(physicianSchema),
+        }}
+      />
+      <script
+        id="clinic-schema"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(clinicSchema),
         }}
       />
 

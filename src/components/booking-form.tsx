@@ -1,0 +1,653 @@
+"use client";
+
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { ptBR } from "date-fns/locale";
+
+import type { BookingPayload } from "@/domain/booking/schema";
+import type {
+  BookingLocationOption,
+  LocationAvailabilityResponse,
+} from "@/lib/booking-bootstrap";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
+import { useRouter, useSearchParams } from "next/navigation";
+
+const DRAFT_STORAGE_KEY = "oftagenda:booking-draft:v1";
+
+type BookingFormProps = {
+  isAuthenticated: boolean;
+  clerkEnabled: boolean;
+  embedMode?: boolean;
+  initialLocations: BookingLocationOption[];
+  initialLocationsError?: string | null;
+  initialAvailabilityByLocation: Record<string, LocationAvailabilityResponse>;
+  initialAvailabilityErrorsByLocation: Record<string, string>;
+};
+
+export function BookingForm({
+  isAuthenticated,
+  clerkEnabled,
+  embedMode = false,
+  initialLocations,
+  initialLocationsError = null,
+  initialAvailabilityByLocation,
+  initialAvailabilityErrorsByLocation,
+}: BookingFormProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  const dateSectionRef = useRef<HTMLElement | null>(null);
+  const timeSectionRef = useRef<HTMLDivElement | null>(null);
+  const locationListRef = useRef<HTMLDivElement | null>(null);
+  const hasHydratedInitialDataRef = useRef(false);
+
+  const [location, setLocation] = useState<BookingPayload["location"] | "">("");
+  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedTime, setSelectedTime] = useState("");
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [locations] = useState<BookingLocationOption[]>(initialLocations);
+  const [isEmbedded, setIsEmbedded] = useState(embedMode);
+  const [isLocationOverflowing, setIsLocationOverflowing] = useState(false);
+  const [isStartingBooking, startStartingBookingTransition] = useTransition();
+
+  const selectedLocation = locations.find((item) => item.value === location);
+  const hasLocation = Boolean(location);
+  const availability = location ? initialAvailabilityByLocation[location] ?? null : null;
+  const availabilityError = location ? initialAvailabilityErrorsByLocation[location] ?? null : null;
+  const locationsError = initialLocationsError;
+  const availableDates = availability?.dates ?? [];
+  const selectedDateOption = useMemo(
+    () => availableDates.find((item) => item.isoDate === selectedDate) ?? null,
+    [availableDates, selectedDate],
+  );
+  const currentTimeSlots = selectedDateOption?.times ?? [];
+  const canPickTime = Boolean(hasLocation && selectedDate);
+  const hasSelection = Boolean(location && selectedDate && selectedTime);
+  const shouldShowTimeCard = Boolean(selectedDate);
+  const availableDateSet = useMemo(
+    () => new Set(availableDates.map((item) => item.isoDate)),
+    [availableDates],
+  );
+  const firstAvailableDate = availableDates[0]?.isoDate ?? "";
+  const lastAvailableDate = availableDates[availableDates.length - 1]?.isoDate ?? "";
+
+  function handleLocationChange(nextLocation: BookingPayload["location"]) {
+    setLocation(nextLocation);
+    setSelectedDate("");
+    setSelectedTime("");
+    setIsConfirmDialogOpen(false);
+    setError(null);
+    scrollToSection(dateSectionRef);
+  }
+
+  function handleDateChange(nextDate: string) {
+    setSelectedDate(nextDate);
+    setError(null);
+    scrollToSection(timeSectionRef);
+  }
+
+  function handleTimeSelect(slot: string) {
+    setSelectedTime(slot);
+    setError(null);
+  }
+
+  function handleOpenConfirmationDialog() {
+    if (isStartingBooking) {
+      return;
+    }
+    if (!hasSelection) {
+      setError("Selecione local, data e horario para continuar.");
+      return;
+    }
+    setIsConfirmDialogOpen(true);
+  }
+
+  useEffect(() => {
+    if (!location) {
+      return;
+    }
+
+    const exists = locations.some((item) => item.value === location);
+    if (!exists) {
+      setLocation("");
+      setSelectedDate("");
+      setSelectedTime("");
+    }
+  }, [location, locations]);
+
+  useEffect(() => {
+    if (!selectedDate) {
+      setSelectedTime("");
+      setIsConfirmDialogOpen(false);
+      return;
+    }
+    if (!currentTimeSlots.includes(selectedTime)) {
+      setSelectedTime("");
+      setIsConfirmDialogOpen(false);
+    }
+  }, [selectedDate, selectedTime, currentTimeSlots]);
+
+  useEffect(() => {
+    if (hasHydratedInitialDataRef.current) {
+      return;
+    }
+    hasHydratedInitialDataRef.current = true;
+
+    const queryLocation = searchParams.get("location");
+    const queryDate = searchParams.get("date") ?? "";
+    const queryTime = searchParams.get("time") ?? "";
+
+    if (queryLocation) {
+      setLocation(queryLocation as BookingPayload["location"]);
+      setSelectedDate(queryDate);
+      setSelectedTime(queryTime);
+      return;
+    }
+
+    const draftRaw = window.localStorage.getItem(DRAFT_STORAGE_KEY);
+    if (!draftRaw) {
+      return;
+    }
+
+    try {
+      const draft = JSON.parse(draftRaw) as {
+        location?: string;
+        selectedDate?: string;
+        selectedTime?: string;
+      };
+      const draftLocation = draft.location;
+      if (!draftLocation) {
+        return;
+      }
+      setLocation(draftLocation as BookingPayload["location"]);
+      setSelectedDate(draft.selectedDate ?? "");
+      setSelectedTime(draft.selectedTime ?? "");
+    } catch {
+      window.localStorage.removeItem(DRAFT_STORAGE_KEY);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (!availableDates.length) {
+      return;
+    }
+    const hasCurrentDate = availableDates.some((item) => item.isoDate === selectedDate);
+    if (selectedDate && hasCurrentDate) {
+      return;
+    }
+    const firstDate = availableDates[0];
+    if (firstDate) {
+      setSelectedDate(firstDate.isoDate);
+    }
+  }, [availableDates, selectedDate]);
+
+  useEffect(() => {
+    if (!selectedDate) {
+      return;
+    }
+    if (selectedTime && currentTimeSlots.includes(selectedTime)) {
+      return;
+    }
+    const firstSlot = currentTimeSlots[0];
+    if (firstSlot) {
+      setSelectedTime(firstSlot);
+    }
+  }, [selectedDate, selectedTime, currentTimeSlots]);
+
+  useEffect(() => {
+    const nextEmbeddedMode = embedMode || searchParams.get("embed") === "1" || window.self !== window.top;
+    setIsEmbedded(nextEmbeddedMode);
+  }, [embedMode, searchParams]);
+
+  useEffect(() => {
+    if (!location) {
+      window.localStorage.removeItem(DRAFT_STORAGE_KEY);
+      return;
+    }
+    window.localStorage.setItem(
+      DRAFT_STORAGE_KEY,
+      JSON.stringify({
+        location,
+        selectedDate,
+        selectedTime,
+      }),
+    );
+  }, [location, selectedDate, selectedTime]);
+
+  useEffect(() => {
+    if (!isEmbedded) {
+      return;
+    }
+    document.body.classList.add("booking-embed-mode");
+    return () => {
+      document.body.classList.remove("booking-embed-mode");
+    };
+  }, [isEmbedded]);
+
+  useEffect(() => {
+    if (!isEmbedded || !cardRef.current) {
+      return;
+    }
+
+    const observer = new ResizeObserver(() => {
+      const height = cardRef.current?.offsetHeight ?? 0;
+      window.parent.postMessage({ type: "oftagenda:booking:resize", height }, "*");
+    });
+    observer.observe(cardRef.current);
+    window.parent.postMessage({ type: "oftagenda:booking:ready" }, "*");
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [isEmbedded]);
+
+  useEffect(() => {
+    const listElement = locationListRef.current;
+    if (!listElement) {
+      setIsLocationOverflowing(false);
+      return;
+    }
+
+    const updateOverflowState = () => {
+      const isDesktop = window.matchMedia("(min-width: 1024px)").matches;
+      if (!isDesktop) {
+        setIsLocationOverflowing(false);
+        return;
+      }
+      setIsLocationOverflowing(listElement.scrollHeight > listElement.clientHeight + 1);
+    };
+
+    updateOverflowState();
+    const observer = new ResizeObserver(updateOverflowState);
+    observer.observe(listElement);
+    window.addEventListener("resize", updateOverflowState);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", updateOverflowState);
+    };
+  }, [locations]);
+
+  function handleStartBooking() {
+    if (isStartingBooking) {
+      return;
+    }
+    setError(null);
+
+    if (!location || !selectedDate || !selectedTime) {
+      setError("Selecione local, data e horario para continuar.");
+      return;
+    }
+
+    const summaryUrl = buildPreBookingSummaryUrl({
+      location,
+      locationLabel: selectedLocation?.label ?? location,
+      locationTypeLabel: selectedLocation
+        ? selectedLocation.eventTypesCount
+          ? `${selectedLocation.eventTypesCount} tipos de evento ativos`
+          : "Local ativo"
+        : "Selecione um local",
+      selectedDate,
+      selectedTime,
+    });
+
+    if (!isAuthenticated) {
+      if (!clerkEnabled) {
+        setError("Nao foi possivel iniciar o login agora. Tente novamente em instantes.");
+        return;
+      }
+      startStartingBookingTransition(() => {
+        router.push(`/sign-in?redirect_url=${encodeURIComponent(summaryUrl)}`);
+      });
+      return;
+    }
+
+    window.localStorage.removeItem(DRAFT_STORAGE_KEY);
+    setIsConfirmDialogOpen(false);
+    startStartingBookingTransition(() => {
+      router.push(summaryUrl);
+    });
+  }
+
+  return (
+    <Card
+      ref={cardRef}
+      className={cn(
+        "border-border/70 bg-card/95 shadow-sm",
+        isEmbedded && "rounded-none border-x-0 border-y-0 shadow-none",
+      )}
+    >
+      <CardHeader className="space-y-3">
+        <CardTitle>Agendar consulta</CardTitle>
+        <CardDescription>
+          Selecione local, data e horario. Em seguida, revise no resumo antes de concluir.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        <div className="grid min-w-0 gap-4 md:grid-cols-5 md:grid-rows-[auto_auto] md:gap-5">
+          <section className="min-w-0 h-fit self-start space-y-4 rounded-xl border border-border/70 p-4 md:col-span-3">
+            <div className="space-y-1">
+              <Label>1. Escolha o local de atendimento</Label>
+              <p className="text-xs text-muted-foreground">
+                Escolha o local onde voce deseja ser atendido para visualizar as datas e horarios disponiveis. Estamos aqui para tornar seu agendamento simples, rapido e tranquilo.
+              </p>
+            </div>
+            {locations.length > 0 ? (
+              <div
+                ref={locationListRef}
+                className="max-h-88 overflow-y-auto pr-1 md:max-h-96"
+              >
+                <RadioGroup className="space-y-2">
+                  {locations.map((item) => (
+                    <label
+                      key={item.value}
+                      className={cn(
+                        "flex flex-wrap cursor-pointer items-center justify-between gap-3 rounded-xl border px-4 py-3 transition-colors sm:flex-nowrap",
+                        location === item.value
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:bg-muted/30",
+                      )}
+                    >
+                      <div className="flex min-w-0 items-center gap-3">
+                        <RadioGroupItem
+                          name="location"
+                          value={item.value}
+                          checked={location === item.value}
+                          onChange={() => handleLocationChange(item.value)}
+                        />
+                        <span className="min-w-0 wrap-break-word">{item.label}</span>
+                      </div>
+                      <span className="w-full pl-8 text-left text-xs text-muted-foreground sm:w-auto sm:pl-0 sm:text-right">
+                        {item.eventTypesCount ? `${item.eventTypesCount} tipos` : "Evento ativo"}
+                      </span>
+                    </label>
+                  ))}
+                </RadioGroup>
+              </div>
+            ) : (
+              <p className="rounded-xl border border-dashed border-border/70 p-3 text-xs text-muted-foreground">
+                Nenhum evento ativo disponivel para agendamento.
+              </p>
+            )}
+            {locationsError ? <p className="text-xs text-muted-foreground">{locationsError}</p> : null}
+          </section>
+
+          <section
+            ref={dateSectionRef}
+            className={cn(
+              "min-w-0 scroll-mt-24 space-y-4 rounded-xl border border-border/70 p-4 md:col-span-2 md:row-span-2",
+              !hasLocation && "opacity-60",
+            )}
+          >
+            <div className="space-y-1">
+              <Label>2. Escolha a data</Label>
+              <p className="text-xs text-muted-foreground">
+                {hasLocation
+                    ? "Selecione no calendario um dia disponivel para este local."
+                  : "Primeiro selecione o evento."}
+              </p>
+            </div>
+
+            {!hasLocation ? null : (
+              <div className="space-y-3">
+                <div className="rounded-xl border border-border/70 bg-muted/10 p-2">
+                  <Calendar
+                    mode="single"
+                    locale={ptBR}
+                    selected={selectedDate ? parseIsoDate(selectedDate) : undefined}
+                    onSelect={(dateValue) => {
+                      if (!dateValue) {
+                        return;
+                      }
+                      const isoDate = toIsoDate(dateValue);
+                      if (!availableDateSet.has(isoDate)) {
+                        return;
+                      }
+                      handleDateChange(isoDate);
+                    }}
+                    disabled={(dateValue) => !availableDateSet.has(toIsoDate(dateValue))}
+                    fromDate={firstAvailableDate ? parseIsoDate(firstAvailableDate) : undefined}
+                    toDate={lastAvailableDate ? parseIsoDate(lastAvailableDate) : undefined}
+                    className="w-full min-h-[320px] [--cell-size:min(2.1rem,11vw)] sm:min-h-[360px] sm:[--cell-size:2.25rem]"
+                    classNames={{ root: "w-full" }}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  {availableDates.slice(0, 6).map((dateOption) => (
+                    <Button
+                      key={dateOption.isoDate}
+                      type="button"
+                      variant={selectedDate === dateOption.isoDate ? "default" : "outline"}
+                      className="h-auto w-full min-w-0 justify-start whitespace-normal py-2 text-left leading-tight transition-all"
+                      onClick={() => handleDateChange(dateOption.isoDate)}
+                    >
+                      {dateOption.weekdayLabel}, {dateOption.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {availabilityError ? <p className="text-xs text-destructive">{availabilityError}</p> : null}
+            {hasLocation && !availabilityError && availableDates.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                Nao ha datas disponiveis para este local.
+              </p>
+            ) : null}
+          </section>
+
+          <div
+            ref={timeSectionRef}
+            aria-hidden={!shouldShowTimeCard}
+            className={cn(
+              "min-w-0 scroll-mt-24 overflow-hidden transition-[max-height,opacity] duration-300 ease-in-out",
+              isLocationOverflowing
+                ? "md:col-span-5 md:row-start-3"
+                : "md:col-span-3 md:row-start-2",
+              shouldShowTimeCard ? "max-h-[1000px] opacity-100" : "pointer-events-none max-h-0 opacity-0",
+            )}
+          >
+            <section
+              className={cn(
+                "space-y-4 rounded-xl border border-border/70 p-4",
+                !canPickTime && "opacity-60",
+              )}
+            >
+              <div className="space-y-1">
+                <Label>3. Escolha o horario</Label>
+                <p className="text-xs text-muted-foreground">
+                  {canPickTime
+                    ? `Horarios disponiveis para ${selectedLocation?.label}.`
+                    : "Selecione evento e data para carregar os horarios abaixo."}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {currentTimeSlots.map((slot) => (
+                  <Button
+                    key={slot}
+                    type="button"
+                    variant={selectedTime === slot ? "default" : "outline"}
+                    className="transition-all"
+                    onClick={() => handleTimeSelect(slot)}
+                  >
+                    {slot}
+                  </Button>
+                ))}
+              </div>
+
+              {canPickTime && currentTimeSlots.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  Nao ha horarios livres para esta data.
+                </p>
+              ) : null}
+
+              <div className="rounded-xl border border-dashed border-border/70 bg-muted/20 p-4 text-sm">
+                <p className="font-medium">Resumo rapido</p>
+                <p className="text-muted-foreground">
+                  {selectedLocation?.label ?? "Selecione um evento"}
+                  {selectedDateOption
+                    ? ` - ${selectedDateOption.weekdayLabel}, ${selectedDateOption.label}`
+                    : selectedDate
+                      ? ` - ${formatDateLabel(selectedDate)}`
+                      : " - sem data"}
+                  {selectedTime ? ` - ${selectedTime}` : " - sem horario"}
+                </p>
+              </div>
+
+              {error ? <p className="text-sm text-destructive">{error}</p> : null}
+
+              <div className="flex justify-end">
+                <Button
+                  type="button"
+                  onClick={handleOpenConfirmationDialog}
+                  disabled={!hasSelection || isStartingBooking}
+                >
+                  Confirmar horario
+                </Button>
+              </div>
+            </section>
+          </div>
+        </div>
+      </CardContent>
+
+      <Dialog
+        open={isConfirmDialogOpen}
+        onOpenChange={(open) => {
+          if (isStartingBooking) {
+            return;
+          }
+          setIsConfirmDialogOpen(open);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmar agendamento</DialogTitle>
+            <DialogDescription>
+              Revise os dados antes de continuar.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="rounded-xl border border-border/70 bg-muted/20 p-4 text-sm">
+            <p>
+              <span className="font-medium text-foreground">Local:</span>{" "}
+              {selectedLocation?.label ?? "Nao informado"}
+            </p>
+            <p>
+              <span className="font-medium text-foreground">Data:</span>{" "}
+              {selectedDateOption
+                ? `${selectedDateOption.weekdayLabel}, ${selectedDateOption.label}`
+                : selectedDate
+                  ? formatDateLabel(selectedDate)
+                  : "Nao informada"}
+            </p>
+            <p>
+              <span className="font-medium text-foreground">Horario:</span>{" "}
+              {selectedTime || "Nao informado"}
+            </p>
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsConfirmDialogOpen(false)}
+              disabled={isStartingBooking}
+            >
+              Editar dados
+            </Button>
+            <Button type="button" onClick={handleStartBooking} disabled={!hasSelection || isStartingBooking}>
+              {isStartingBooking ? (
+                <span className="inline-flex items-center gap-2">
+                  <span
+                    className="size-3 animate-spin rounded-full border-2 border-current border-t-transparent"
+                    aria-hidden="true"
+                  />
+                  Processando...
+                </span>
+              ) : (
+                "Confirmar"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </Card>
+  );
+}
+
+function buildPreBookingSummaryUrl({
+  location,
+  locationLabel,
+  locationTypeLabel,
+  selectedDate,
+  selectedTime,
+}: {
+  location: BookingPayload["location"];
+  locationLabel: string;
+  locationTypeLabel: string;
+  selectedDate: string;
+  selectedTime: string;
+}) {
+  const params = new URLSearchParams({
+    location,
+    locationLabel,
+    locationTypeLabel,
+    date: selectedDate,
+    time: selectedTime,
+  });
+  return `/agendar/resumo?${params.toString()}`;
+}
+
+function formatDateLabel(isoDate: string) {
+  const [year, month, day] = isoDate.split("-");
+  return `${day}/${month}/${year}`;
+}
+
+function toIsoDate(date: Date) {
+  const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0);
+  const year = localDate.getFullYear();
+  const month = String(localDate.getMonth() + 1).padStart(2, "0");
+  const day = String(localDate.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function parseIsoDate(isoDate: string) {
+  const [year, month, day] = isoDate.split("-").map((value) => Number(value));
+  const safeYear = typeof year === "number" && Number.isFinite(year) ? year : 1970;
+  const safeMonth = typeof month === "number" && Number.isFinite(month) ? month : 1;
+  const safeDay = typeof day === "number" && Number.isFinite(day) ? day : 1;
+  return new Date(safeYear, safeMonth - 1, safeDay, 12, 0, 0);
+}
+
+function scrollToSection(sectionRef: { current: HTMLElement | null }) {
+  if (typeof window === "undefined" || !sectionRef.current) {
+    return;
+  }
+  if (!window.matchMedia("(max-width: 1023px)").matches) {
+    return;
+  }
+  window.setTimeout(() => {
+    sectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, 100);
+}

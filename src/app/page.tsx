@@ -1,0 +1,162 @@
+import Link from "next/link";
+import type { Metadata } from "next";
+import { Suspense } from "react";
+
+import { auth } from "@clerk/nextjs/server";
+
+import { BookingFormContainer } from "@/components/booking-form-container";
+import { BookingFormFallback } from "@/components/booking-form-fallback";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
+import { isClerkConfigured } from "@/lib/access";
+
+export const metadata: Metadata = {
+  title: "Oftalmologista em Fortaleza | Consulta de Retina e Catarata",
+  description:
+    "Agendamento oftalmológico para pacientes da Minha Agenda. Selecione local, data e horário em poucos passos.",
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    title: "Minha Agenda | Agendamento Oftalmológico",
+    description:
+      "Acesse sua agenda e confirme a consulta oftalmológica com fluxo rápido e objetivo.",
+    type: "website",
+    locale: "pt_BR",
+    url: "/",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Minha Agenda | Agendamento Oftalmológico",
+    description: "Fluxo direto para agendar consulta oftalmológica.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+};
+
+const physicianSchema = {
+  "@context": "https://schema.org",
+  "@type": "Physician",
+  name: "Dr. Leonardo Nunes",
+  medicalSpecialty: ["Ophthalmology"],
+  areaServed: ["Fortaleza - CE", "Sao Domingos do Maranhao - MA", "Fortuna - MA"],
+  knowsAbout: [
+    "Consulta oftalmológica",
+    "Retina clínica e cirúrgica",
+    "Cirurgia de catarata",
+    "Atendimento humanizado",
+  ],
+};
+
+const clinicSchema = {
+  "@context": "https://schema.org",
+  "@type": "MedicalClinic",
+  name: "Minha Agenda - Oftalmologia",
+  medicalSpecialty: ["Ophthalmology"],
+  areaServed: ["Fortaleza - CE", "Sao Domingos do Maranhao - MA", "Fortuna - MA"],
+  availableService: [
+    { "@type": "MedicalProcedure", name: "Consulta oftalmológica completa" },
+    { "@type": "MedicalProcedure", name: "Avaliação de retina" },
+    { "@type": "MedicalProcedure", name: "Avaliação para cirurgia de catarata" },
+  ],
+};
+
+export default async function HomePage() {
+  const clerkEnabled = isClerkConfigured();
+  const userId = clerkEnabled ? (await auth()).userId : null;
+
+  return (
+    <div className="relative mx-auto flex w-full max-w-6xl flex-col gap-6 pt-4 md:gap-8 md:pt-8">
+      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-80 bg-[radial-gradient(circle_at_top,rgba(120,148,255,0.18),transparent_58%)] blur-2xl" />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify([physicianSchema, clinicSchema]),
+        }}
+      />
+
+      <section aria-labelledby="home-hero">
+        <Card className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-2 motion-safe:duration-500 rounded-3xl border-white/10 bg-linear-to-br from-card/95 via-card/90 to-card/65 backdrop-blur-2xl">
+          <CardHeader className="space-y-4">
+            <p className="inline-flex w-fit rounded-full border border-border/70 bg-muted/30 px-3 py-1 text-xs text-muted-foreground">
+              Área exclusiva para pacientes da Minha Agenda
+            </p>
+            <h1 id="home-hero" className="max-w-3xl text-3xl font-semibold tracking-tight md:text-5xl">
+              Minha Agenda
+            </h1>
+            <CardDescription className="max-w-2xl text-sm text-muted-foreground md:text-base">
+              Aqui, cada paciente é especial: atendimento com tempo, clareza e precisão.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-wrap items-center gap-3">
+            <Button asChild className="h-10 rounded-xl px-5 text-sm transition-transform duration-200 hover:-translate-y-0.5">
+              <a href="#agendamento">Agendar</a>
+            </Button>
+            <Button
+              variant="secondary"
+              asChild
+              className="h-10 rounded-xl px-5 text-sm transition-colors duration-200"
+            >
+              <Link href="/sign-in">Entrar</Link>
+            </Button>
+            <p className="w-full text-xs text-muted-foreground">
+              Atendimento individual para quem faz parte da Minha Agenda.
+            </p>
+          </CardContent>
+        </Card>
+      </section>
+
+      <section aria-labelledby="home-diferenciais">
+        <h2 id="home-diferenciais" className="sr-only">
+          Diferenciais do atendimento
+        </h2>
+        <div className="grid gap-3 md:grid-cols-3 md:gap-4">
+          <Card className="rounded-2xl border-border/70 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-1 motion-safe:duration-500">
+            <CardHeader className="space-y-2 pb-3">
+              <h3 className="text-base font-medium">Atendimento individual</h3>
+              <CardDescription className="text-sm">Consulta personalizada para o seu caso.</CardDescription>
+            </CardHeader>
+          </Card>
+          <Card className="rounded-2xl border-border/70 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-1 motion-safe:duration-500 motion-safe:delay-100">
+            <CardHeader className="space-y-2 pb-3">
+              <h3 className="text-base font-medium">Tecnologia de alta precisão</h3>
+              <CardDescription className="text-sm">Diagnóstico claro e conduta objetiva.</CardDescription>
+            </CardHeader>
+          </Card>
+          <Card className="rounded-2xl border-border/70 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-1 motion-safe:duration-500 motion-safe:delay-200">
+            <CardHeader className="space-y-2 pb-3">
+              <h3 className="text-base font-medium">Segurança em cada etapa</h3>
+              <CardDescription className="text-sm">Fluxo direto do agendamento ao resumo.</CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
+      </section>
+
+      <section id="agendamento" aria-labelledby="home-agendamento" className="scroll-mt-24">
+        <div className="mx-auto w-full max-w-5xl space-y-3">
+          <h2 id="home-agendamento" className="text-xl font-semibold tracking-tight md:text-2xl">
+            Agendamento
+          </h2>
+          <p className="max-w-3xl text-sm text-muted-foreground">
+            Escolha local, data e horário e avance para o resumo.
+          </p>
+        </div>
+        <div className="mx-auto mt-4 w-full max-w-5xl">
+          <Suspense fallback={<BookingFormFallback />}>
+            <BookingFormContainer
+              isAuthenticated={Boolean(userId)}
+              clerkEnabled={clerkEnabled}
+            />
+          </Suspense>
+        </div>
+        {!clerkEnabled ? (
+          <p className="mx-auto mt-3 w-full max-w-5xl text-xs text-muted-foreground">
+            Configure as chaves do Clerk no `.env.local` para habilitar a autenticação.
+          </p>
+        ) : null}
+      </section>
+    </div>
+  );
+}

@@ -305,13 +305,13 @@ export function HomeAvailability() {
         className="w-full px-10"
       >
         <CarouselContent>
-          <CarouselItem className="h-full">
-            <Card className="h-full rounded-3xl border-white/10 bg-linear-to-b from-card/95 to-card/75 backdrop-blur-2xl ring-0">
+          <CarouselItem>
+            <Card className="rounded-3xl border-white/10 bg-linear-to-b from-card/95 to-card/75 backdrop-blur-2xl ring-0">
               <CardHeader className="space-y-2">
                 <CardTitle className="text-base md:text-lg">1. Escolha o local</CardTitle>
                 <CardDescription>Selecione onde prefere ser atendido.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4 overflow-y-auto">
+              <CardContent className="space-y-4">
                 <div className="space-y-1">
                   <Label>Locais de atendimento</Label>
                   <p className="text-xs text-muted-foreground">
@@ -352,8 +352,8 @@ export function HomeAvailability() {
             </Card>
           </CarouselItem>
 
-          <CarouselItem className="h-full">
-            <Card className="h-full rounded-3xl border-white/10 bg-linear-to-b from-card/95 to-card/75 backdrop-blur-2xl ring-0">
+          <CarouselItem>
+            <Card className="rounded-3xl border-white/10 bg-linear-to-b from-card/95 to-card/75 backdrop-blur-2xl ring-0">
               <CardHeader>
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
@@ -369,7 +369,7 @@ export function HomeAvailability() {
                   </Badge>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4 overflow-y-auto">
+              <CardContent className="space-y-4">
                 <fieldset
                   className={cn("space-y-3", !hasLocation && "opacity-60")}
                   disabled={!hasLocation}
@@ -397,8 +397,12 @@ export function HomeAvailability() {
                       onSelect={handleCalendarSelect}
                       timeZone={timeZone}
                       disabled={(date) => !availableDateLookup.has(toIsoDate(date))}
-                      className="mx-auto w-full max-w-sm rounded-2xl border border-white/10 bg-background/35 p-3 shadow-inner [--cell-size:min(2.1rem,11vw)] sm:mx-0 sm:[--cell-size:2.25rem]"
-                      classNames={{ root: "w-full" }}
+                      className="mx-auto w-full max-w-88 rounded-2xl border border-white/10 bg-background/35 p-3 shadow-inner [--cell-size:clamp(1.65rem,6.2vw,2.2rem)] sm:mx-0 sm:max-w-none sm:[--cell-size:clamp(1.85rem,3.8vw,2.5rem)]"
+                      classNames={{
+                        root: "w-full",
+                        month: "flex w-full flex-col items-center sm:items-stretch",
+                        table: "mx-auto w-full table-fixed",
+                      }}
                     />
                   )}
                   {selectedDateOption ? (
@@ -428,8 +432,8 @@ export function HomeAvailability() {
             </Card>
           </CarouselItem>
 
-          <CarouselItem className="h-full">
-            <Card className="h-full rounded-3xl border-white/10 bg-linear-to-b from-card/95 to-card/75 backdrop-blur-2xl ring-0">
+          <CarouselItem>
+            <Card className="rounded-3xl border-white/10 bg-linear-to-b from-card/95 to-card/75 backdrop-blur-2xl ring-0">
               <CardHeader>
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
@@ -445,7 +449,7 @@ export function HomeAvailability() {
                   </Badge>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4 overflow-y-auto">
+              <CardContent className="space-y-4">
                 <fieldset
                   className={cn("space-y-3", !canPickTime && "opacity-60")}
                   disabled={!canPickTime}

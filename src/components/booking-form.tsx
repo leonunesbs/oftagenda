@@ -8,14 +8,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { ptBR } from "date-fns/locale";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 
-import type { BookingPayload } from "@/domain/booking/schema";
-import type {
-  BookingLocationOption,
-  LocationAvailabilityResponse,
-} from "@/lib/booking-bootstrap";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -27,8 +22,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { cn } from "@/lib/utils";
+import type { BookingPayload } from "@/domain/booking/schema";
 import { trackEvent } from "@/lib/analytics";
+import type {
+  BookingLocationOption,
+  LocationAvailabilityResponse,
+} from "@/lib/booking-bootstrap";
+import { cn } from "@/lib/utils";
 import { useRouter, useSearchParams } from "next/navigation";
 
 const DRAFT_STORAGE_KEY = "oftagenda:booking-draft:v1";
@@ -72,8 +72,12 @@ export function BookingForm({
 
   const selectedLocation = locations.find((item) => item.value === location);
   const hasLocation = Boolean(location);
-  const availability = location ? initialAvailabilityByLocation[location] ?? null : null;
-  const availabilityError = location ? initialAvailabilityErrorsByLocation[location] ?? null : null;
+  const availability = location
+    ? (initialAvailabilityByLocation[location] ?? null)
+    : null;
+  const availabilityError = location
+    ? (initialAvailabilityErrorsByLocation[location] ?? null)
+    : null;
   const locationsError = initialLocationsError;
   const availableDates = availability?.dates ?? [];
   const selectedDateOption = useMemo(
@@ -89,7 +93,8 @@ export function BookingForm({
     [availableDates],
   );
   const firstAvailableDate = availableDates[0]?.isoDate ?? "";
-  const lastAvailableDate = availableDates[availableDates.length - 1]?.isoDate ?? "";
+  const lastAvailableDate =
+    availableDates[availableDates.length - 1]?.isoDate ?? "";
 
   function handleLocationChange(nextLocation: BookingPayload["location"]) {
     trackEvent("select_city", { location: nextLocation });
@@ -192,7 +197,9 @@ export function BookingForm({
     if (!availableDates.length) {
       return;
     }
-    const hasCurrentDate = availableDates.some((item) => item.isoDate === selectedDate);
+    const hasCurrentDate = availableDates.some(
+      (item) => item.isoDate === selectedDate,
+    );
     if (selectedDate && hasCurrentDate) {
       return;
     }
@@ -216,7 +223,10 @@ export function BookingForm({
   }, [selectedDate, selectedTime, currentTimeSlots]);
 
   useEffect(() => {
-    const nextEmbeddedMode = embedMode || searchParams.get("embed") === "1" || window.self !== window.top;
+    const nextEmbeddedMode =
+      embedMode ||
+      searchParams.get("embed") === "1" ||
+      window.self !== window.top;
     setIsEmbedded(nextEmbeddedMode);
   }, [embedMode, searchParams]);
 
@@ -252,7 +262,10 @@ export function BookingForm({
 
     const observer = new ResizeObserver(() => {
       const height = cardRef.current?.offsetHeight ?? 0;
-      window.parent.postMessage({ type: "oftagenda:booking:resize", height }, "*");
+      window.parent.postMessage(
+        { type: "oftagenda:booking:resize", height },
+        "*",
+      );
     });
     observer.observe(cardRef.current);
     window.parent.postMessage({ type: "oftagenda:booking:ready" }, "*");
@@ -275,7 +288,9 @@ export function BookingForm({
         setIsLocationOverflowing(false);
         return;
       }
-      setIsLocationOverflowing(listElement.scrollHeight > listElement.clientHeight + 1);
+      setIsLocationOverflowing(
+        listElement.scrollHeight > listElement.clientHeight + 1,
+      );
     };
 
     updateOverflowState();
@@ -314,7 +329,9 @@ export function BookingForm({
 
     if (!isAuthenticated) {
       if (!clerkEnabled) {
-        setError("Nao foi possivel iniciar o login agora. Tente novamente em instantes.");
+        setError(
+          "Nao foi possivel iniciar o login agora. Tente novamente em instantes.",
+        );
         return;
       }
       startStartingBookingTransition(() => {
@@ -353,16 +370,19 @@ export function BookingForm({
       <CardHeader className="space-y-3">
         <CardTitle>Agendar consulta</CardTitle>
         <CardDescription>
-          Selecione local, data e horario. Em seguida, revise no resumo antes de concluir.
+          Selecione local, data e horario. Em seguida, revise no resumo antes de
+          concluir.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
-        <div className="grid min-w-0 gap-4 md:grid-cols-5 md:grid-rows-[auto_auto] md:gap-5">
-          <section className="min-w-0 h-fit self-start space-y-4 rounded-xl border border-border/70 p-4 md:col-span-3">
+        <div className="grid min-w-0 gap-4 sm:grid-cols-5 sm:auto-rows-auto md:gap-5">
+          <section className="min-w-0 h-fit self-start space-y-4 rounded-xl border border-border/70 p-4 sm:col-span-3">
             <div className="space-y-1">
               <Label>1. Escolha o local de atendimento</Label>
               <p className="text-xs text-muted-foreground">
-                Escolha o local onde voce deseja ser atendido para visualizar as datas e horarios disponiveis. Estamos aqui para tornar seu agendamento simples, rapido e tranquilo.
+                Escolha o local onde voce deseja ser atendido para visualizar as
+                datas e horarios disponiveis. Estamos aqui para tornar seu
+                agendamento simples, rapido e tranquilo.
               </p>
             </div>
             {locations.length > 0 ? (
@@ -388,10 +408,14 @@ export function BookingForm({
                           checked={location === item.value}
                           onChange={() => handleLocationChange(item.value)}
                         />
-                        <span className="min-w-0 wrap-break-word">{item.label}</span>
+                        <span className="min-w-0 wrap-break-word">
+                          {item.label}
+                        </span>
                       </div>
                       <span className="w-full pl-8 text-left text-xs text-muted-foreground sm:w-auto sm:pl-0 sm:text-right">
-                        {item.eventTypesCount ? `${item.eventTypesCount} tipos` : "Evento ativo"}
+                        {item.eventTypesCount
+                          ? `${item.eventTypesCount} tipos`
+                          : "Evento ativo"}
                       </span>
                     </label>
                   ))}
@@ -402,13 +426,15 @@ export function BookingForm({
                 Nenhum evento ativo disponivel para agendamento.
               </p>
             )}
-            {locationsError ? <p className="text-xs text-muted-foreground">{locationsError}</p> : null}
+            {locationsError ? (
+              <p className="text-xs text-muted-foreground">{locationsError}</p>
+            ) : null}
           </section>
 
           <section
             ref={dateSectionRef}
             className={cn(
-              "min-w-0 scroll-mt-24 space-y-4 rounded-xl border border-border/70 p-4 md:col-span-2 md:row-span-2",
+              "min-w-0 h-fit self-start scroll-mt-24 space-y-4 rounded-xl border border-border/70 p-4 sm:col-span-2 sm:row-span-2",
               !hasLocation && "opacity-60",
             )}
           >
@@ -416,7 +442,7 @@ export function BookingForm({
               <Label>2. Escolha a data</Label>
               <p className="text-xs text-muted-foreground">
                 {hasLocation
-                    ? "Selecione no calendario um dia disponivel para este local."
+                  ? "Selecione no calendario um dia disponivel para este local."
                   : "Primeiro selecione o evento."}
               </p>
             </div>
@@ -427,7 +453,9 @@ export function BookingForm({
                   <Calendar
                     mode="single"
                     locale={ptBR}
-                    selected={selectedDate ? parseIsoDate(selectedDate) : undefined}
+                    selected={
+                      selectedDate ? parseIsoDate(selectedDate) : undefined
+                    }
                     onSelect={(dateValue) => {
                       if (!dateValue) {
                         return;
@@ -438,32 +466,56 @@ export function BookingForm({
                       }
                       handleDateChange(isoDate);
                     }}
-                    disabled={(dateValue) => !availableDateSet.has(toIsoDate(dateValue))}
-                    fromDate={firstAvailableDate ? parseIsoDate(firstAvailableDate) : undefined}
-                    toDate={lastAvailableDate ? parseIsoDate(lastAvailableDate) : undefined}
-                    className="w-full min-h-[320px] [--cell-size:min(2.1rem,11vw)] sm:min-h-[360px] sm:[--cell-size:2.25rem]"
-                    classNames={{ root: "w-full" }}
+                    disabled={(dateValue) =>
+                      !availableDateSet.has(toIsoDate(dateValue))
+                    }
+                    fromDate={
+                      firstAvailableDate
+                        ? parseIsoDate(firstAvailableDate)
+                        : undefined
+                    }
+                    toDate={
+                      lastAvailableDate
+                        ? parseIsoDate(lastAvailableDate)
+                        : undefined
+                    }
+                    className="mx-auto w-full max-w-88 px-0 [--cell-size:clamp(1.65rem,6.2vw,2.2rem)] sm:max-w-none sm:px-1 sm:[--cell-size:clamp(1.85rem,3.8vw,2.5rem)]"
+                    classNames={{
+                      root: "w-full",
+                      month: "flex w-full flex-col items-center sm:items-stretch",
+                      table: "mx-auto w-full table-fixed",
+                    }}
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
-                  {availableDates.slice(0, 6).map((dateOption) => (
-                    <Button
-                      key={dateOption.isoDate}
-                      type="button"
-                      variant={selectedDate === dateOption.isoDate ? "default" : "outline"}
-                      className="h-auto w-full min-w-0 justify-start whitespace-normal py-2 text-left leading-tight transition-all"
-                      onClick={() => handleDateChange(dateOption.isoDate)}
-                    >
-                      {dateOption.weekdayLabel}, {dateOption.label}
-                    </Button>
-                  ))}
+                <div className="relative z-10 rounded-xl bg-card/80 p-1 backdrop-blur-sm">
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    {availableDates.slice(0, 6).map((dateOption) => (
+                      <Button
+                        key={dateOption.isoDate}
+                        type="button"
+                        variant={
+                          selectedDate === dateOption.isoDate
+                            ? "default"
+                            : "outline"
+                        }
+                        className="h-auto w-full min-w-0 justify-start whitespace-normal py-2 text-left leading-tight transition-all"
+                        onClick={() => handleDateChange(dateOption.isoDate)}
+                      >
+                        {dateOption.weekdayLabel}, {dateOption.label}
+                      </Button>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
 
-            {availabilityError ? <p className="text-xs text-destructive">{availabilityError}</p> : null}
-            {hasLocation && !availabilityError && availableDates.length === 0 ? (
+            {availabilityError ? (
+              <p className="text-xs text-destructive">{availabilityError}</p>
+            ) : null}
+            {hasLocation &&
+            !availabilityError &&
+            availableDates.length === 0 ? (
               <p className="text-xs text-muted-foreground">
                 Nao ha datas disponiveis para este local.
               </p>
@@ -476,9 +528,11 @@ export function BookingForm({
             className={cn(
               "min-w-0 scroll-mt-24 overflow-hidden transition-[max-height,opacity] duration-300 ease-in-out",
               isLocationOverflowing
-                ? "md:col-span-5 md:row-start-3"
-                : "md:col-span-3 md:row-start-2",
-              shouldShowTimeCard ? "max-h-[1000px] opacity-100" : "pointer-events-none max-h-0 opacity-0",
+                ? "sm:col-span-5 sm:row-start-3"
+                : "sm:col-span-3 sm:row-start-2",
+              shouldShowTimeCard
+                ? "max-h-[1000px] opacity-100"
+                : "pointer-events-none max-h-0 opacity-0",
             )}
           >
             <section
@@ -529,7 +583,9 @@ export function BookingForm({
                 </p>
               </div>
 
-              {error ? <p className="text-sm text-destructive">{error}</p> : null}
+              {error ? (
+                <p className="text-sm text-destructive">{error}</p>
+              ) : null}
 
               <div className="flex justify-end">
                 <Button
@@ -590,7 +646,11 @@ export function BookingForm({
             >
               Editar dados
             </Button>
-            <Button type="button" onClick={handleStartBooking} disabled={!hasSelection || isStartingBooking}>
+            <Button
+              type="button"
+              onClick={handleStartBooking}
+              disabled={!hasSelection || isStartingBooking}
+            >
               {isStartingBooking ? (
                 <span className="inline-flex items-center gap-2">
                   <span
@@ -639,7 +699,14 @@ function formatDateLabel(isoDate: string) {
 }
 
 function toIsoDate(date: Date) {
-  const localDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12, 0, 0);
+  const localDate = new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+    12,
+    0,
+    0,
+  );
   const year = localDate.getFullYear();
   const month = String(localDate.getMonth() + 1).padStart(2, "0");
   const day = String(localDate.getDate()).padStart(2, "0");
@@ -648,8 +715,10 @@ function toIsoDate(date: Date) {
 
 function parseIsoDate(isoDate: string) {
   const [year, month, day] = isoDate.split("-").map((value) => Number(value));
-  const safeYear = typeof year === "number" && Number.isFinite(year) ? year : 1970;
-  const safeMonth = typeof month === "number" && Number.isFinite(month) ? month : 1;
+  const safeYear =
+    typeof year === "number" && Number.isFinite(year) ? year : 1970;
+  const safeMonth =
+    typeof month === "number" && Number.isFinite(month) ? month : 1;
   const safeDay = typeof day === "number" && Number.isFinite(day) ? day : 1;
   return new Date(safeYear, safeMonth - 1, safeDay, 12, 0, 0);
 }

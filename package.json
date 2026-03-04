@@ -1,6 +1,7 @@
 {
   "name": "oftagenda",
   "version": "1.0.0",
+  "packageManager": "pnpm@10.28.0",
   "private": true,
   "description": "A TypeScript starter for Next.js that includes all you need to build amazing projects",
   "keywords": [

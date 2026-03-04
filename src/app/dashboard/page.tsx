@@ -3,6 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 
 import { api } from "../../../convex/_generated/api";
 import { getUserRoleFromClerkAuth, hasConfirmedBooking } from "@/lib/access";
+import { PatientPanelForm } from "@/components/patient-panel-form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -20,6 +21,7 @@ export default async function DashboardPage() {
       scheduledFor?: number;
       location: string;
       consultationType?: string;
+      status: string;
     } | null;
     history: Array<{ _id: string; status: string; requestedAt: number; location: string }>;
   } = {
@@ -39,6 +41,7 @@ export default async function DashboardPage() {
             scheduledFor: data.nextAppointment.scheduledFor,
             location: data.nextAppointment.location,
             consultationType: data.nextAppointment.consultationType,
+            status: data.nextAppointment.status,
           }
         : null,
       history: data.history.map((item) => ({
@@ -54,6 +57,21 @@ export default async function DashboardPage() {
 
   const bookingConfirmed = dashboardState.hasConfirmedBooking;
   const nextAppointment = dashboardState.nextAppointment;
+  const initialPanelData = {
+    location: nextAppointment?.location ?? "",
+    date: nextAppointment?.scheduledFor
+      ? new Date(nextAppointment.scheduledFor).toISOString().slice(0, 10)
+      : "",
+    time: nextAppointment?.scheduledFor
+      ? new Date(nextAppointment.scheduledFor).toLocaleTimeString("pt-BR", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        })
+      : "",
+    consultationType: nextAppointment?.consultationType ?? "Consulta oftalmologica",
+    status: nextAppointment?.status ?? "pending",
+  };
 
   return (
     <section className="mx-auto w-full max-w-3xl space-y-6">
@@ -80,18 +98,7 @@ export default async function DashboardPage() {
           ) : null}
 
           {bookingConfirmed ? (
-            <div className="space-y-4 rounded-xl border border-border p-4">
-              <h3 className="font-medium">Próxima consulta</h3>
-              <div className="grid gap-2 text-sm text-muted-foreground md:grid-cols-2">
-                <p>Data: {nextAppointment?.scheduledFor ? new Date(nextAppointment.scheduledFor).toLocaleDateString("pt-BR") : "A confirmar"}</p>
-                <p>Horário: {nextAppointment?.scheduledFor ? new Date(nextAppointment.scheduledFor).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "A confirmar"}</p>
-                <p>Local: {nextAppointment?.location ?? "A confirmar"}</p>
-                <p>Tipo: {nextAppointment?.consultationType ?? "Consulta oftalmológica"}</p>
-              </div>
-              <Button asChild>
-                <Link href="/detalhes">Adicionar detalhes (opcional)</Link>
-              </Button>
-            </div>
+            <PatientPanelForm initialAppointment={initialPanelData} />
           ) : (
             <div className="space-y-4 rounded-xl border border-border p-4">
               <h3 className="font-medium">Agendar consulta</h3>

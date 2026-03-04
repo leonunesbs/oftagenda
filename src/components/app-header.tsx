@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { UserButton } from "@clerk/nextjs";
+import { ClerkLoaded, ClerkLoading, UserButton } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
 import {
   File01Icon,
@@ -13,6 +13,7 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 
 import { Button } from "@/components/ui/button";
+import { ColorModeToggle } from "@/components/color-mode-toggle";
 import {
   Sheet,
   SheetClose,
@@ -27,6 +28,22 @@ import { getUserRoleFromClerkAuth, isAdminFromClerkAuth } from "@/lib/access";
 type AppHeaderProps = {
   clerkEnabled: boolean;
 };
+
+function ClerkUserButtonWithLoading() {
+  return (
+    <>
+      <ClerkLoading>
+        <span
+          aria-hidden="true"
+          className="size-8 animate-pulse rounded-full border border-border/70 bg-muted"
+        />
+      </ClerkLoading>
+      <ClerkLoaded>
+        <UserButton />
+      </ClerkLoaded>
+    </>
+  );
+}
 
 export async function AppHeader({ clerkEnabled }: AppHeaderProps) {
   const authData = clerkEnabled ? await auth() : null;
@@ -57,10 +74,11 @@ export async function AppHeader({ clerkEnabled }: AppHeaderProps) {
               <Link href={item.href}>{item.label}</Link>
             </Button>
           ))}
+          <ColorModeToggle />
           {role ? <span className="hidden text-xs text-muted-foreground md:inline">Role: {role}</span> : null}
           {clerkEnabled ? (
             userId ? (
-              <UserButton />
+              <ClerkUserButtonWithLoading />
             ) : (
               <Button asChild>
                 <Link href="/sign-in">Entrar</Link>
@@ -74,7 +92,8 @@ export async function AppHeader({ clerkEnabled }: AppHeaderProps) {
         </nav>
 
         <div className="flex items-center gap-2 md:hidden">
-          {clerkEnabled && userId ? <UserButton /> : null}
+          <ColorModeToggle />
+          {clerkEnabled && userId ? <ClerkUserButtonWithLoading /> : null}
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="outline" size="icon-sm" aria-label="Abrir menu">

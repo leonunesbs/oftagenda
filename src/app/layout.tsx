@@ -17,9 +17,40 @@ const geistSans = Geist({
   subsets: ["latin"],
 });
 
+function getMetadataBase() {
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    process.env.NEXT_PUBLIC_APP_URL ??
+    process.env.VERCEL_PROJECT_PRODUCTION_URL;
+
+  if (!siteUrl) {
+    return new URL("https://oftleonardo.com.br");
+  }
+
+  const normalizedSiteUrl = siteUrl.startsWith("http") ? siteUrl : `https://${siteUrl}`;
+  try {
+    return new URL(normalizedSiteUrl);
+  } catch {
+    return new URL("https://oftleonardo.com.br");
+  }
+}
+
 export const metadata: Metadata = {
-  title: "Minha Agenda",
-  description: "Agendamento primeiro. Detalhes depois.",
+  metadataBase: getMetadataBase(),
+  title: {
+    default: "Minha Agenda | Agendamento Oftalmologico Premium",
+    template: "%s | Minha Agenda",
+  },
+  description:
+    "Landing de agendamento oftalmologico com foco em atendimento individualizado, tecnologia de alta precisao e conversao para consulta.",
+  openGraph: {
+    type: "website",
+    locale: "pt_BR",
+    siteName: "Minha Agenda",
+  },
+  twitter: {
+    card: "summary_large_image",
+  },
 };
 
 export default function RootLayout({

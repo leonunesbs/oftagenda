@@ -94,6 +94,9 @@ importers:
       '@types/react-dom':
         specifier: 19.2.3
         version: 19.2.3(@types/react@19.2.14)
+      baseline-browser-mapping:
+        specifier: 2.10.0
+        version: 2.10.0
       husky:
         specifier: 9.1.7
         version: 9.1.7
@@ -2068,10 +2071,6 @@ packages:
   baseline-browser-mapping@2.10.0:
     resolution: {integrity: sha512-lIyg0szRfYbiy67j9KN8IyeD7q7hcmqnJ1ddWmNt19ItGpNN64mnllmxUNFIOdOm6by97jlL6wfpTTJrmnjWAA==}
     engines: {node: '>=6.0.0'}
-    hasBin: true
-
-  baseline-browser-mapping@2.8.18:
-    resolution: {integrity: sha512-UYmTpOBwgPScZpS4A+YbapwWuBwasxvO/2IOHArSsAhL/+ZdmATBXTex3t+l2hXwLVYK382ibr/nKoY9GKe86w==}
     hasBin: true
 
   body-parser@2.2.2:
@@ -5523,8 +5522,6 @@ snapshots:
 
   baseline-browser-mapping@2.10.0: {}
 
-  baseline-browser-mapping@2.8.18: {}
-
   body-parser@2.2.2:
     dependencies:
       bytes: 3.1.2
@@ -6343,7 +6340,7 @@ snapshots:
     dependencies:
       '@next/env': 16.1.6
       '@swc/helpers': 0.5.15
-      baseline-browser-mapping: 2.8.18
+      baseline-browser-mapping: 2.10.0
       caniuse-lite: 1.0.30001751
       postcss: 8.4.31
       react: 19.2.4

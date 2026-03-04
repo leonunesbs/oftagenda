@@ -1,7 +1,15 @@
 import { SignUp } from "@clerk/nextjs";
+import type { Metadata } from "next";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { isClerkConfigured } from "@/lib/access";
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default function SignUpPage() {
   if (!isClerkConfigured()) {

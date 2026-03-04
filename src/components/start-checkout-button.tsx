@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
+import { trackEvent } from "@/lib/analytics";
 
 type StartCheckoutButtonProps = {
   location: string;
@@ -27,6 +28,7 @@ export function StartCheckoutButton({
     setError(null);
     startCheckoutTransition(async () => {
       try {
+        trackEvent("submit_booking", { location, date, time, step: "checkout" });
         const response = await fetch("/api/stripe/checkout", {
           method: "POST",
           headers: { "Content-Type": "application/json" },

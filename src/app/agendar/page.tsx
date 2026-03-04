@@ -1,8 +1,22 @@
 import { Suspense } from "react";
 import { auth } from "@clerk/nextjs/server";
+import type { Metadata } from "next";
 import { isClerkConfigured } from "@/lib/access";
 import { BookingFormContainer } from "@/components/booking-form-container";
 import { BookingFormFallback } from "@/components/booking-form-fallback";
+
+export const metadata: Metadata = {
+  title: "Agendar consulta",
+  description: "Selecione local, data e horario para iniciar seu agendamento oftalmologico.",
+  alternates: {
+    canonical: "/agendar",
+  },
+  openGraph: {
+    title: "Agendar consulta | Minha Agenda",
+    description: "Fluxo rapido para selecionar local, data e horario da consulta.",
+    url: "/agendar",
+  },
+};
 
 export default async function AgendarPage() {
   const clerkEnabled = isClerkConfigured();

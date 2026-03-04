@@ -9,6 +9,7 @@ import { BookingFormFallback } from "@/components/booking-form-fallback";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 import { isClerkConfigured } from "@/lib/access";
+import { siteConfig } from "@/config/site";
 
 export const metadata: Metadata = {
   title: "Oftalmologista em Fortaleza | Consulta de Retina e Catarata",
@@ -66,6 +67,7 @@ const clinicSchema = {
 export default async function HomePage() {
   const clerkEnabled = isClerkConfigured();
   const userId = clerkEnabled ? (await auth()).userId : null;
+  const oftleonardoContentUrl = `${siteConfig.social.oftleonardoSite}/conteudos?utm_source=oftagenda&utm_medium=referral&utm_campaign=crossdomain_seo`;
 
   return (
     <div className="relative mx-auto flex w-full max-w-6xl flex-col gap-6 pt-4 md:gap-8 md:pt-8">
@@ -132,6 +134,35 @@ export default async function HomePage() {
             </CardHeader>
           </Card>
         </div>
+      </section>
+
+      <section aria-labelledby="home-conteudos-relacionados">
+        <Card className="rounded-2xl border-border/70">
+          <CardHeader className="space-y-2">
+            <h2 id="home-conteudos-relacionados" className="text-xl font-semibold tracking-tight">
+              Conteudos de apoio para sua jornada
+            </h2>
+            <CardDescription>
+              Entenda exames, sintomas e orientacoes antes da consulta em nosso hub educativo.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-wrap gap-3">
+            <Button variant="outline" asChild>
+              <a href={oftleonardoContentUrl} target="_blank" rel="noreferrer">
+                Abrir hub de conteudos
+              </a>
+            </Button>
+            <Button variant="outline" asChild>
+              <a
+                href={`${siteConfig.social.oftleonardoSite}/acuidade-visual?utm_source=oftagenda&utm_medium=referral&utm_campaign=crossdomain_seo`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Teste de acuidade visual
+              </a>
+            </Button>
+          </CardContent>
+        </Card>
       </section>
 
       <section id="agendamento" aria-labelledby="home-agendamento" className="scroll-mt-24">

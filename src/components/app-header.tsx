@@ -24,6 +24,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { getUserRoleFromClerkAuth, isAdminFromClerkAuth } from "@/lib/access";
+import { siteConfig } from "@/config/site";
 
 type AppHeaderProps = {
   clerkEnabled: boolean;
@@ -57,6 +58,7 @@ export async function AppHeader({ clerkEnabled }: AppHeaderProps) {
     { href: "/agendar", label: "Agendar", icon: SearchIcon },
     { href: "/status", label: "Status", icon: File01Icon },
   ];
+  const oftleonardoContentUrl = `${siteConfig.social.oftleonardoSite}/conteudos?utm_source=oftagenda&utm_medium=referral&utm_campaign=crossdomain_seo`;
 
   return (
     <header className="border-b border-border/70 bg-background/80 backdrop-blur">
@@ -74,6 +76,11 @@ export async function AppHeader({ clerkEnabled }: AppHeaderProps) {
               <Link href={item.href}>{item.label}</Link>
             </Button>
           ))}
+          <Button variant="ghost" asChild>
+            <a href={oftleonardoContentUrl} target="_blank" rel="noreferrer">
+              Conteudos
+            </a>
+          </Button>
           <ColorModeToggle />
           {role ? <span className="hidden text-xs text-muted-foreground md:inline">Role: {role}</span> : null}
           {clerkEnabled ? (
@@ -116,6 +123,13 @@ export async function AppHeader({ clerkEnabled }: AppHeaderProps) {
                     </Button>
                   </SheetClose>
                 ))}
+                <SheetClose asChild>
+                  <Button variant="ghost" asChild className="justify-start">
+                    <a href={oftleonardoContentUrl} target="_blank" rel="noreferrer">
+                      Conteudos
+                    </a>
+                  </Button>
+                </SheetClose>
 
                 {role ? <span className="px-2 pt-2 text-xs text-muted-foreground">Role: {role}</span> : null}
 

@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { trackEvent } from "@/lib/analytics";
 import { useRouter, useSearchParams } from "next/navigation";
 
 const DRAFT_STORAGE_KEY = "oftagenda:booking-draft:v1";
@@ -91,6 +92,7 @@ export function BookingForm({
   const lastAvailableDate = availableDates[availableDates.length - 1]?.isoDate ?? "";
 
   function handleLocationChange(nextLocation: BookingPayload["location"]) {
+    trackEvent("select_city", { location: nextLocation });
     setLocation(nextLocation);
     setSelectedDate("");
     setSelectedTime("");
@@ -316,6 +318,12 @@ export function BookingForm({
         return;
       }
       startStartingBookingTransition(() => {
+        trackEvent("start_booking", {
+          location,
+          date: selectedDate,
+          time: selectedTime,
+          authenticated: false,
+        });
         router.push(`/sign-in?redirect_url=${encodeURIComponent(summaryUrl)}`);
       });
       return;
@@ -324,6 +332,12 @@ export function BookingForm({
     window.localStorage.removeItem(DRAFT_STORAGE_KEY);
     setIsConfirmDialogOpen(false);
     startStartingBookingTransition(() => {
+      trackEvent("start_booking", {
+        location,
+        date: selectedDate,
+        time: selectedTime,
+        authenticated: true,
+      });
       router.push(summaryUrl);
     });
   }

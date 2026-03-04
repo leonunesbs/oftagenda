@@ -1,8 +1,16 @@
 import { SignIn } from "@clerk/nextjs";
 import { ptBR } from "@clerk/localizations";
+import type { Metadata } from "next";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { isClerkConfigured } from "@/lib/access";
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default function SignInPage() {
   if (!isClerkConfigured()) {

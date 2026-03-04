@@ -5,6 +5,7 @@ import { api } from "../../../convex/_generated/api";
 import { getUserRoleFromClerkAuth, hasConfirmedBooking } from "@/lib/access";
 import { PatientPanelForm } from "@/components/patient-panel-form";
 import { Button } from "@/components/ui/button";
+import { BookingConfirmedEvent } from "@/components/booking-confirmed-event";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { getAuthenticatedConvexHttpClient } from "@/lib/convex-server";
@@ -75,6 +76,7 @@ export default async function DashboardPage() {
 
   return (
     <section className="mx-auto w-full max-w-3xl space-y-6">
+      <BookingConfirmedEvent enabled={bookingConfirmed} />
       <Card className="border-border/70">
         <CardHeader>
           <CardTitle>Status do agendamento</CardTitle>

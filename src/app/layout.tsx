@@ -1,5 +1,6 @@
 import "./globals.css";
 
+import { ptBR } from "@clerk/localizations";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Geist, Inter } from "next/font/google";
 
@@ -100,7 +101,7 @@ export default function RootLayout({
           }}
         />
         {clerkEnabled ? (
-          <ClerkProvider>
+          <ClerkProvider localization={ptBR}>
             <ConvexClientProvider>
               <TooltipProvider>
                 <div className="min-h-screen bg-background">

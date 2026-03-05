@@ -7,6 +7,8 @@ import { requireMemberApiAccess } from "@/lib/access";
 import { getStripeClient } from "@/lib/stripe";
 
 export const runtime = "nodejs";
+const RESERVATION_HOLD_DURATION_SECONDS = 15 * 60;
+const STRIPE_MIN_SESSION_DURATION_SECONDS = 30 * 60;
 
 export async function POST(request: Request) {
   try {
@@ -59,7 +61,11 @@ export async function POST(request: Request) {
             },
           ];
 
+      const minimumStripeExpiresAt = Date.now() + STRIPE_MIN_SESSION_DURATION_SECONDS * 1000;
+      const desiredHoldExpiresAt =
+        draft.holdExpiresAt ?? Date.now() + RESERVATION_HOLD_DURATION_SECONDS * 1000;
       const session = await stripe.checkout.sessions.create({
+        expires_at: Math.floor(Math.max(desiredHoldExpiresAt, minimumStripeExpiresAt) / 1000),
         mode: "payment",
         line_items: lineItems,
         payment_intent_data: {

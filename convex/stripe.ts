@@ -4,6 +4,8 @@ import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { mutation } from "./_generated/server";
 
+const RESERVATION_HOLD_DURATION_MS = 15 * 60_000;
+
 const checkoutDraftSchema = {
   location: v.string(),
   date: v.string(),
@@ -46,6 +48,7 @@ export const createCheckoutDraft = mutation({
 
     await assertSlotIsAvailable(ctx, eventType, args.date, args.time);
     const endsAt = slotTimestamp + eventType.durationMinutes * 60_000;
+    const holdExpiresAt = now + RESERVATION_HOLD_DURATION_MS;
 
     const existingReservations = await ctx.db
       .query("reservations")
@@ -121,6 +124,7 @@ export const createCheckoutDraft = mutation({
       eventTypeSlug: eventType.slug,
       eventTypeName: eventType.name ?? eventType.title,
       clerkUserId: identity.subject,
+      holdExpiresAt,
     };
   },
 });
@@ -303,6 +307,32 @@ async function markAsPaid(
   },
   now: number,
 ) {
+  if (reservation.status !== "pending" && reservation.status !== "confirmed") {
+    await ctx.db.patch(payment._id, {
+      status: "failed",
+      externalId: args.checkoutSessionId ?? payment.externalId,
+      lastStripeEventId: args.eventId.trim(),
+      notes: "Pagamento recebido para reserva encerrada. Revisar e estornar no Stripe.",
+      updatedAt: now,
+    });
+    return;
+  }
+  if (reservation.status === "pending" && getReservationHoldExpiresAt(reservation) <= now) {
+    await ctx.db.patch(payment._id, {
+      status: "failed",
+      externalId: args.checkoutSessionId ?? payment.externalId,
+      lastStripeEventId: args.eventId.trim(),
+      notes: "Pagamento recebido após expiração da janela de reserva. Revisar e estornar no Stripe.",
+      updatedAt: now,
+    });
+    await ctx.db.patch(reservation._id, {
+      status: "cancelled",
+      notes: "Reserva expirada antes da confirmação do pagamento.",
+      updatedAt: now,
+    });
+    return;
+  }
+
   const alreadyPaid = payment.status === "paid";
   await ctx.db.patch(payment._id, {
     status: "paid",
@@ -503,11 +533,15 @@ async function assertSlotIsAvailable(
   }
   const groupName = resolveAvailabilityGroupName(referenceAvailability);
   const weekday = new Date(`${isoDate}T12:00:00`).getDay();
+  const now = Date.now();
   if (Number.isNaN(weekday)) {
     throw new Error("Data inválida.");
   }
   if (!isValidTimeValue(time)) {
     throw new Error("Horário inválido.");
+  }
+  if (!isIsoDateTimeInFutureForTimezone(isoDate, time, referenceAvailability.timezone, now)) {
+    throw new Error("Horário já está no passado. Escolha um horário futuro.");
   }
 
   const [allAvailabilities, allOverrides, allReservations] = await Promise.all([
@@ -556,9 +590,7 @@ async function assertSlotIsAvailable(
   }
 
   const activeReservations = allReservations.filter(
-    (reservation) =>
-      reservation.eventTypeId === eventType._id &&
-      (reservation.status === "pending" || reservation.status === "confirmed"),
+    (reservation) => reservation.eventTypeId === eventType._id && isReservationBlocking(reservation, now),
   );
   const reservedKeys = new Set<string>();
   for (const reservation of activeReservations) {
@@ -686,6 +718,40 @@ function formatTimeInTimezone(timestamp: number, timezone: string) {
 
 function buildSlotKey(groupName: string, isoDate: string, time: string) {
   return `${groupName}|${isoDate}|${time}`;
+}
+
+function isReservationBlocking(
+  reservation: Doc<"reservations">,
+  now: number,
+) {
+  if (reservation.status === "confirmed") {
+    return true;
+  }
+  if (reservation.status !== "pending") {
+    return false;
+  }
+  return getReservationHoldExpiresAt(reservation) > now;
+}
+
+function getReservationHoldExpiresAt(reservation: Doc<"reservations">) {
+  return reservation.updatedAt + RESERVATION_HOLD_DURATION_MS;
+}
+
+function isIsoDateTimeInFutureForTimezone(
+  isoDate: string,
+  time: string,
+  timezone: string,
+  now: number,
+) {
+  const currentDate = formatDateInTimezone(now, timezone);
+  if (isoDate > currentDate) {
+    return true;
+  }
+  if (isoDate < currentDate) {
+    return false;
+  }
+  const currentTime = formatTimeInTimezone(now, timezone);
+  return time > currentTime;
 }
 
 function inferPreferredPeriod(timestamp: number) {

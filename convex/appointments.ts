@@ -4,6 +4,8 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 import type { MutationCtx } from "./_generated/server";
 
+const RESERVATION_HOLD_DURATION_MS = 15 * 60_000;
+
 const bookingLocationValidator = v.string();
 
 const periodValidator = v.union(
@@ -160,11 +162,13 @@ export const getBookingOptionsByLocation = query({
     );
 
     const allReservations = await ctx.db.query("reservations").collect();
-    const reservations = allReservations.filter(
-      (item) =>
-        eventTypes.some((eventType) => eventType._id === item.eventTypeId) &&
-        (item.status === "pending" || item.status === "confirmed"),
-    );
+    const now = Date.now();
+    const reservations = allReservations.filter((item) => {
+      if (!eventTypes.some((eventType) => eventType._id === item.eventTypeId)) {
+        return false;
+      }
+      return isReservationBlocking(item, now);
+    });
 
     const reservedSlots = new Set<string>();
     for (const reservation of reservations) {
@@ -178,7 +182,6 @@ export const getBookingOptionsByLocation = query({
       reservedSlots.add(buildSlotKey(groupName, dateKey, timeKey));
     }
 
-    const today = new Date();
     const dates: Array<{
       isoDate: string;
       label: string;
@@ -187,8 +190,8 @@ export const getBookingOptionsByLocation = query({
     }> = [];
 
     for (let offset = 0; offset < daysAhead; offset += 1) {
-      const day = new Date(today);
-      day.setDate(today.getDate() + offset);
+      const day = new Date(now);
+      day.setDate(day.getDate() + offset);
 
       const isoDate = toIsoDate(day);
       const weekday = day.getDay();
@@ -211,6 +214,9 @@ export const getBookingOptionsByLocation = query({
               duration,
             );
             for (const slot of generatedSlots) {
+              if (!isIsoDateTimeInFutureForTimezone(isoDate, slot, override.timezone, now)) {
+                continue;
+              }
               const key = buildSlotKey(groupName, isoDate, slot);
               if (reservedSlots.has(key)) {
                 continue;
@@ -227,6 +233,9 @@ export const getBookingOptionsByLocation = query({
         for (const availability of weeklySlots) {
           const slots = buildSlotsWithinRange(availability.startTime, availability.endTime, duration);
           for (const slot of slots) {
+            if (!isIsoDateTimeInFutureForTimezone(isoDate, slot, availability.timezone, now)) {
+              continue;
+            }
             const key = buildSlotKey(groupName, isoDate, slot);
             if (reservedSlots.has(key)) {
               continue;
@@ -431,6 +440,40 @@ function buildSlotKey(groupName: string, isoDate: string, time: string) {
 
 function buildOverrideKey(groupName: string, isoDate: string) {
   return `${groupName}|${isoDate}`;
+}
+
+function isReservationBlocking(
+  reservation: Doc<"reservations">,
+  now: number,
+) {
+  if (reservation.status === "confirmed") {
+    return true;
+  }
+  if (reservation.status !== "pending") {
+    return false;
+  }
+  return getReservationHoldExpiresAt(reservation) > now;
+}
+
+function getReservationHoldExpiresAt(reservation: Doc<"reservations">) {
+  return reservation.updatedAt + RESERVATION_HOLD_DURATION_MS;
+}
+
+function isIsoDateTimeInFutureForTimezone(
+  isoDate: string,
+  time: string,
+  timezone: string,
+  now: number,
+) {
+  const currentDate = formatDateInTimezone(now, timezone);
+  if (isoDate > currentDate) {
+    return true;
+  }
+  if (isoDate < currentDate) {
+    return false;
+  }
+  const currentTime = formatTimeInTimezone(now, timezone);
+  return time > currentTime;
 }
 
 function resolveAvailabilityGroupName(availability: { name?: string; _id?: unknown } | undefined) {

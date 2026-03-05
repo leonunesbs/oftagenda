@@ -75,6 +75,7 @@ export function BookingForm({
   const [isLocationOverflowing, setIsLocationOverflowing] = useState(false);
   const [isStartingBooking, startStartingBookingTransition] = useTransition();
   const [isDraftHydrated, setIsDraftHydrated] = useState(false);
+  const [currentTimestamp, setCurrentTimestamp] = useState(() => Date.now());
 
   const selectedLocation = locations.find((item) => item.value === location);
   const hasLocation = Boolean(location);
@@ -91,6 +92,18 @@ export function BookingForm({
     [availableDates, selectedDate],
   );
   const currentTimeSlots = selectedDateOption?.times ?? [];
+  const filteredTimeSlots = useMemo(() => {
+    if (!selectedDate) {
+      return currentTimeSlots;
+    }
+    const now = new Date(currentTimestamp);
+    const todayIso = toIsoDate(now);
+    if (selectedDate !== todayIso) {
+      return currentTimeSlots;
+    }
+    const currentTime = formatCurrentTime(now);
+    return currentTimeSlots.filter((slot) => slot > currentTime);
+  }, [currentTimestamp, currentTimeSlots, selectedDate]);
   const canPickTime = Boolean(hasLocation && selectedDate);
   const hasSelection = Boolean(location && selectedDate && selectedTime);
   const shouldShowTimeCard = Boolean(selectedDate);
@@ -153,11 +166,20 @@ export function BookingForm({
       setIsConfirmDialogOpen(false);
       return;
     }
-    if (!currentTimeSlots.includes(selectedTime)) {
+    if (!filteredTimeSlots.includes(selectedTime)) {
       setSelectedTime("");
       setIsConfirmDialogOpen(false);
     }
-  }, [selectedDate, selectedTime, currentTimeSlots]);
+  }, [selectedDate, selectedTime, filteredTimeSlots]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setCurrentTimestamp(Date.now());
+    }, 30_000);
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, []);
 
   useEffect(() => {
     const nextEmbeddedMode =
@@ -551,7 +573,7 @@ export function BookingForm({
               </div>
 
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {currentTimeSlots.map((slot) => (
+                {filteredTimeSlots.map((slot) => (
                   <Button
                     key={slot}
                     type="button"
@@ -564,7 +586,7 @@ export function BookingForm({
                 ))}
               </div>
 
-              {canPickTime && currentTimeSlots.length === 0 ? (
+              {canPickTime && filteredTimeSlots.length === 0 ? (
                 <p className="text-xs text-muted-foreground">
                   Nao ha horários livres para esta data.
                 </p>
@@ -711,6 +733,10 @@ function toIsoDate(date: Date) {
   const month = String(localDate.getMonth() + 1).padStart(2, "0");
   const day = String(localDate.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+function formatCurrentTime(date: Date) {
+  return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 }
 
 function parseIsoDate(isoDate: string) {

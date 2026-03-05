@@ -447,7 +447,7 @@ export const createAvailability = mutation({
     }
 
     if (args.startTime >= args.endTime) {
-      throw new Error("Horario inicial deve ser menor que o final");
+      throw new Error("Horário inicial deve ser menor que o final");
     }
 
     const now = Date.now();
@@ -505,10 +505,10 @@ export const upsertAvailabilityDaySlots = mutation({
       const startTime = slot.startTime.trim();
       const endTime = slot.endTime.trim();
       if (!isValidTimeValue(startTime) || !isValidTimeValue(endTime)) {
-        throw new Error(`Faixa ${index + 1}: horario invalido, use formato HH:mm`);
+        throw new Error(`Faixa ${index + 1}: horário invalido, use formato HH:mm`);
       }
       if (startTime >= endTime) {
-        throw new Error(`Faixa ${index + 1}: horario inicial deve ser menor que o final`);
+        throw new Error(`Faixa ${index + 1}: horário inicial deve ser menor que o final`);
       }
       return {
         availabilityId: slot.availabilityId,
@@ -645,10 +645,10 @@ export const upsertAvailabilityDateOverrides = mutation({
       const startTime = slot.startTime.trim();
       const endTime = slot.endTime.trim();
       if (!isValidTimeValue(startTime) || !isValidTimeValue(endTime)) {
-        throw new Error(`Faixa ${index + 1}: horario invalido, use formato HH:mm`);
+        throw new Error(`Faixa ${index + 1}: horário invalido, use formato HH:mm`);
       }
       if (startTime >= endTime) {
-        throw new Error(`Faixa ${index + 1}: horario inicial deve ser menor que o final`);
+        throw new Error(`Faixa ${index + 1}: horário inicial deve ser menor que o final`);
       }
       return {
         startTime,
@@ -658,7 +658,7 @@ export const upsertAvailabilityDateOverrides = mutation({
     });
 
     if (!args.allDayUnavailable && normalizedSlots.length === 0) {
-      throw new Error("Informe ao menos um horario para a substituicao");
+      throw new Error("Informe ao menos um horário para a substituicao");
     }
 
     if (!args.allDayUnavailable) {
@@ -782,7 +782,7 @@ export const updateAvailability = mutation({
     }
 
     if (args.startTime >= args.endTime) {
-      throw new Error("Horario inicial deve ser menor que o final");
+      throw new Error("Horário inicial deve ser menor que o final");
     }
 
     await ctx.db.patch(args.availabilityId, {
@@ -1114,7 +1114,7 @@ function parseIsoDateAndTimeToTimestamp(date: string, time: string) {
   const raw = `${date.trim()}T${time.trim()}:00`;
   const timestamp = Date.parse(raw);
   if (Number.isNaN(timestamp)) {
-    throw new Error("Data ou horario invalidos");
+    throw new Error("Data ou horário invalidos");
   }
   return timestamp;
 }
@@ -1195,7 +1195,7 @@ function validateSlotMatchesAvailability(
   const start = parseTimeToMinutes(availability.startTime);
   const end = parseTimeToMinutes(availability.endTime);
   if (slot < start || slot >= end) {
-    throw new Error("Horario fora da faixa da disponibilidade");
+    throw new Error("Horário fora da faixa da disponibilidade");
   }
 }
 
@@ -1242,7 +1242,7 @@ async function resolveAvailabilityForReservation(
     }),
   );
   if (!matched) {
-    throw new Error("Horario fora das faixas configuradas para este grupo de disponibilidade");
+    throw new Error("Horário fora das faixas configuradas para este grupo de disponibilidade");
   }
 
   return matched;

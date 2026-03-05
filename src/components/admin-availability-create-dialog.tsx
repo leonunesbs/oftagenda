@@ -181,7 +181,7 @@ export function AdminAvailabilityCreateDialog({
         <DialogHeader>
           <DialogTitle>Cadastrar disponibilidade</DialogTitle>
           <DialogDescription>
-            Defina o nome e ative os dias da semana com Switch. Em cada dia ativo, configure um ou varios horarios.
+            Defina o nome e ative os dias da semana com Switch. Em cada dia ativo, configure um ou varios horários.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
@@ -209,7 +209,7 @@ export function AdminAvailabilityCreateDialog({
                         checked={day.allowMultiple}
                         onCheckedChange={(checked) => setAllowMultiple(weekday, Boolean(checked))}
                       />
-                      <p className="text-xs text-muted-foreground">Multiplos horarios</p>
+                      <p className="text-xs text-muted-foreground">Multiplos horários</p>
                     </div>
                   ) : null}
                 </div>
@@ -267,7 +267,7 @@ export function AdminAvailabilityCreateDialog({
                   onClick={() => addSlot(weekday)}
                   disabled={!day.enabled || !day.allowMultiple}
                 >
-                  + Horario
+                  + Horário
                 </Button>
               </div>
             ))}

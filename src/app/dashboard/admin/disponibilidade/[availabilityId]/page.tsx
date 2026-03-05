@@ -65,7 +65,7 @@ export default async function AvailabilityDetailsPage({
     <section className="mx-auto w-full max-w-6xl space-y-4">
       <div className="flex items-center justify-between gap-2">
         <div>
-          <h1 className="text-lg font-semibold">Editar horarios</h1>
+          <h1 className="text-lg font-semibold">Editar horários</h1>
           <p className="text-xs text-muted-foreground">{selectedGroup.name}</p>
         </div>
         <Button asChild variant="outline" size="sm">

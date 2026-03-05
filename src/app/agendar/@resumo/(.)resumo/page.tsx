@@ -24,7 +24,7 @@ export default function ResumoInterceptPage() {
 
   const locationLabel = locationLabelFromParams || location || "Local nao informado";
   const dateLabel = date ? formatDateLabel(date) : "Data nao informada";
-  const timeLabel = time || "Horario nao informado";
+  const timeLabel = time || "Horário nao informado";
 
   return (
     <Dialog
@@ -51,7 +51,7 @@ export default function ResumoInterceptPage() {
             <span className="font-medium text-foreground">Data:</span> {dateLabel}
           </p>
           <p>
-            <span className="font-medium text-foreground">Horario:</span> {timeLabel}
+            <span className="font-medium text-foreground">Horário:</span> {timeLabel}
           </p>
         </div>
 

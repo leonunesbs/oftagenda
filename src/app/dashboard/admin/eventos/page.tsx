@@ -255,7 +255,7 @@ export default async function AdminEventsPage() {
                             type="time"
                             step={300}
                             required
-                            aria-label="Horario"
+                            aria-label="Horário"
                             title="Use formato 24h (HH:mm)"
                           />
                           <select name="status" className={selectClassName} defaultValue="pending">

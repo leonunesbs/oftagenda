@@ -296,7 +296,7 @@ export function AdminAvailabilityEditor({
       return;
     }
     if (!overrideAllDayUnavailable && overrideSlots.length === 0) {
-      setOverrideFeedback({ type: "error", message: "Adicione pelo menos um horario para a substituicao." });
+      setOverrideFeedback({ type: "error", message: "Adicione pelo menos um horário para a substituicao." });
       return;
     }
 
@@ -411,7 +411,7 @@ export function AdminAvailabilityEditor({
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-2">
         <p className="text-xs text-muted-foreground">
-          Dias com faixas configuradas: {flattenedDayCount}. Use o botao + para adicionar novos horarios no mesmo dia.
+          Dias com faixas configuradas: {flattenedDayCount}. Use o botao + para adicionar novos horários no mesmo dia.
         </p>
         {showCreateButton ? (
           <Button size="sm" asChild>
@@ -495,7 +495,7 @@ export function AdminAvailabilityEditor({
                             setAllowMultiple(groupIndex, weekday, Boolean(checked))
                           }
                         />
-                        <p className="text-xs text-muted-foreground">Multiplos horarios</p>
+                        <p className="text-xs text-muted-foreground">Multiplos horários</p>
                       </div>
                     ) : null}
                     <Button
@@ -506,7 +506,7 @@ export function AdminAvailabilityEditor({
                       onClick={() => addSlot(groupIndex, weekday)}
                       disabled={!day.enabled || !day.allowMultiple}
                     >
-                      + Horario
+                      + Horário
                     </Button>
                     <Button
                       type="button"
@@ -526,7 +526,7 @@ export function AdminAvailabilityEditor({
 
                 {day.enabled && day.slots.length === 0 ? (
                   <p className="text-xs text-muted-foreground">
-                    Sem horarios para este dia. Clique em + Horario para adicionar.
+                    Sem horários para este dia. Clique em + Horário para adicionar.
                   </p>
                 ) : null}
 
@@ -599,7 +599,7 @@ export function AdminAvailabilityEditor({
           <DialogHeader>
             <DialogTitle>Substituir datas selecionadas</DialogTitle>
             <DialogDescription>
-              Selecione uma ou mais datas para substituir os horarios da disponibilidade.
+              Selecione uma ou mais datas para substituir os horários da disponibilidade.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 lg:grid-cols-2">
@@ -622,7 +622,7 @@ export function AdminAvailabilityEditor({
               )}
             </div>
             <div className="space-y-3 rounded-lg border border-border/70 bg-muted/10 p-3">
-              <p className="text-sm font-medium">Horarios para substituir</p>
+              <p className="text-sm font-medium">Horários para substituir</p>
               <div className="flex items-center gap-2">
                 <Switch
                   checked={overrideAllDayUnavailable}
@@ -691,7 +691,7 @@ export function AdminAvailabilityEditor({
                 onClick={addOverrideSlot}
                 disabled={overrideAllDayUnavailable}
               >
-                + Horario
+                + Horário
               </Button>
               {overrideFeedback ? (
                 <p className={`text-xs ${overrideFeedback.type === "error" ? "text-destructive" : "text-muted-foreground"}`}>

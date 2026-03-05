@@ -367,7 +367,7 @@ export function PatientPanelForm({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="time">Horario</Label>
+                <Label htmlFor="time">Horário</Label>
                 <Input
                   id="time"
                   type="time"
@@ -616,7 +616,7 @@ export function PatientPanelForm({
               <div className="space-y-2 rounded-lg border border-border/70 p-3 text-sm">
                 <p className="font-medium">Resumo da consulta</p>
                 <p>
-                  Data e horario:{" "}
+                  Data e horário:{" "}
                   {date && time ? `${date} as ${time}` : "A confirmar"}
                 </p>
                 <p>Local: {location || "A confirmar"}</p>

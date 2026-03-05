@@ -121,7 +121,7 @@ export function BookingForm({
       return;
     }
     if (!hasSelection) {
-      setError("Selecione local, data e horario para continuar.");
+      setError("Selecione local, data e horário para continuar.");
       return;
     }
     setIsConfirmDialogOpen(true);
@@ -241,7 +241,7 @@ export function BookingForm({
     setError(null);
 
     if (!location || !selectedDate || !selectedTime) {
-      setError("Selecione local, data e horario para continuar.");
+      setError("Selecione local, data e horário para continuar.");
       return;
     }
 
@@ -300,7 +300,7 @@ export function BookingForm({
       <CardHeader className="space-y-3">
         <CardTitle>Agendar consulta</CardTitle>
         <CardDescription>
-          Selecione local, data e horario. Em seguida, revise no resumo antes de
+          Selecione local, data e horário. Em seguida, revise no resumo antes de
           concluir.
         </CardDescription>
       </CardHeader>
@@ -311,7 +311,7 @@ export function BookingForm({
               <Label>1. Escolha o local de atendimento</Label>
               <p className="text-xs text-muted-foreground">
                 Escolha o local onde voce deseja ser atendido para visualizar as
-                datas e horarios disponiveis. Estamos aqui para tornar seu
+                datas e horários disponiveis. Estamos aqui para tornar seu
                 agendamento simples, rapido e tranquilo.
               </p>
             </div>
@@ -473,11 +473,11 @@ export function BookingForm({
               )}
             >
               <div className="space-y-1">
-                <Label>3. Escolha o horario</Label>
+                <Label>3. Escolha o horário</Label>
                 <p className="text-xs text-muted-foreground">
                   {canPickTime
-                    ? `Horarios disponiveis para ${selectedLocation?.label}.`
-                    : "Selecione evento e data para carregar os horarios abaixo."}
+                    ? `Horários disponiveis para ${selectedLocation?.label}.`
+                    : "Selecione evento e data para carregar os horários abaixo."}
                 </p>
               </div>
 
@@ -497,7 +497,7 @@ export function BookingForm({
 
               {canPickTime && currentTimeSlots.length === 0 ? (
                 <p className="text-xs text-muted-foreground">
-                  Nao ha horarios livres para esta data.
+                  Nao ha horários livres para esta data.
                 </p>
               ) : null}
 
@@ -510,7 +510,7 @@ export function BookingForm({
                     : selectedDate
                       ? ` - ${formatDateLabel(selectedDate)}`
                       : " - sem data"}
-                  {selectedTime ? ` - ${selectedTime}` : " - sem horario"}
+                  {selectedTime ? ` - ${selectedTime}` : " - sem horário"}
                 </p>
               </div>
 
@@ -524,7 +524,7 @@ export function BookingForm({
                   onClick={handleOpenConfirmationDialog}
                   disabled={!hasSelection || isStartingBooking}
                 >
-                  Confirmar horario
+                  Confirmar horário
                 </Button>
               </div>
             </section>
@@ -563,7 +563,7 @@ export function BookingForm({
                   : "Nao informada"}
             </p>
             <p>
-              <span className="font-medium text-foreground">Horario:</span>{" "}
+              <span className="font-medium text-foreground">Horário:</span>{" "}
               {selectedTime || "Nao informado"}
             </p>
           </div>

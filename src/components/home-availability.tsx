@@ -264,7 +264,7 @@ export function HomeAvailability() {
         {[
           { index: 0, title: "Local", done: currentStep > 1 },
           { index: 1, title: "Data", done: currentStep > 2 },
-          { index: 2, title: "Horario", done: currentStep > 3 },
+          { index: 2, title: "Horário", done: currentStep > 3 },
         ].map((step) => (
           <button
             key={step.title}
@@ -315,7 +315,7 @@ export function HomeAvailability() {
                 <div className="space-y-1">
                   <Label>Locais de atendimento</Label>
                   <p className="text-xs text-muted-foreground">
-                    As datas e horarios sao exibidos somente apos a selecao do local.
+                    As datas e horários sao exibidos somente apos a selecao do local.
                   </p>
                 </div>
                 <RadioGroup>
@@ -425,7 +425,7 @@ export function HomeAvailability() {
                     onClick={() => carouselApi?.scrollTo(2)}
                     disabled={!selectedDate}
                   >
-                    Avancar para horario
+                    Avancar para horário
                   </Button>
                 </div>
               </CardContent>
@@ -437,15 +437,15 @@ export function HomeAvailability() {
               <CardHeader>
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <CardTitle className="text-base md:text-lg">3. Escolha o horario</CardTitle>
+                    <CardTitle className="text-base md:text-lg">3. Escolha o horário</CardTitle>
                     <CardDescription>
                       {canPickTime
-                        ? "Selecione o melhor horario para continuar o agendamento."
-                        : "Selecione local e data para ver os horarios livres."}
+                        ? "Selecione o melhor horário para continuar o agendamento."
+                        : "Selecione local e data para ver os horários livres."}
                     </CardDescription>
                   </div>
                   <Badge variant="outline" className="border-white/10 bg-white/5">
-                    {availableSlots.length} horarios livres
+                    {availableSlots.length} horários livres
                   </Badge>
                 </div>
               </CardHeader>
@@ -455,7 +455,7 @@ export function HomeAvailability() {
                   disabled={!canPickTime}
                   aria-busy={isLoadingAvailability}
                 >
-                  <Label>Horarios disponiveis</Label>
+                  <Label>Horários disponiveis</Label>
                   {isLoadingAvailability ? (
                     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                       {Array.from({ length: 6 }).map((_, index) => (
@@ -482,12 +482,12 @@ export function HomeAvailability() {
                   )}
                   {canPickTime && availableSlots.length === 0 ? (
                     <p className="text-sm text-muted-foreground">
-                      Nao ha horarios livres para esta data.
+                      Nao ha horários livres para esta data.
                     </p>
                   ) : null}
                   {selectedTime ? (
                     <p className="text-xs text-muted-foreground">
-                      Horario selecionado: {selectedTime}
+                      Horário selecionado: {selectedTime}
                     </p>
                   ) : null}
                 </fieldset>

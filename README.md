@@ -122,7 +122,7 @@ No build de producao, `pnpm build` faz deploy do Convex automaticamente quando `
 
 ## TODOs de produto
 
-- Integrar Cal.com (ou sistema real) para horarios e confirmacao real
+- Integrar Cal.com (ou sistema real) para horários e confirmacao real
 - Ativar Clerk Billing por entitlements
 - Adequacao LGPD (consentimento, retencao, auditoria)
 - Rate limiting nas APIs

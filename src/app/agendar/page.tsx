@@ -7,13 +7,13 @@ import { BookingFormFallback } from "@/components/booking-form-fallback";
 
 export const metadata: Metadata = {
   title: "Agendar consulta",
-  description: "Selecione local, data e horario para iniciar seu agendamento oftalmologico.",
+  description: "Selecione local, data e horário para iniciar seu agendamento oftalmologico.",
   alternates: {
     canonical: "/agendar",
   },
   openGraph: {
     title: "Agendar consulta | Minha Agenda",
-    description: "Fluxo rapido para selecionar local, data e horario da consulta.",
+    description: "Fluxo rapido para selecionar local, data e horário da consulta.",
     url: "/agendar",
   },
 };

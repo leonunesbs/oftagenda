@@ -11,7 +11,7 @@ import { redirects } from './redirects';
 const ContentSecurityPolicy = `
   object-src 'none';
   base-uri 'self';
-  frame-ancestors 'self';
+  frame-ancestors 'self' https://oftleonardo.com.br https://*.oftleonardo.com.br;
   manifest-src 'self';
   report-to default;
 `;

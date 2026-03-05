@@ -38,7 +38,8 @@ export function StartCheckoutButton({
         if (!response.ok || !data?.ok || typeof data.url !== "string") {
           throw new Error(data?.error ?? "Não foi possível iniciar o checkout.");
         }
-        window.location.href = data.url;
+        const target = window.self !== window.top ? window.top! : window;
+        target.location.href = data.url;
       } catch (checkoutError) {
         setError(
           checkoutError instanceof Error

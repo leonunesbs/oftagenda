@@ -33,6 +33,12 @@ import { ptBR } from "date-fns/locale";
 
 const DRAFT_STORAGE_KEY = "oftagenda:booking-draft:v1";
 
+type BookingDraft = {
+  location: BookingPayload["location"];
+  selectedDate: string;
+  selectedTime: string;
+};
+
 type BookingFormProps = {
   isAuthenticated: boolean;
   clerkEnabled: boolean;
@@ -68,6 +74,7 @@ export function BookingForm({
   const [isEmbedded, setIsEmbedded] = useState(embedMode);
   const [isLocationOverflowing, setIsLocationOverflowing] = useState(false);
   const [isStartingBooking, startStartingBookingTransition] = useTransition();
+  const [isDraftHydrated, setIsDraftHydrated] = useState(false);
 
   const selectedLocation = locations.find((item) => item.value === location);
   const hasLocation = Boolean(location);
@@ -161,6 +168,60 @@ export function BookingForm({
   }, [embedMode, searchParams]);
 
   useEffect(() => {
+    if (isDraftHydrated) {
+      return;
+    }
+
+    const draftRaw = window.localStorage.getItem(DRAFT_STORAGE_KEY);
+    if (!draftRaw) {
+      setIsDraftHydrated(true);
+      return;
+    }
+
+    try {
+      const draft = JSON.parse(draftRaw) as Partial<BookingDraft>;
+      if (typeof draft.location !== "string" || !draft.location) {
+        window.localStorage.removeItem(DRAFT_STORAGE_KEY);
+        setIsDraftHydrated(true);
+        return;
+      }
+
+      const locationExists = locations.some((item) => item.value === draft.location);
+      if (!locationExists) {
+        window.localStorage.removeItem(DRAFT_STORAGE_KEY);
+        setIsDraftHydrated(true);
+        return;
+      }
+
+      const availabilityForLocation = initialAvailabilityByLocation[draft.location];
+      const draftDate =
+        typeof draft.selectedDate === "string" ? draft.selectedDate : "";
+      const dateOption = availabilityForLocation?.dates.find(
+        (item) => item.isoDate === draftDate,
+      );
+      const restoredDate = dateOption ? draftDate : "";
+      const restoredTime =
+        dateOption &&
+        typeof draft.selectedTime === "string" &&
+        dateOption.times.includes(draft.selectedTime)
+          ? draft.selectedTime
+          : "";
+
+      setLocation(draft.location);
+      setSelectedDate(restoredDate);
+      setSelectedTime(restoredTime);
+    } catch {
+      window.localStorage.removeItem(DRAFT_STORAGE_KEY);
+    } finally {
+      setIsDraftHydrated(true);
+    }
+  }, [initialAvailabilityByLocation, isDraftHydrated, locations]);
+
+  useEffect(() => {
+    if (!isDraftHydrated) {
+      return;
+    }
+
     if (!location) {
       window.localStorage.removeItem(DRAFT_STORAGE_KEY);
       return;
@@ -173,7 +234,7 @@ export function BookingForm({
         selectedTime,
       }),
     );
-  }, [location, selectedDate, selectedTime]);
+  }, [isDraftHydrated, location, selectedDate, selectedTime]);
 
   useEffect(() => {
     if (!isEmbedded) {
@@ -264,6 +325,14 @@ export function BookingForm({
         );
         return;
       }
+      window.localStorage.setItem(
+        DRAFT_STORAGE_KEY,
+        JSON.stringify({
+          location,
+          selectedDate,
+          selectedTime,
+        } satisfies BookingDraft),
+      );
       startStartingBookingTransition(() => {
         trackEvent("start_booking", {
           location,

@@ -1,18 +1,24 @@
 "use client";
 
-import Link from "next/link";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { useEffect, useMemo, useState } from "react";
 
-import { calculateDilatationGuidance } from "@/domain/triage/dilatation";
-import type { TriagePayload } from "@/domain/triage/schema";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { calculateDilatationGuidance } from "@/domain/triage/dilatation";
+import type { TriagePayload } from "@/domain/triage/schema";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 
 const DASHBOARD_STORAGE_KEY = "oftagenda:patient-panel:v1";
 
@@ -53,25 +59,32 @@ const reasonOptions: MainReasonOption[] = [
   { value: "other", label: "Outro" },
 ];
 
-const conditionOptions: Array<{ value: TriagePayload["conditions"][number]; label: string }> = [
+const conditionOptions: Array<{
+  value: TriagePayload["conditions"][number];
+  label: string;
+}> = [
   { value: "diabetes", label: "Diabetes" },
   { value: "glaucoma", label: "Glaucoma" },
   { value: "prior_surgery", label: "Cirurgia ocular previa" },
   { value: "hypertension", label: "Pressao alta" },
 ];
 
-const symptomOptions: Array<{ value: TriagePayload["symptoms"][number]; label: string }> = [
+const symptomOptions: Array<{
+  value: TriagePayload["symptoms"][number];
+  label: string;
+}> = [
   { value: "floaters", label: "Moscas volantes ou manchas" },
   { value: "flashes", label: "Claroes" },
   { value: "sudden_loss", label: "Perda subita de visao" },
 ];
 
-const lastDilationOptions: Array<{ value: LastDilationOption; label: string }> = [
-  { value: "lt6m", label: "Ha menos de 6 meses" },
-  { value: "6to12m", label: "Entre 6 e 12 meses" },
-  { value: "gt1y", label: "Ha mais de 1 ano" },
-  { value: "unknown", label: "Nao lembro" },
-];
+const lastDilationOptions: Array<{ value: LastDilationOption; label: string }> =
+  [
+    { value: "lt6m", label: "Ha menos de 6 meses" },
+    { value: "6to12m", label: "Entre 6 e 12 meses" },
+    { value: "gt1y", label: "Ha mais de 1 ano" },
+    { value: "unknown", label: "Nao lembro" },
+  ];
 
 const companionOptions: Array<{ value: CompanionOption; label: string }> = [
   { value: "acompanhado", label: "Vir acompanhado" },
@@ -104,13 +117,20 @@ const statusOptions: MultiOption[] = [
   { value: "pending", label: "A confirmar" },
 ];
 
-const contactPreferenceOptions: Array<{ value: ContactPreferenceOption; label: string }> = [
+const contactPreferenceOptions: Array<{
+  value: ContactPreferenceOption;
+  label: string;
+}> = [
   { value: "whatsapp", label: "WhatsApp" },
   { value: "ligacao", label: "Ligacao" },
   { value: "email", label: "E-mail" },
 ];
 
-function toggleArrayItem<T extends string>(values: T[], target: T, checked: boolean) {
+function toggleArrayItem<T extends string>(
+  values: T[],
+  target: T,
+  checked: boolean,
+) {
   if (checked) {
     return values.includes(target) ? values : [...values, target];
   }
@@ -124,17 +144,23 @@ function formatStatusLabel(status: string) {
   return status;
 }
 
-export function PatientPanelForm({ initialAppointment }: PatientPanelFormProps) {
+export function PatientPanelForm({
+  initialAppointment,
+}: PatientPanelFormProps) {
   const [location, setLocation] = useState(initialAppointment.location);
   const [date, setDate] = useState(initialAppointment.date);
   const [time, setTime] = useState(initialAppointment.time);
-  const [consultationType, setConsultationType] = useState(initialAppointment.consultationType);
+  const [consultationType, setConsultationType] = useState(
+    initialAppointment.consultationType,
+  );
   const [durationMinutes, setDurationMinutes] = useState("60");
   const [status, setStatus] = useState(initialAppointment.status);
 
-  const [companionPlan, setCompanionPlan] = useState<CompanionOption>("a_confirmar");
+  const [companionPlan, setCompanionPlan] =
+    useState<CompanionOption>("a_confirmar");
   const [drivePlan, setDrivePlan] = useState<DriveOption>("nao_se_aplica");
-  const [extraTimePlan, setExtraTimePlan] = useState<ExtraTimeOption>("parcial");
+  const [extraTimePlan, setExtraTimePlan] =
+    useState<ExtraTimeOption>("parcial");
 
   const [hasExams, setHasExams] = useState(false);
   const [examList, setExamList] = useState("");
@@ -142,10 +168,12 @@ export function PatientPanelForm({ initialAppointment }: PatientPanelFormProps) 
   const [reason, setReason] = useState<TriagePayload["reason"]>("routine");
   const [conditions, setConditions] = useState<TriagePayload["conditions"]>([]);
   const [symptoms, setSymptoms] = useState<TriagePayload["symptoms"]>([]);
-  const [lastDilation, setLastDilation] = useState<LastDilationOption>("unknown");
+  const [lastDilation, setLastDilation] =
+    useState<LastDilationOption>("unknown");
   const [oneSentenceSummary, setOneSentenceSummary] = useState("");
 
-  const [contactPreference, setContactPreference] = useState<ContactPreferenceOption>("whatsapp");
+  const [contactPreference, setContactPreference] =
+    useState<ContactPreferenceOption>("whatsapp");
   const [accessibilityNeeds, setAccessibilityNeeds] = useState("");
   const [continuousDrops, setContinuousDrops] = useState(false);
   const [isFirstConsultation, setIsFirstConsultation] = useState(false);
@@ -183,8 +211,10 @@ export function PatientPanelForm({ initialAppointment }: PatientPanelFormProps) 
       if (typeof draft.location === "string") setLocation(draft.location);
       if (typeof draft.date === "string") setDate(draft.date);
       if (typeof draft.time === "string") setTime(draft.time);
-      if (typeof draft.consultationType === "string") setConsultationType(draft.consultationType);
-      if (typeof draft.durationMinutes === "string") setDurationMinutes(draft.durationMinutes);
+      if (typeof draft.consultationType === "string")
+        setConsultationType(draft.consultationType);
+      if (typeof draft.durationMinutes === "string")
+        setDurationMinutes(draft.durationMinutes);
       if (typeof draft.status === "string") setStatus(draft.status);
       if (draft.companionPlan) setCompanionPlan(draft.companionPlan);
       if (draft.drivePlan) setDrivePlan(draft.drivePlan);
@@ -195,11 +225,16 @@ export function PatientPanelForm({ initialAppointment }: PatientPanelFormProps) 
       if (Array.isArray(draft.conditions)) setConditions(draft.conditions);
       if (Array.isArray(draft.symptoms)) setSymptoms(draft.symptoms);
       if (draft.lastDilation) setLastDilation(draft.lastDilation);
-      if (typeof draft.oneSentenceSummary === "string") setOneSentenceSummary(draft.oneSentenceSummary);
-      if (draft.contactPreference) setContactPreference(draft.contactPreference);
-      if (typeof draft.accessibilityNeeds === "string") setAccessibilityNeeds(draft.accessibilityNeeds);
-      if (typeof draft.continuousDrops === "boolean") setContinuousDrops(draft.continuousDrops);
-      if (typeof draft.isFirstConsultation === "boolean") setIsFirstConsultation(draft.isFirstConsultation);
+      if (typeof draft.oneSentenceSummary === "string")
+        setOneSentenceSummary(draft.oneSentenceSummary);
+      if (draft.contactPreference)
+        setContactPreference(draft.contactPreference);
+      if (typeof draft.accessibilityNeeds === "string")
+        setAccessibilityNeeds(draft.accessibilityNeeds);
+      if (typeof draft.continuousDrops === "boolean")
+        setContinuousDrops(draft.continuousDrops);
+      if (typeof draft.isFirstConsultation === "boolean")
+        setIsFirstConsultation(draft.isFirstConsultation);
     } catch {
       window.localStorage.removeItem(DASHBOARD_STORAGE_KEY);
     }
@@ -294,12 +329,15 @@ export function PatientPanelForm({ initialAppointment }: PatientPanelFormProps) 
         <CardHeader>
           <CardTitle>Painel do paciente</CardTitle>
           <CardDescription>
-            Formulario de organizacao da consulta com seletores rapidos e acoes diretas.
+            Formulario de organizacao da consulta com seletores rapidos e acoes
+            diretas.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <section className="space-y-4 rounded-xl border border-border/70 p-4">
-            <h3 className="text-sm font-medium">Dados essenciais da consulta</h3>
+            <h3 className="text-sm font-medium">
+              Dados essenciais da consulta
+            </h3>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="location">Local de atendimento</Label>
@@ -321,11 +359,21 @@ export function PatientPanelForm({ initialAppointment }: PatientPanelFormProps) 
               </div>
               <div className="space-y-2">
                 <Label htmlFor="date">Data</Label>
-                <Input id="date" type="date" value={date} onChange={(event) => setDate(event.target.value)} />
+                <Input
+                  id="date"
+                  type="date"
+                  value={date}
+                  onChange={(event) => setDate(event.target.value)}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="time">Horario</Label>
-                <Input id="time" type="time" value={time} onChange={(event) => setTime(event.target.value)} />
+                <Input
+                  id="time"
+                  type="time"
+                  value={time}
+                  onChange={(event) => setTime(event.target.value)}
+                />
               </div>
             </div>
 
@@ -336,7 +384,9 @@ export function PatientPanelForm({ initialAppointment }: PatientPanelFormProps) 
                   <Button
                     key={option.value}
                     type="button"
-                    variant={durationMinutes === option.value ? "default" : "outline"}
+                    variant={
+                      durationMinutes === option.value ? "default" : "outline"
+                    }
                     onClick={() => setDurationMinutes(option.value)}
                   >
                     {option.label}
@@ -384,7 +434,9 @@ export function PatientPanelForm({ initialAppointment }: PatientPanelFormProps) 
                   <Button
                     key={option.value}
                     type="button"
-                    variant={companionPlan === option.value ? "default" : "outline"}
+                    variant={
+                      companionPlan === option.value ? "default" : "outline"
+                    }
                     onClick={() => setCompanionPlan(option.value)}
                   >
                     {option.label}
@@ -412,7 +464,9 @@ export function PatientPanelForm({ initialAppointment }: PatientPanelFormProps) 
                   <Button
                     key={option.value}
                     type="button"
-                    variant={extraTimePlan === option.value ? "default" : "outline"}
+                    variant={
+                      extraTimePlan === option.value ? "default" : "outline"
+                    }
                     onClick={() => setExtraTimePlan(option.value)}
                   >
                     {option.label}
@@ -440,7 +494,9 @@ export function PatientPanelForm({ initialAppointment }: PatientPanelFormProps) 
           </section>
 
           <section className="space-y-4 rounded-xl border border-border/70 p-4">
-            <h3 className="text-sm font-medium">Triagem para previsao de dilatacao</h3>
+            <h3 className="text-sm font-medium">
+              Triagem para previsao de dilatacao
+            </h3>
 
             <div className="space-y-2">
               <Label>Motivo principal</Label>
@@ -474,7 +530,13 @@ export function PatientPanelForm({ initialAppointment }: PatientPanelFormProps) 
                       <Checkbox
                         checked={checked}
                         onChange={(event) =>
-                          setConditions(toggleArrayItem(conditions, option.value, event.currentTarget.checked))
+                          setConditions(
+                            toggleArrayItem(
+                              conditions,
+                              option.value,
+                              event.currentTarget.checked,
+                            ),
+                          )
                         }
                       />
                       <span>{option.label}</span>
@@ -500,7 +562,13 @@ export function PatientPanelForm({ initialAppointment }: PatientPanelFormProps) 
                       <Checkbox
                         checked={checked}
                         onChange={(event) =>
-                          setSymptoms(toggleArrayItem(symptoms, option.value, event.currentTarget.checked))
+                          setSymptoms(
+                            toggleArrayItem(
+                              symptoms,
+                              option.value,
+                              event.currentTarget.checked,
+                            ),
+                          )
                         }
                       />
                       <span>{option.label}</span>
@@ -517,7 +585,9 @@ export function PatientPanelForm({ initialAppointment }: PatientPanelFormProps) 
                   <Button
                     key={option.value}
                     type="button"
-                    variant={lastDilation === option.value ? "default" : "outline"}
+                    variant={
+                      lastDilation === option.value ? "default" : "outline"
+                    }
                     onClick={() => setLastDilation(option.value)}
                   >
                     {option.label}
@@ -527,13 +597,15 @@ export function PatientPanelForm({ initialAppointment }: PatientPanelFormProps) 
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="oneSentenceSummary">Em uma frase, o que mais incomoda</Label>
+              <Label htmlFor="oneSentenceSummary">
+                Em uma frase, o que mais incomoda
+              </Label>
               <Textarea
                 id="oneSentenceSummary"
                 maxLength={240}
                 value={oneSentenceSummary}
                 onChange={(event) => setOneSentenceSummary(event.target.value)}
-                placeholder="Resumo rapido da principal queixa"
+                placeholder="Resumo rápido da principal queixa"
               />
             </div>
           </section>
@@ -543,7 +615,10 @@ export function PatientPanelForm({ initialAppointment }: PatientPanelFormProps) 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2 rounded-lg border border-border/70 p-3 text-sm">
                 <p className="font-medium">Resumo da consulta</p>
-                <p>Data e horario: {date && time ? `${date} as ${time}` : "A confirmar"}</p>
+                <p>
+                  Data e horario:{" "}
+                  {date && time ? `${date} as ${time}` : "A confirmar"}
+                </p>
                 <p>Local: {location || "A confirmar"}</p>
                 <p>Tipo: {consultationType || "Consulta oftalmologica"}</p>
                 <p>Status: {formatStatusLabel(status)}</p>
@@ -552,8 +627,8 @@ export function PatientPanelForm({ initialAppointment }: PatientPanelFormProps) 
                 <p className="font-medium">Previsao de dilatacao</p>
                 <p>Nivel de probabilidade: {probabilityLabel}</p>
                 <p className="text-muted-foreground">
-                  Mensagem conservadora: existe chance de dilatacao conforme avaliacao clinica. A decisao final
-                  acontece no consultorio.
+                  Mensagem conservadora: existe chance de dilatacao conforme
+                  avaliacao clinica. A decisao final acontece no consultorio.
                 </p>
               </div>
             </div>
@@ -590,7 +665,9 @@ export function PatientPanelForm({ initialAppointment }: PatientPanelFormProps) 
               <li>O tempo total varia conforme necessidade de exame.</li>
               <li>Exames podem ser solicitados conforme avaliacao.</li>
               <li>Acompanhante e recomendado quando houver dilatacao.</li>
-              <li>Seus dados sao usados apenas para organizar o atendimento.</li>
+              <li>
+                Seus dados sao usados apenas para organizar o atendimento.
+              </li>
               <li>A decisao final sobre dilatacao e sempre no consultorio.</li>
             </ul>
           </section>
@@ -598,7 +675,9 @@ export function PatientPanelForm({ initialAppointment }: PatientPanelFormProps) 
           <Separator />
 
           <section className="space-y-4 rounded-xl border border-border/70 p-4">
-            <h3 className="text-sm font-medium">Inputs opcionais para fases futuras</h3>
+            <h3 className="text-sm font-medium">
+              Inputs opcionais para fases futuras
+            </h3>
             <div className="space-y-2">
               <Label>Preferencia de contato</Label>
               <div className="flex flex-wrap gap-2">
@@ -606,7 +685,9 @@ export function PatientPanelForm({ initialAppointment }: PatientPanelFormProps) 
                   <Button
                     key={option.value}
                     type="button"
-                    variant={contactPreference === option.value ? "default" : "outline"}
+                    variant={
+                      contactPreference === option.value ? "default" : "outline"
+                    }
                     onClick={() => setContactPreference(option.value)}
                   >
                     {option.label}
@@ -616,7 +697,9 @@ export function PatientPanelForm({ initialAppointment }: PatientPanelFormProps) 
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="accessibilityNeeds">Necessidades de acessibilidade</Label>
+              <Label htmlFor="accessibilityNeeds">
+                Necessidades de acessibilidade
+              </Label>
               <Textarea
                 id="accessibilityNeeds"
                 value={accessibilityNeeds}
@@ -629,14 +712,18 @@ export function PatientPanelForm({ initialAppointment }: PatientPanelFormProps) 
               <label className="flex items-center gap-2">
                 <Checkbox
                   checked={continuousDrops}
-                  onChange={(event) => setContinuousDrops(event.currentTarget.checked)}
+                  onChange={(event) =>
+                    setContinuousDrops(event.currentTarget.checked)
+                  }
                 />
                 Uso de colirios continuos
               </label>
               <label className="flex items-center gap-2">
                 <Checkbox
                   checked={isFirstConsultation}
-                  onChange={(event) => setIsFirstConsultation(event.currentTarget.checked)}
+                  onChange={(event) =>
+                    setIsFirstConsultation(event.currentTarget.checked)
+                  }
                 />
                 Primeira consulta com o medico
               </label>

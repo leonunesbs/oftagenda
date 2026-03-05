@@ -7,12 +7,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { ptBR } from "date-fns/locale";
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
-
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
 import {
   Dialog,
   DialogContent,
@@ -21,15 +15,21 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import type { BookingPayload } from "@/domain/booking/schema";
-import { trackEvent } from "@/lib/analytics";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import type {
   BookingLocationOption,
   LocationAvailabilityResponse,
 } from "@/lib/booking-bootstrap";
-import { cn } from "@/lib/utils";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Label } from "@/components/ui/label";
+import type { BookingPayload } from "@/domain/booking/schema";
+import { trackEvent } from "@/lib/analytics";
+import { cn } from "@/lib/utils";
+import { ptBR } from "date-fns/locale";
 
 const DRAFT_STORAGE_KEY = "oftagenda:booking-draft:v1";
 
@@ -453,7 +453,8 @@ export function BookingForm({
                     className="mx-auto w-full max-w-88 px-0 [--cell-size:clamp(1.65rem,6.2vw,2.2rem)] sm:max-w-none sm:px-1 sm:[--cell-size:clamp(1.85rem,3.8vw,2.5rem)]"
                     classNames={{
                       root: "w-full",
-                      month: "flex w-full flex-col items-center sm:items-stretch",
+                      month:
+                        "flex w-full flex-col items-center sm:items-stretch",
                       table: "mx-auto w-full table-fixed",
                     }}
                   />
@@ -542,7 +543,7 @@ export function BookingForm({
               ) : null}
 
               <div className="rounded-xl border border-dashed border-border/70 bg-muted/20 p-4 text-sm">
-                <p className="font-medium">Resumo rapido</p>
+                <p className="font-medium">Resumo rápido</p>
                 <p className="text-muted-foreground">
                   {selectedLocation?.label ?? "Selecione um evento"}
                   {selectedDateOption

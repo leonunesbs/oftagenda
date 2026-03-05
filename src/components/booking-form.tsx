@@ -58,7 +58,6 @@ export function BookingForm({
   const dateSectionRef = useRef<HTMLElement | null>(null);
   const timeSectionRef = useRef<HTMLDivElement | null>(null);
   const locationListRef = useRef<HTMLDivElement | null>(null);
-  const hasHydratedInitialDataRef = useRef(false);
 
   const [location, setLocation] = useState<BookingPayload["location"] | "">("");
   const [selectedDate, setSelectedDate] = useState("");
@@ -152,46 +151,6 @@ export function BookingForm({
       setIsConfirmDialogOpen(false);
     }
   }, [selectedDate, selectedTime, currentTimeSlots]);
-
-  useEffect(() => {
-    if (hasHydratedInitialDataRef.current) {
-      return;
-    }
-    hasHydratedInitialDataRef.current = true;
-
-    const queryLocation = searchParams.get("location");
-    const queryDate = searchParams.get("date") ?? "";
-    const queryTime = searchParams.get("time") ?? "";
-
-    if (queryLocation) {
-      setLocation(queryLocation as BookingPayload["location"]);
-      setSelectedDate(queryDate);
-      setSelectedTime(queryTime);
-      return;
-    }
-
-    const draftRaw = window.localStorage.getItem(DRAFT_STORAGE_KEY);
-    if (!draftRaw) {
-      return;
-    }
-
-    try {
-      const draft = JSON.parse(draftRaw) as {
-        location?: string;
-        selectedDate?: string;
-        selectedTime?: string;
-      };
-      const draftLocation = draft.location;
-      if (!draftLocation) {
-        return;
-      }
-      setLocation(draftLocation as BookingPayload["location"]);
-      setSelectedDate(draft.selectedDate ?? "");
-      setSelectedTime(draft.selectedTime ?? "");
-    } catch {
-      window.localStorage.removeItem(DRAFT_STORAGE_KEY);
-    }
-  }, [searchParams]);
 
   useEffect(() => {
     const nextEmbeddedMode =

@@ -1,5 +1,3 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
 # dependencies
 /node_modules
 .pnpm-store/
@@ -22,27 +20,36 @@
 /out/
 next-env.d.ts
 
-# production
+# build output
 /build
+dist/
 
-# misc
-.DS_Store
-*.pem
+# caches
+.turbo/
+.cache/
+.eslintcache
+
+# typescript
+*.tsbuildinfo
 
 # debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.pnpm-debug.log*
+pnpm-debug.log*
 
 # env files
-.env*
+.env
+.env.*
+!.env.example
+!.env.sample
+
+# misc
+.DS_Store
+*.pem
 
 # vercel
 .vercel
-
-# typescript
-*.tsbuildinfo
 
 # clerk configuration (can include secrets)
 /.clerk/

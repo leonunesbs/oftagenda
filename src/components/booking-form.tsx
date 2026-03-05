@@ -194,35 +194,6 @@ export function BookingForm({
   }, [searchParams]);
 
   useEffect(() => {
-    if (!availableDates.length) {
-      return;
-    }
-    const hasCurrentDate = availableDates.some(
-      (item) => item.isoDate === selectedDate,
-    );
-    if (selectedDate && hasCurrentDate) {
-      return;
-    }
-    const firstDate = availableDates[0];
-    if (firstDate) {
-      setSelectedDate(firstDate.isoDate);
-    }
-  }, [availableDates, selectedDate]);
-
-  useEffect(() => {
-    if (!selectedDate) {
-      return;
-    }
-    if (selectedTime && currentTimeSlots.includes(selectedTime)) {
-      return;
-    }
-    const firstSlot = currentTimeSlots[0];
-    if (firstSlot) {
-      setSelectedTime(firstSlot);
-    }
-  }, [selectedDate, selectedTime, currentTimeSlots]);
-
-  useEffect(() => {
     const nextEmbeddedMode =
       embedMode ||
       searchParams.get("embed") === "1" ||

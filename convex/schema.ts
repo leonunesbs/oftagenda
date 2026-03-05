@@ -152,6 +152,7 @@ export default defineSchema({
     appointmentId: v.optional(v.id("appointments")),
     startsAt: v.number(),
     endsAt: v.number(),
+    holdExpiresAt: v.optional(v.number()),
     status: reservationStatusValidator,
     notes: v.optional(v.string()),
     createdAt: v.number(),

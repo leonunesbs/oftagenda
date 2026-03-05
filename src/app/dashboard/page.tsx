@@ -24,10 +24,18 @@ export default async function DashboardPage() {
       consultationType?: string;
       status: string;
     } | null;
+    pendingReservations: Array<{
+      _id: string;
+      startsAt: number;
+      holdExpiresAt: number;
+      location: string;
+      consultationType: string;
+    }>;
     history: Array<{ _id: string; status: string; requestedAt: number; location: string }>;
   } = {
     hasConfirmedBooking: false,
     nextAppointment: null,
+    pendingReservations: [],
     history: [],
   };
 
@@ -45,6 +53,13 @@ export default async function DashboardPage() {
             status: data.nextAppointment.status,
           }
         : null,
+      pendingReservations: data.pendingReservations.map((item) => ({
+        _id: item._id,
+        startsAt: item.startsAt,
+        holdExpiresAt: item.holdExpiresAt,
+        location: item.location,
+        consultationType: item.consultationType,
+      })),
       history: data.history.map((item) => ({
         _id: item._id,
         status: item.status,
@@ -128,6 +143,31 @@ export default async function DashboardPage() {
             <p className="text-xs text-muted-foreground">
               A decisão final sobre dilatação é feita durante a consulta.
             </p>
+          </div>
+
+          <Separator />
+
+          <div className="space-y-2">
+            <h3 className="font-medium">Agendamentos pendentes</h3>
+            {dashboardState.pendingReservations.length > 0 ? (
+              <ul className="space-y-1 text-sm text-muted-foreground">
+                {dashboardState.pendingReservations.map((item) => (
+                  <li key={item._id}>
+                    {item.consultationType} - {item.location} -{" "}
+                    {new Date(item.startsAt).toLocaleString("pt-BR")} (reservado ate{" "}
+                    {new Date(item.holdExpiresAt).toLocaleTimeString("pt-BR", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                    )
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Nenhum agendamento pendente de pagamento no momento.
+              </p>
+            )}
           </div>
 
           <Separator />

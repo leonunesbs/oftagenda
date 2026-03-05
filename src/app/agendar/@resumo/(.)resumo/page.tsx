@@ -19,12 +19,14 @@ export default function ResumoInterceptPage() {
 
   const location = searchParams.get("location") ?? "";
   const locationLabelFromParams = searchParams.get("locationLabel") ?? "";
+  const locationAddress = searchParams.get("locationAddress") ?? "";
   const date = searchParams.get("date") ?? "";
   const time = searchParams.get("time") ?? "";
 
   const locationLabel = locationLabelFromParams || location || "Local nao informado";
   const dateLabel = date ? formatDateLabel(date) : "Data nao informada";
   const timeLabel = time || "Horário nao informado";
+  const mapsHref = locationAddress ? buildMapsDirectionsUrl(locationAddress) : "";
 
   return (
     <Dialog
@@ -47,6 +49,20 @@ export default function ResumoInterceptPage() {
           <p>
             <span className="font-medium text-foreground">Local:</span> {locationLabel}
           </p>
+          {locationAddress ? (
+            <p>
+              <span className="font-medium text-foreground">Endereco:</span>{" "}
+              <a
+                href={mapsHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline underline-offset-4 transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                aria-label={`Abrir rotas no mapa para ${locationAddress}`}
+              >
+                {locationAddress}
+              </a>
+            </p>
+          ) : null}
           <p>
             <span className="font-medium text-foreground">Data:</span> {dateLabel}
           </p>
@@ -77,4 +93,8 @@ function formatDateLabel(isoDate: string) {
     return isoDate;
   }
   return `${day}/${month}/${year}`;
+}
+
+function buildMapsDirectionsUrl(address: string) {
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`;
 }

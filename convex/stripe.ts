@@ -4,7 +4,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { mutation } from "./_generated/server";
 
-const RESERVATION_HOLD_DURATION_MS = 15 * 60_000;
+const RESERVATION_HOLD_DURATION_MS = 30 * 60_000;
 
 const checkoutDraftSchema = {
   location: v.string(),
@@ -67,6 +67,7 @@ export const createCheckoutDraft = mutation({
       await ctx.db.patch(existingDraft._id, {
         availabilityId: eventType.availabilityId,
         endsAt,
+        holdExpiresAt,
         notes: "Checkout Stripe pendente.",
         updatedAt: now,
       });
@@ -77,6 +78,7 @@ export const createCheckoutDraft = mutation({
         availabilityId: eventType.availabilityId,
         startsAt: slotTimestamp,
         endsAt,
+        holdExpiresAt,
         status: "pending",
         notes: "Checkout Stripe pendente.",
         createdAt: now,
@@ -136,6 +138,7 @@ export const attachCheckoutSession = mutation({
     checkoutSessionId: v.string(),
     paymentIntentId: v.optional(v.string()),
     amountCents: v.optional(v.number()),
+    holdExpiresAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -165,6 +168,10 @@ export const attachCheckoutSession = mutation({
       updatedAt: now,
     });
     await ctx.db.patch(args.reservationId, {
+      holdExpiresAt:
+        typeof args.holdExpiresAt === "number" && Number.isFinite(args.holdExpiresAt)
+          ? Math.round(args.holdExpiresAt)
+          : reservation.holdExpiresAt,
       notes: "Aguardando confirmação do pagamento Stripe.",
       updatedAt: now,
     });
@@ -734,7 +741,7 @@ function isReservationBlocking(
 }
 
 function getReservationHoldExpiresAt(reservation: Doc<"reservations">) {
-  return reservation.updatedAt + RESERVATION_HOLD_DURATION_MS;
+  return reservation.holdExpiresAt ?? reservation.updatedAt + RESERVATION_HOLD_DURATION_MS;
 }
 
 function isIsoDateTimeInFutureForTimezone(

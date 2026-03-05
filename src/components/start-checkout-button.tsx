@@ -55,6 +55,9 @@ export function StartCheckoutButton({
       <Button type="button" onClick={handleStartCheckout} disabled={isLoading}>
         {isLoading ? "Redirecionando..." : label}
       </Button>
+      <p className="rounded-md border border-border/60 bg-muted/30 px-3 py-1.5 text-xs text-muted-foreground">
+        Link de pagamento e bloqueio do horário válidos por 30 minutos.
+      </p>
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
     </div>
   );

@@ -5,6 +5,7 @@ import { getConvexHttpClient } from "@/lib/convex-server";
 export type BookingLocationOption = {
   value: string;
   label: string;
+  address?: string;
   eventTypesCount?: number;
 };
 

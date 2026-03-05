@@ -331,11 +331,7 @@ export function BookingForm({
     const summaryUrl = buildPreBookingSummaryUrl({
       location,
       locationLabel: selectedLocation?.label ?? location,
-      locationTypeLabel: selectedLocation
-        ? selectedLocation.eventTypesCount
-          ? `${selectedLocation.eventTypesCount} tipos de evento ativos`
-          : "Local ativo"
-        : "Selecione um local",
+      locationAddress: selectedLocation?.address ?? "",
       selectedDate,
       selectedTime,
     });
@@ -695,20 +691,20 @@ export function BookingForm({
 function buildPreBookingSummaryUrl({
   location,
   locationLabel,
-  locationTypeLabel,
+  locationAddress,
   selectedDate,
   selectedTime,
 }: {
   location: BookingPayload["location"];
   locationLabel: string;
-  locationTypeLabel: string;
+  locationAddress: string;
   selectedDate: string;
   selectedTime: string;
 }) {
   const params = new URLSearchParams({
     location,
     locationLabel,
-    locationTypeLabel,
+    locationAddress,
     date: selectedDate,
     time: selectedTime,
   });

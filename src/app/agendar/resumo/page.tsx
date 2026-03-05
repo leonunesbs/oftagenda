@@ -9,7 +9,7 @@ type ResumoPageProps = {
     | Promise<{
         location?: string;
         locationLabel?: string;
-        locationTypeLabel?: string;
+        locationAddress?: string;
         date?: string;
         time?: string;
         payment?: string;
@@ -17,7 +17,7 @@ type ResumoPageProps = {
     | {
         location?: string;
         locationLabel?: string;
-        locationTypeLabel?: string;
+        locationAddress?: string;
         date?: string;
         time?: string;
         payment?: string;
@@ -28,15 +28,15 @@ export default async function ResumoPreAgendamentoPage({ searchParams }: ResumoP
   const params = (await searchParams) ?? {};
   const location = params.location ?? "";
   const locationLabelFromParams = params.locationLabel ?? "";
-  const locationTypeLabel = params.locationTypeLabel ?? "";
+  const locationAddress = params.locationAddress ?? "";
   const date = params.date ?? "";
   const time = params.time ?? "";
   const payment = params.payment ?? "";
 
   const locationLabel = locationLabelFromParams || location || "Local não informado";
-  const locationType = locationTypeLabel || "Tipo não informado";
   const dateLabel = date ? formatDateLabel(date) : "Data não informada";
   const timeLabel = time || "Horário não informado";
+  const mapsHref = locationAddress ? buildMapsDirectionsUrl(locationAddress) : "";
 
   return (
     <section className="mx-auto w-full max-w-3xl">
@@ -52,9 +52,20 @@ export default async function ResumoPreAgendamentoPage({ searchParams }: ResumoP
             <p>
               <span className="font-medium text-foreground">Local:</span> {locationLabel}
             </p>
-            <p>
-              <span className="font-medium text-foreground">Tipo de local:</span> {locationType}
-            </p>
+            {locationAddress ? (
+              <p>
+                <span className="font-medium text-foreground">Endereço:</span>{" "}
+                <a
+                  href={mapsHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline underline-offset-4 transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  aria-label={`Abrir rotas no mapa para ${locationAddress}`}
+                >
+                  {locationAddress}
+                </a>
+              </p>
+            ) : null}
             <p>
               <span className="font-medium text-foreground">Data:</span> {dateLabel}
             </p>
@@ -91,4 +102,8 @@ function formatDateLabel(isoDate: string) {
     return isoDate;
   }
   return `${day}/${month}/${year}`;
+}
+
+function buildMapsDirectionsUrl(address: string) {
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`;
 }

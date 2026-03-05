@@ -281,7 +281,8 @@ export const getActiveBookingLocations = query({
       .sort((a, b) => (a.name ?? a.title).localeCompare(b.name ?? b.title, "pt-BR"))
       .map((eventType) => ({
         value: eventType.slug,
-        label: `${eventType.name ?? eventType.title}${eventType.address ? ` - ${eventType.address}` : ""}`,
+        label: eventType.name ?? eventType.title,
+        address: eventType.address ?? "",
       }));
   },
 });
@@ -294,18 +295,42 @@ export const getDashboardState = query({
       throw new Error("Not authenticated");
     }
 
-    const appointments = await ctx.db
-      .query("appointments")
-      .withIndex("by_clerk_user_id", (q) => q.eq("clerkUserId", identity.subject))
-      .collect();
+    const [appointments, reservations, eventTypes] = await Promise.all([
+      ctx.db
+        .query("appointments")
+        .withIndex("by_clerk_user_id", (q) => q.eq("clerkUserId", identity.subject))
+        .collect(),
+      ctx.db
+        .query("reservations")
+        .withIndex("by_clerk_user_id", (q) => q.eq("clerkUserId", identity.subject))
+        .collect(),
+      ctx.db.query("event_types").collect(),
+    ]);
 
     const sorted = [...appointments].sort((a, b) => b.requestedAt - a.requestedAt);
     const nextAppointment =
       sorted.find((item) => item.status === "confirmed" || item.status === "rescheduled") ?? null;
+    const now = Date.now();
+    const eventTypeById = new Map(eventTypes.map((item) => [String(item._id), item]));
+    const pendingReservations = [...reservations]
+      .filter((item) => item.status === "pending" && getReservationHoldExpiresAt(item) > now)
+      .sort((a, b) => a.startsAt - b.startsAt)
+      .slice(0, 8)
+      .map((item) => {
+        const eventType = eventTypeById.get(String(item.eventTypeId));
+        return {
+          _id: item._id,
+          startsAt: item.startsAt,
+          holdExpiresAt: getReservationHoldExpiresAt(item),
+          location: eventType?.location ?? "fortaleza",
+          consultationType: eventType?.name ?? eventType?.title ?? "Consulta oftalmologica",
+        };
+      });
 
     return {
       hasConfirmedBooking: nextAppointment !== null,
       nextAppointment,
+      pendingReservations,
       history: sorted.slice(0, 8),
     };
   },
@@ -456,7 +481,7 @@ function isReservationBlocking(
 }
 
 function getReservationHoldExpiresAt(reservation: Doc<"reservations">) {
-  return reservation.updatedAt + RESERVATION_HOLD_DURATION_MS;
+  return reservation.holdExpiresAt ?? reservation.updatedAt + RESERVATION_HOLD_DURATION_MS;
 }
 
 function isIsoDateTimeInFutureForTimezone(

@@ -117,13 +117,13 @@ export default async function DashboardPage() {
 
           <div className="space-y-3">
             <Button variant="secondary" asChild>
-              <a
+              <Link
                 href="https://wa.me/5585999853811?text=Ol%C3%A1!%20Vim%20pela%20Minha%20Agenda%20e%20gostaria%20de%20confirmar/reagendar%20minha%20consulta."
                 target="_blank"
                 rel="noreferrer"
               >
                 Confirmar/reagendar no WhatsApp
-              </a>
+              </Link>
             </Button>
             <p className="text-xs text-muted-foreground">
               A decisão final sobre dilatação é feita durante a consulta.

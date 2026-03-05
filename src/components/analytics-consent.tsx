@@ -2,10 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { GoogleTagManager } from "@next/third-parties/google";
+import Link from "next/link";
 import Script from "next/script";
 
 import { Button } from "@/components/ui/button";
-import { siteConfig } from "@/config/site";
 import { clientEnv } from "@/lib/env/client";
 
 const CONSENT_KEY = "oftcore:consent:v1";
@@ -110,7 +110,8 @@ fbq('track', 'PageView');`}
 
       {shouldLoadScripts && googleAdsId ? (
         <Script id="google-ads-config" strategy="afterInteractive">
-          {`window.gtag = window.gtag || function(){window.dataLayer.push(arguments);};
+          {`window.dataLayer = window.dataLayer || [];
+window.gtag = window.gtag || function(){window.dataLayer.push(arguments);};
 window.gtag('config', '${googleAdsId}');`}
         </Script>
       ) : null}
@@ -125,14 +126,12 @@ window.gtag('config', '${googleAdsId}');`}
           </p>
           <p className="mt-2 text-xs text-muted-foreground">
             Saiba mais em{" "}
-            <a
-              href={`${siteConfig.social.oftleonardoSite}/politica-de-privacidade`}
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              href="/politica-de-privacidade"
               className="underline underline-offset-2 hover:text-foreground"
             >
               Política de Privacidade
-            </a>
+            </Link>
             .
           </p>
           <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">

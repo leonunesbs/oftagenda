@@ -413,13 +413,13 @@ export function PatientPanelForm({
 
             <div className="flex flex-wrap gap-2">
               <Button asChild>
-                <a
+                <Link
                   href="https://wa.me/5585999853811?text=Ol%C3%A1!%20Preciso%20de%20apoio%20com%20minha%20consulta."
                   target="_blank"
                   rel="noreferrer"
                 >
                   Contato no WhatsApp
-                </a>
+                </Link>
               </Button>
             </div>
           </section>
@@ -635,13 +635,13 @@ export function PatientPanelForm({
 
             <div className="flex flex-wrap gap-2">
               <Button variant="secondary" asChild>
-                <a
+                <Link
                   href="https://wa.me/5585999853811?text=Ol%C3%A1!%20Preciso%20falar%20com%20a%20secretaria%20sobre%20minha%20consulta."
                   target="_blank"
                   rel="noreferrer"
                 >
                   Falar com a secretaria
-                </a>
+                </Link>
               </Button>
               <Button variant="outline" asChild>
                 <Link href="/agendar">Reagendar</Link>

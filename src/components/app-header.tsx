@@ -77,9 +77,9 @@ export async function AppHeader({ clerkEnabled }: AppHeaderProps) {
             </Button>
           ))}
           <Button variant="ghost" asChild>
-            <a href={oftleonardoContentUrl} target="_blank" rel="noreferrer">
+            <Link href={oftleonardoContentUrl} target="_blank" rel="noreferrer">
               Conteudos
-            </a>
+            </Link>
           </Button>
           <ColorModeToggle />
           {role ? <span className="hidden text-xs text-muted-foreground md:inline">Role: {role}</span> : null}
@@ -124,9 +124,9 @@ export async function AppHeader({ clerkEnabled }: AppHeaderProps) {
                 ))}
                 <SheetClose asChild>
                   <Button variant="ghost" asChild className="justify-start">
-                    <a href={oftleonardoContentUrl} target="_blank" rel="noreferrer">
+                    <Link href={oftleonardoContentUrl} target="_blank" rel="noreferrer">
                       Conteudos
-                    </a>
+                    </Link>
                   </Button>
                 </SheetClose>
 

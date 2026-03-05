@@ -26,15 +26,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.5,
     },
     {
-      url: `${baseUrl}/sign-in`,
+      url: `${baseUrl}/termos-de-uso`,
       lastModified: now,
-      changeFrequency: "monthly",
+      changeFrequency: "yearly",
       priority: 0.4,
     },
     {
-      url: `${baseUrl}/sign-up`,
+      url: `${baseUrl}/politica-de-privacidade`,
       lastModified: now,
-      changeFrequency: "monthly",
+      changeFrequency: "yearly",
       priority: 0.4,
     },
   ];

@@ -114,15 +114,25 @@ export default async function HomePage() {
           </CardHeader>
           <CardContent className="flex flex-wrap items-center gap-3">
             <Button asChild className="h-10 rounded-xl px-5 text-sm transition-transform duration-200 hover:-translate-y-0.5">
-              <a href="#agendamento">Agendar</a>
+              <Link href="#agendamento">Agendar</Link>
             </Button>
-            <Button
-              variant="secondary"
-              asChild
-              className="h-10 rounded-xl px-5 text-sm transition-colors duration-200"
-            >
-              <Link href="/sign-in">Entrar</Link>
-            </Button>
+            {clerkEnabled ? (
+              <Button
+                variant="secondary"
+                asChild
+                className="h-10 rounded-xl px-5 text-sm transition-colors duration-200"
+              >
+                <Link href={userId ? "/dashboard" : "/sign-in"}>{userId ? "Painel" : "Entrar"}</Link>
+              </Button>
+            ) : (
+              <Button
+                variant="secondary"
+                disabled
+                className="h-10 rounded-xl px-5 text-sm transition-colors duration-200"
+              >
+                Clerk nao configurado
+              </Button>
+            )}
             <p className="w-full text-xs text-muted-foreground">
               Atendimento individual para quem faz parte da Minha Agenda.
             </p>
@@ -168,18 +178,18 @@ export default async function HomePage() {
           </CardHeader>
           <CardContent className="flex flex-wrap gap-3">
             <Button variant="outline" asChild>
-              <a href={oftleonardoContentUrl} target="_blank" rel="noreferrer">
+              <Link href={oftleonardoContentUrl} target="_blank" rel="noreferrer">
                 Abrir hub de conteudos
-              </a>
+              </Link>
             </Button>
             <Button variant="outline" asChild>
-              <a
+              <Link
                 href={`${siteConfig.social.oftleonardoSite}/acuidade-visual?utm_source=oftagenda&utm_medium=referral&utm_campaign=crossdomain_seo`}
                 target="_blank"
                 rel="noreferrer"
               >
                 Teste de acuidade visual
-              </a>
+              </Link>
             </Button>
           </CardContent>
         </Card>

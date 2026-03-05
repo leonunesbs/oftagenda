@@ -1,5 +1,6 @@
 import "./globals.css";
 
+import Link from "next/link";
 import { ptBR } from "@clerk/localizations";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Geist, Inter } from "next/font/google";
@@ -90,6 +91,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const clerkEnabled = isClerkConfigured();
+  const legalFooter = (
+    <footer className="mx-auto w-full max-w-5xl px-4 pb-8 pt-2 text-xs text-muted-foreground md:px-6">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border/70 pt-4">
+        <Link href="/termos-de-uso" className="underline underline-offset-2 hover:text-foreground">
+          Termos de Uso
+        </Link>
+        <Link href="/politica-de-privacidade" className="underline underline-offset-2 hover:text-foreground">
+          Política de Privacidade
+        </Link>
+      </div>
+    </footer>
+  );
 
   return (
     <html lang="pt-BR" className={`${inter.variable} dark`}>
@@ -115,6 +128,7 @@ export default function RootLayout({
                 <div className="min-h-screen bg-background">
                   <AppHeader clerkEnabled />
                   <main className="mx-auto w-full max-w-5xl px-4 py-10 md:px-6 md:py-14">{children}</main>
+                  {legalFooter}
                   <AnalyticsPageview />
                   <AnalyticsConsent />
                   <Toaster />
@@ -127,6 +141,7 @@ export default function RootLayout({
             <div className="min-h-screen bg-background">
               <AppHeader clerkEnabled={false} />
               <main className="mx-auto w-full max-w-5xl px-4 py-10 md:px-6 md:py-14">{children}</main>
+              {legalFooter}
               <AnalyticsPageview />
               <AnalyticsConsent />
               <Toaster />

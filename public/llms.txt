@@ -1,0 +1,25 @@
+# Minha Agenda (Oftagenda)
+
+> Plataforma de agendamento oftalmologico para selecionar local, data e horario e confirmar consulta em poucos passos.
+
+## URL principal
+
+- https://agenda.oftleonardo.com.br/
+
+## Paginas publicas
+
+- [Home](https://agenda.oftleonardo.com.br/): Visao geral e acesso ao fluxo de agendamento.
+- [Agendar](https://agenda.oftleonardo.com.br/agendar): Fluxo principal de selecao de local, data e horario.
+- [Status](https://agenda.oftleonardo.com.br/status): Diagnostico de conectividade e ambiente.
+- [Termos de Uso](https://agenda.oftleonardo.com.br/termos-de-uso): Condicoes de uso da plataforma.
+- [Politica de Privacidade](https://agenda.oftleonardo.com.br/politica-de-privacidade): Regras de tratamento de dados e cookies.
+
+## Descoberta tecnica
+
+- Sitemap: https://agenda.oftleonardo.com.br/sitemap.xml
+- Robots: https://agenda.oftleonardo.com.br/robots.txt
+
+## Notas
+
+- O fluxo de agendamento nao seleciona data/horario automaticamente.
+- O usuario deve escolher explicitamente local -> data -> horario.

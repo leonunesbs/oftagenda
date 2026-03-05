@@ -5,6 +5,7 @@ import { GoogleTagManager } from "@next/third-parties/google";
 import Script from "next/script";
 
 import { Button } from "@/components/ui/button";
+import { siteConfig } from "@/config/site";
 import { clientEnv } from "@/lib/env/client";
 
 const CONSENT_KEY = "oftcore:consent:v1";
@@ -115,17 +116,36 @@ window.gtag('config', '${googleAdsId}');`}
       ) : null}
 
       {consent === null ? (
-        <div className="fixed inset-x-0 bottom-4 z-50 mx-auto w-[min(720px,95vw)] rounded-xl border border-border/70 bg-background/95 p-4 shadow-lg backdrop-blur">
-          <p className="text-sm text-muted-foreground">
-            Usamos cookies para mensurar performance e melhorar sua experiência. Você pode aceitar
-            ou recusar rastreamento não essencial.
+        <div className="fixed inset-x-0 bottom-4 z-50 mx-auto w-[min(760px,95vw)] rounded-2xl border border-border/70 bg-background/95 p-4 shadow-xl backdrop-blur md:p-5">
+          <p className="text-sm font-semibold text-foreground">Sua privacidade em primeiro lugar</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Usamos cookies opcionais para entender o que funciona melhor e melhorar seu agendamento.
+            Se preferir, você pode continuar apenas com os cookies essenciais sem impactar as funções
+            principais.
           </p>
-          <div className="mt-3 flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => updateConsent("denied")}>
-              Recusar
+          <p className="mt-2 text-xs text-muted-foreground">
+            Saiba mais em{" "}
+            <a
+              href={`${siteConfig.social.oftleonardoSite}/politica-de-privacidade`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-2 hover:text-foreground"
+            >
+              Política de Privacidade
+            </a>
+            .
+          </p>
+          <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => updateConsent("denied")}
+              className="w-full sm:w-auto"
+            >
+              Apenas essenciais
             </Button>
-            <Button type="button" onClick={() => updateConsent("granted")}>
-              Aceitar
+            <Button type="button" onClick={() => updateConsent("granted")} className="w-full sm:w-auto">
+              Aceitar e continuar
             </Button>
           </div>
         </div>

@@ -1,3 +1,5 @@
+import { sendGTMEvent } from "@next/third-parties/google";
+
 export type AnalyticsEventName =
   | "view_content"
   | "select_city"
@@ -8,7 +10,6 @@ export type AnalyticsEventName =
 
 declare global {
   interface Window {
-    dataLayer?: Array<Record<string, unknown>>;
     gtag?: (...args: unknown[]) => void;
     fbq?: (...args: unknown[]) => void;
   }
@@ -38,7 +39,7 @@ export function trackEvent(event: AnalyticsEventName, payload: Record<string, un
   }
 
   const safePayload = sanitizePayload(payload);
-  window.dataLayer?.push({ event, ...safePayload });
+  sendGTMEvent({ event, ...safePayload });
   window.gtag?.("event", event, safePayload);
 }
 

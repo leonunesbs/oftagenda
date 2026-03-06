@@ -14,6 +14,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { isClerkConfigured } from "@/lib/access";
 import { resolveSiteUrl, siteConfig } from "@/config/site";
 import type { Metadata } from "next";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -108,47 +109,49 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className={`${inter.variable} dark`}>
       <body className={geistSans.variable}>
-        <script
-          id="website-schema"
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify(websiteSchema),
-          }}
-        />
-        <script
-          id="medical-clinic-schema"
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify(medicalClinicSchema),
-          }}
-        />
-        {clerkEnabled ? (
-          <ClerkProvider localization={ptBR}>
-            <ConvexClientProvider>
-              <TooltipProvider>
-                <div className="flex min-h-screen flex-col bg-background">
-                  <AppHeader clerkEnabled />
-                  <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10 md:px-6 md:py-14">{children}</main>
-                  {legalFooter}
-                  <AnalyticsPageview />
-                  <AnalyticsConsent />
-                  <Toaster />
-                </div>
-              </TooltipProvider>
-            </ConvexClientProvider>
-          </ClerkProvider>
-        ) : (
-          <TooltipProvider>
-            <div className="flex min-h-screen flex-col bg-background">
-              <AppHeader clerkEnabled={false} />
-              <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10 md:px-6 md:py-14">{children}</main>
-              {legalFooter}
-              <AnalyticsPageview />
-              <AnalyticsConsent />
-              <Toaster />
-            </div>
-          </TooltipProvider>
-        )}
+        <NuqsAdapter>
+          <script
+            id="website-schema"
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify(websiteSchema),
+            }}
+          />
+          <script
+            id="medical-clinic-schema"
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify(medicalClinicSchema),
+            }}
+          />
+          {clerkEnabled ? (
+            <ClerkProvider localization={ptBR}>
+              <ConvexClientProvider>
+                <TooltipProvider>
+                  <div className="flex min-h-screen flex-col bg-background">
+                    <AppHeader clerkEnabled />
+                    <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10 md:px-6 md:py-14">{children}</main>
+                    {legalFooter}
+                    <AnalyticsPageview />
+                    <AnalyticsConsent />
+                    <Toaster />
+                  </div>
+                </TooltipProvider>
+              </ConvexClientProvider>
+            </ClerkProvider>
+          ) : (
+            <TooltipProvider>
+              <div className="flex min-h-screen flex-col bg-background">
+                <AppHeader clerkEnabled={false} />
+                <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10 md:px-6 md:py-14">{children}</main>
+                {legalFooter}
+                <AnalyticsPageview />
+                <AnalyticsConsent />
+                <Toaster />
+              </div>
+            </TooltipProvider>
+          )}
+        </NuqsAdapter>
       </body>
     </html>
   );

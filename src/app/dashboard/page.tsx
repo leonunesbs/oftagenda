@@ -1,14 +1,20 @@
-import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
+import Link from "next/link";
 
-import { api } from "../../../convex/_generated/api";
-import { getUserRoleFromClerkAuth, hasConfirmedBooking } from "@/lib/access";
+import { BookingConfirmedEvent } from "@/components/booking-confirmed-event";
 import { PatientPanelForm } from "@/components/patient-panel-form";
 import { Button } from "@/components/ui/button";
-import { BookingConfirmedEvent } from "@/components/booking-confirmed-event";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { getUserRoleFromClerkAuth, hasConfirmedBooking } from "@/lib/access";
 import { getAuthenticatedConvexHttpClient } from "@/lib/convex-server";
+import { api } from "../../../convex/_generated/api";
 
 type DashboardPageProps = {
   searchParams?:
@@ -26,7 +32,9 @@ type DashboardPageProps = {
       };
 };
 
-export default async function DashboardPage({ searchParams }: DashboardPageProps) {
+export default async function DashboardPage({
+  searchParams,
+}: DashboardPageProps) {
   const params = (await searchParams) ?? {};
   const payment = params.payment ?? "";
   const locationFromParams = params.location ?? "";
@@ -53,7 +61,12 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
       location: string;
       consultationType: string;
     }>;
-    history: Array<{ _id: string; status: string; requestedAt: number; location: string }>;
+    history: Array<{
+      _id: string;
+      status: string;
+      requestedAt: number;
+      location: string;
+    }>;
   } = {
     hasConfirmedBooking: false,
     nextAppointment: null,
@@ -100,7 +113,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     dateFromParams,
     timeFromParams,
   });
-  const appointmentLocation = nextAppointment?.location || locationFromParams || "Local a confirmar";
+  const appointmentLocation =
+    nextAppointment?.location || locationFromParams || "Local a confirmar";
   const calendarLinks = appointmentStart
     ? buildCalendarLinks({
         title: "Consulta com Dr Leonardo",
@@ -123,7 +137,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           hour12: false,
         })
       : "",
-    consultationType: nextAppointment?.consultationType ?? "Consulta oftalmologica",
+    consultationType:
+      nextAppointment?.consultationType ?? "Consulta oftalmologica",
     status: nextAppointment?.status ?? "pending",
   };
 
@@ -146,25 +161,34 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                 Pagamento confirmado! Seja muito bem-vindo(a).
               </h3>
               <p className="text-sm text-emerald-800/90 dark:text-emerald-200/90">
-                Sua consulta foi reservada com sucesso. Agora começa a melhor parte: aquela expectativa boa
-                para chegar logo o dia de cuidar da sua visão.
+                Sua consulta foi reservada com sucesso. Agora começa a melhor
+                parte: aquela expectativa boa para chegar logo o dia de cuidar
+                da sua visão.
               </p>
               {calendarLinks ? (
                 <div className="flex flex-wrap gap-2">
                   <Button asChild size="sm">
-                    <Link href={calendarLinks.googleCalendarHref} target="_blank" rel="noreferrer">
+                    <Link
+                      href={calendarLinks.googleCalendarHref}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
                       Salvar no Google Agenda
                     </Link>
                   </Button>
                   <Button asChild size="sm" variant="outline">
-                    <a href={calendarLinks.icsHref} download="consulta-dr-leonardo.ics">
+                    <a
+                      href={calendarLinks.icsHref}
+                      download="consulta-dr-leonardo.ics"
+                    >
                       Salvar no calendário do celular
                     </a>
                   </Button>
                 </div>
               ) : (
                 <p className="text-xs text-emerald-800/80 dark:text-emerald-200/80">
-                  Assim que os dados da consulta estiverem disponíveis, você poderá salvar no calendário.
+                  Assim que os dados da consulta estiverem disponíveis, você
+                  poderá salvar no calendário.
                 </p>
               )}
             </div>
@@ -222,7 +246,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                 {dashboardState.pendingReservations.map((item) => (
                   <li key={item._id}>
                     {item.consultationType} - {item.location} -{" "}
-                    {new Date(item.startsAt).toLocaleString("pt-BR")} (reservado ate{" "}
+                    {new Date(item.startsAt).toLocaleString("pt-BR")} (reservado
+                    ate{" "}
                     {new Date(item.holdExpiresAt).toLocaleTimeString("pt-BR", {
                       hour: "2-digit",
                       minute: "2-digit",
@@ -246,12 +271,16 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
               <ul className="space-y-1 text-sm text-muted-foreground">
                 {dashboardState.history.map((item) => (
                   <li key={item._id}>
-                    {item.status} - {new Date(item.requestedAt).toLocaleString("pt-BR")} - {item.location}
+                    {item.status} -{" "}
+                    {new Date(item.requestedAt).toLocaleString("pt-BR")} -{" "}
+                    {item.location}
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-muted-foreground">Sem histórico de agendamentos ainda.</p>
+              <p className="text-sm text-muted-foreground">
+                Sem histórico de agendamentos ainda.
+              </p>
             )}
           </div>
         </CardContent>
@@ -353,5 +382,9 @@ function createIcsUid(startsAt: Date) {
 }
 
 function escapeIcsText(value: string) {
-  return value.replaceAll("\\", "\\\\").replaceAll(";", "\\;").replaceAll(",", "\\,").replaceAll("\n", "\\n");
+  return value
+    .replaceAll("\\", "\\\\")
+    .replaceAll(";", "\\;")
+    .replaceAll(",", "\\,")
+    .replaceAll("\n", "\\n");
 }

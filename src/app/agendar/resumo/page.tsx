@@ -6,24 +6,23 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
 import { StartCheckoutButton } from "@/components/start-checkout-button";
+import { Button } from "@/components/ui/button";
+import { resolvePreBookingSummary } from "@/lib/pre-booking-summary";
+import Link from "next/link";
 
 type ResumoPageProps = {
   searchParams?:
     | Promise<{
+        locationId?: string;
         location?: string;
-        locationLabel?: string;
-        locationAddress?: string;
         date?: string;
         time?: string;
         payment?: string;
       }>
     | {
+        locationId?: string;
         location?: string;
-        locationLabel?: string;
-        locationAddress?: string;
         date?: string;
         time?: string;
         payment?: string;
@@ -34,25 +33,18 @@ export default async function ResumoPreAgendamentoPage({
   searchParams,
 }: ResumoPageProps) {
   const params = (await searchParams) ?? {};
-  const location = params.location ?? "";
-  const locationLabelFromParams = params.locationLabel ?? "";
-  const locationAddress = params.locationAddress ?? "";
-  const date = params.date ?? "";
-  const time = params.time ?? "";
-  const payment = params.payment ?? "";
-  const hasRedactedParams = [location, locationLabelFromParams, locationAddress, date, time, payment].some(
-    isRedactedValue,
-  );
+  const summary = await resolvePreBookingSummary(params);
 
-  if (hasRedactedParams) {
+  if (summary.hasRedactedParams || summary.hasInvalidSelection) {
     return (
       <section className="mx-auto w-full max-w-3xl">
         <Card className="border-destructive/40 bg-card/95 shadow-sm">
           <CardHeader className="space-y-2">
             <CardTitle>Erro ao carregar agendamento</CardTitle>
             <CardDescription>
-              Detectamos dados inválidos na URL deste pré-agendamento. Por segurança, inicie um novo
-              agendamento.
+              {summary.hasRedactedParams
+                ? "Detectamos dados inválidos na URL deste pré-agendamento. Por segurança, inicie um novo agendamento."
+                : "Esse horário não está mais disponível para o local selecionado. Escolha um novo horário para continuar."}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -64,12 +56,9 @@ export default async function ResumoPreAgendamentoPage({
       </section>
     );
   }
-
-  const locationLabel =
-    locationLabelFromParams || location || "Local não informado";
-  const dateLabel = date ? formatDateLabel(date) : "Data não informada";
-  const timeLabel = time || "Horário não informado";
-  const addressHref = locationAddress ? buildAddressHref(locationAddress) : "";
+  const addressHref = summary.locationAddress
+    ? buildAddressHref(summary.locationAddress)
+    : "";
 
   return (
     <section className="mx-auto flex min-h-[55vh] w-full max-w-4xl items-center">
@@ -77,7 +66,8 @@ export default async function ResumoPreAgendamentoPage({
         <CardHeader className="space-y-2">
           <CardTitle>Resumo do pré-agendamento</CardTitle>
           <CardDescription>
-            Confira os dados selecionados antes de seguir para a confirmação com Dr Leonardo.
+            Confira os dados selecionados antes de seguir para a confirmação com
+            Dr Leonardo.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
@@ -85,27 +75,27 @@ export default async function ResumoPreAgendamentoPage({
             <div className="grid gap-3 md:grid-cols-2">
               <p>
                 <span className="font-medium text-foreground">Local:</span>{" "}
-                {locationLabel}
+                {summary.locationLabel}
               </p>
-              {locationAddress ? (
+              {summary.locationAddress ? (
                 <p>
                   <span className="font-medium text-foreground">Endereço:</span>{" "}
                   <a
                     href={addressHref}
                     className="underline underline-offset-4 transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                    aria-label={`Abrir o endereço em um aplicativo de mapas: ${locationAddress}`}
+                    aria-label={`Abrir o endereço em um aplicativo de mapas: ${summary.locationAddress}`}
                   >
-                    {locationAddress}
+                    {summary.locationAddress}
                   </a>
                 </p>
               ) : null}
               <p>
                 <span className="font-medium text-foreground">Data:</span>{" "}
-                {dateLabel}
+                {summary.dateLabel}
               </p>
               <p>
                 <span className="font-medium text-foreground">Horário:</span>{" "}
-                {timeLabel}
+                {summary.timeLabel}
               </p>
             </div>
           </div>
@@ -115,13 +105,13 @@ export default async function ResumoPreAgendamentoPage({
               <Link href="/agendar">Editar agendamento</Link>
             </Button>
             <StartCheckoutButton
-              location={location}
-              date={date}
-              time={time}
+              location={summary.locationId}
+              date={summary.date}
+              time={summary.time}
               label="Seguir para pagamento"
             />
           </div>
-          {payment === "cancelled" ? (
+          {summary.payment === "cancelled" ? (
             <p className="text-sm text-destructive">
               O checkout foi cancelado. Você pode tentar novamente quando
               quiser.
@@ -133,18 +123,6 @@ export default async function ResumoPreAgendamentoPage({
   );
 }
 
-function formatDateLabel(isoDate: string) {
-  const [year, month, day] = isoDate.split("-");
-  if (!day || !month || !year) {
-    return isoDate;
-  }
-  return `${day}/${month}/${year}`;
-}
-
 function buildAddressHref(address: string) {
   return `geo:0,0?q=${encodeURIComponent(address)}`;
-}
-
-function isRedactedValue(value: string) {
-  return /(?:\[)?redacted(?:\])?/i.test(value.trim());
 }

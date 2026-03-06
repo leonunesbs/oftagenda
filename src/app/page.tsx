@@ -103,13 +103,13 @@ export default async function HomePage() {
         <Card className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-2 motion-safe:duration-500 rounded-3xl border-white/10 bg-linear-to-br from-card/95 via-card/90 to-card/65 backdrop-blur-2xl">
           <CardHeader className="space-y-4">
             <p className="inline-flex w-fit rounded-full border border-border/70 bg-muted/30 px-3 py-1 text-xs text-muted-foreground">
-              Área exclusiva para pacientes de Dr Leonardo
+              Atendimento oftalmológico especializado
             </p>
             <h1 id="home-hero" className="max-w-3xl text-3xl font-semibold tracking-tight md:text-5xl">
               Minha Agenda
             </h1>
             <CardDescription className="max-w-2xl text-sm text-muted-foreground md:text-base">
-              Aqui, cada paciente é especial: atendimento de Leonardo Nunes com tempo, clareza e precisão.
+              Aqui, cada paciente é atendido com tempo, clareza e precisão clínica.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap items-center gap-3">
@@ -134,7 +134,7 @@ export default async function HomePage() {
               </Button>
             )}
             <p className="w-full text-xs text-muted-foreground">
-              Atendimento individual com a assinatura de Dr Leonardo.
+              Protocolo clínico com foco em precisão diagnóstica e conduta segura.
             </p>
           </CardContent>
         </Card>

@@ -56,9 +56,10 @@ export async function AppHeader({ clerkEnabled }: AppHeaderProps) {
     { href: "/dashboard", label: "Painel", icon: LayoutBottomIcon },
     ...(isAdmin ? [{ href: "/dashboard/admin", label: "Admin", icon: ShieldIcon }] : []),
     { href: "/agendar", label: "Agendar", icon: SearchIcon },
-    { href: "/status", label: "Status", icon: File01Icon },
+    ...(isAdmin ? [{ href: "/status", label: "Status", icon: File01Icon }] : []),
   ];
   const oftleonardoContentUrl = `${siteConfig.social.oftleonardoSite}/conteudos?utm_source=oftagenda&utm_medium=referral&utm_campaign=crossdomain_seo`;
+  const mobileMenuContentId = "mobile-menu-sheet-content";
 
   return (
     <header className="border-b border-border/70 bg-background/80 backdrop-blur">
@@ -69,7 +70,7 @@ export async function AppHeader({ clerkEnabled }: AppHeaderProps) {
           </span>
           <span className="flex flex-col leading-tight">
             <span>Minha Agenda</span>
-            <span className="text-[11px] font-normal text-muted-foreground">por Dr Leonardo</span>
+            <span className="text-[11px] font-normal text-muted-foreground">Leonardo Nunes</span>
           </span>
         </Link>
 
@@ -109,7 +110,7 @@ export async function AppHeader({ clerkEnabled }: AppHeaderProps) {
                 <HugeiconsIcon icon={MoreVerticalCircle01Icon} strokeWidth={2} />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[84vw] max-w-xs">
+            <SheetContent id={mobileMenuContentId} side="right" className="w-[84vw] max-w-xs">
               <SheetHeader className="pb-3">
                 <SheetTitle>Menu</SheetTitle>
                 <SheetDescription>Acesse as principais páginas.</SheetDescription>

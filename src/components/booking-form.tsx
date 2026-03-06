@@ -22,6 +22,7 @@ import type { BookingPayload } from "@/domain/booking/schema";
 import { trackEvent } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 import { ptBR } from "date-fns/locale";
+import { parseAsString, useQueryStates } from "nuqs";
 
 const DRAFT_STORAGE_KEY = "oftagenda:booking-draft:v1";
 
@@ -57,9 +58,17 @@ export function BookingForm({
   const timeSectionRef = useRef<HTMLDivElement | null>(null);
   const locationListRef = useRef<HTMLDivElement | null>(null);
 
-  const [location, setLocation] = useState<BookingPayload["location"] | "">("");
-  const [selectedDate, setSelectedDate] = useState("");
-  const [selectedTime, setSelectedTime] = useState("");
+  const [bookingParams, setBookingParams] = useQueryStates(
+    {
+      locationId: parseAsString,
+      date: parseAsString,
+      time: parseAsString,
+    },
+    {
+      history: "replace",
+      shallow: true,
+    },
+  );
   const [error, setError] = useState<string | null>(null);
   const [locations] = useState<BookingLocationOption[]>(initialLocations);
   const [isEmbedded, setIsEmbedded] = useState(embedMode);
@@ -67,14 +76,17 @@ export function BookingForm({
   const [isStartingBooking, startStartingBookingTransition] = useTransition();
   const [isDraftHydrated, setIsDraftHydrated] = useState(false);
   const [currentTimestamp, setCurrentTimestamp] = useState(() => Date.now());
+  const locationId = bookingParams.locationId ?? "";
+  const selectedDate = bookingParams.date ?? "";
+  const selectedTime = bookingParams.time ?? "";
 
-  const selectedLocation = locations.find((item) => item.value === location);
-  const hasLocation = Boolean(location);
-  const availability = location
-    ? (initialAvailabilityByLocation[location] ?? null)
+  const selectedLocation = locations.find((item) => item.value === locationId);
+  const hasLocation = Boolean(selectedLocation);
+  const availability = selectedLocation
+    ? (initialAvailabilityByLocation[selectedLocation.value] ?? null)
     : null;
-  const availabilityError = location
-    ? (initialAvailabilityErrorsByLocation[location] ?? null)
+  const availabilityError = selectedLocation
+    ? (initialAvailabilityErrorsByLocation[selectedLocation.value] ?? null)
     : null;
   const locationsError = initialLocationsError;
   const availableDates = availability?.dates ?? [];
@@ -96,7 +108,9 @@ export function BookingForm({
     return currentTimeSlots.filter((slot) => slot > currentTime);
   }, [currentTimestamp, currentTimeSlots, selectedDate]);
   const canPickTime = Boolean(hasLocation && selectedDate);
-  const hasSelection = Boolean(location && selectedDate && selectedTime);
+  const hasSelection = Boolean(
+    selectedLocation && selectedDate && selectedTime,
+  );
   const shouldShowTimeCard = Boolean(selectedDate);
   const availableDateSet = useMemo(
     () => new Set(availableDates.map((item) => item.isoDate)),
@@ -106,48 +120,65 @@ export function BookingForm({
   const lastAvailableDate =
     availableDates[availableDates.length - 1]?.isoDate ?? "";
 
-  function handleLocationChange(nextLocation: BookingPayload["location"]) {
-    trackEvent("select_city", { location: nextLocation });
-    setLocation(nextLocation);
-    setSelectedDate("");
-    setSelectedTime("");
+  useEffect(() => {
+    const legacyLocationId = searchParams.get("location");
+    if (locationId || !legacyLocationId) {
+      return;
+    }
+    void setBookingParams({ locationId: legacyLocationId });
+  }, [locationId, searchParams, setBookingParams]);
+
+  function handleLocationChange(nextLocationId: BookingPayload["location"]) {
+    trackEvent("select_city", { location: nextLocationId });
+    void setBookingParams({
+      locationId: nextLocationId,
+      date: null,
+      time: null,
+    });
     setError(null);
     scrollToSection(dateSectionRef);
   }
 
   function handleDateChange(nextDate: string) {
-    setSelectedDate(nextDate);
+    void setBookingParams({
+      date: nextDate,
+      time: null,
+    });
     setError(null);
     scrollToSection(timeSectionRef);
   }
 
   function handleTimeSelect(slot: string) {
-    setSelectedTime(slot);
+    void setBookingParams({ time: slot });
     setError(null);
   }
 
   useEffect(() => {
-    if (!location) {
+    if (!locationId) {
       return;
     }
 
-    const exists = locations.some((item) => item.value === location);
+    const exists = locations.some((item) => item.value === locationId);
     if (!exists) {
-      setLocation("");
-      setSelectedDate("");
-      setSelectedTime("");
+      void setBookingParams({
+        locationId: null,
+        date: null,
+        time: null,
+      });
     }
-  }, [location, locations]);
+  }, [locationId, locations, setBookingParams]);
 
   useEffect(() => {
     if (!selectedDate) {
-      setSelectedTime("");
+      if (selectedTime) {
+        void setBookingParams({ time: null });
+      }
       return;
     }
-    if (!filteredTimeSlots.includes(selectedTime)) {
-      setSelectedTime("");
+    if (selectedTime && !filteredTimeSlots.includes(selectedTime)) {
+      void setBookingParams({ time: null });
     }
-  }, [selectedDate, selectedTime, filteredTimeSlots]);
+  }, [selectedDate, selectedTime, filteredTimeSlots, setBookingParams]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -170,6 +201,10 @@ export function BookingForm({
     if (isDraftHydrated) {
       return;
     }
+    if (locationId || selectedDate || selectedTime) {
+      setIsDraftHydrated(true);
+      return;
+    }
 
     const draftRaw = window.localStorage.getItem(DRAFT_STORAGE_KEY);
     if (!draftRaw) {
@@ -185,14 +220,17 @@ export function BookingForm({
         return;
       }
 
-      const locationExists = locations.some((item) => item.value === draft.location);
+      const locationExists = locations.some(
+        (item) => item.value === draft.location,
+      );
       if (!locationExists) {
         window.localStorage.removeItem(DRAFT_STORAGE_KEY);
         setIsDraftHydrated(true);
         return;
       }
 
-      const availabilityForLocation = initialAvailabilityByLocation[draft.location];
+      const availabilityForLocation =
+        initialAvailabilityByLocation[draft.location];
       const draftDate =
         typeof draft.selectedDate === "string" ? draft.selectedDate : "";
       const dateOption = availabilityForLocation?.dates.find(
@@ -206,34 +244,44 @@ export function BookingForm({
           ? draft.selectedTime
           : "";
 
-      setLocation(draft.location);
-      setSelectedDate(restoredDate);
-      setSelectedTime(restoredTime);
+      void setBookingParams({
+        locationId: draft.location,
+        date: restoredDate || null,
+        time: restoredTime || null,
+      });
     } catch {
       window.localStorage.removeItem(DRAFT_STORAGE_KEY);
     } finally {
       setIsDraftHydrated(true);
     }
-  }, [initialAvailabilityByLocation, isDraftHydrated, locations]);
+  }, [
+    initialAvailabilityByLocation,
+    isDraftHydrated,
+    locationId,
+    locations,
+    selectedDate,
+    selectedTime,
+    setBookingParams,
+  ]);
 
   useEffect(() => {
     if (!isDraftHydrated) {
       return;
     }
 
-    if (!location) {
+    if (!locationId) {
       window.localStorage.removeItem(DRAFT_STORAGE_KEY);
       return;
     }
     window.localStorage.setItem(
       DRAFT_STORAGE_KEY,
       JSON.stringify({
-        location,
+        location: locationId,
         selectedDate,
         selectedTime,
       }),
     );
-  }, [isDraftHydrated, location, selectedDate, selectedTime]);
+  }, [isDraftHydrated, locationId, selectedDate, selectedTime]);
 
   useEffect(() => {
     if (!isEmbedded) {
@@ -300,15 +348,13 @@ export function BookingForm({
     }
     setError(null);
 
-    if (!location || !selectedDate || !selectedTime) {
+    if (!selectedLocation || !selectedDate || !selectedTime) {
       setError("Selecione local, data e horário para continuar.");
       return;
     }
 
     const summaryUrl = buildPreBookingSummaryUrl({
-      location,
-      locationLabel: selectedLocation?.label ?? location,
-      locationAddress: selectedLocation?.address ?? "",
+      locationId: selectedLocation.value,
       selectedDate,
       selectedTime,
     });
@@ -323,14 +369,14 @@ export function BookingForm({
       window.localStorage.setItem(
         DRAFT_STORAGE_KEY,
         JSON.stringify({
-          location,
+          location: selectedLocation.value,
           selectedDate,
           selectedTime,
         } satisfies BookingDraft),
       );
       startStartingBookingTransition(() => {
         trackEvent("start_booking", {
-          location,
+          location: selectedLocation.value,
           date: selectedDate,
           time: selectedTime,
           authenticated: false,
@@ -343,7 +389,7 @@ export function BookingForm({
     window.localStorage.removeItem(DRAFT_STORAGE_KEY);
     startStartingBookingTransition(() => {
       trackEvent("start_booking", {
-        location,
+        location: selectedLocation.value,
         date: selectedDate,
         time: selectedTime,
         authenticated: true,
@@ -389,7 +435,7 @@ export function BookingForm({
                       key={item.value}
                       className={cn(
                         "flex flex-wrap cursor-pointer items-center justify-between gap-3 rounded-xl border px-4 py-3 transition-colors sm:flex-nowrap",
-                        location === item.value
+                        locationId === item.value
                           ? "border-primary bg-primary/5"
                           : "border-border hover:bg-muted/30",
                       )}
@@ -398,7 +444,7 @@ export function BookingForm({
                         <RadioGroupItem
                           name="location"
                           value={item.value}
-                          checked={location === item.value}
+                          checked={locationId === item.value}
                           onChange={() => handleLocationChange(item.value)}
                         />
                         <span className="min-w-0 wrap-break-word">
@@ -599,22 +645,16 @@ export function BookingForm({
 }
 
 function buildPreBookingSummaryUrl({
-  location,
-  locationLabel,
-  locationAddress,
+  locationId,
   selectedDate,
   selectedTime,
 }: {
-  location: BookingPayload["location"];
-  locationLabel: string;
-  locationAddress: string;
+  locationId: BookingPayload["location"];
   selectedDate: string;
   selectedTime: string;
 }) {
   const params = new URLSearchParams({
-    location,
-    locationLabel,
-    locationAddress,
+    locationId,
     date: selectedDate,
     time: selectedTime,
   });

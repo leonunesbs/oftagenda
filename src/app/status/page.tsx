@@ -2,7 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { api } from "@convex/_generated/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getConvexHttpClient, getAuthenticatedConvexHttpClient, resolveConvexUrl } from "@/lib/convex-server";
-import { isClerkConfigured } from "@/lib/access";
+import { isClerkConfigured, requireAdmin } from "@/lib/access";
 import { headers } from "next/headers";
 
 type CheckStatus = "ok" | "warning" | "error";
@@ -59,6 +59,8 @@ async function probeUrl(url: string) {
 }
 
 export default async function StatusPage() {
+  await requireAdmin("/status");
+
   const checks: ServiceCheck[] = [];
   const envChecks: ServiceCheck[] = [];
   const now = new Date();

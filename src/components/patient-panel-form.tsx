@@ -47,6 +47,18 @@ type DriveOption = "sim" | "nao" | "nao_se_aplica";
 type ExtraTimeOption = "sim" | "parcial" | "nao";
 type LastDilationOption = TriagePayload["lastDilation"];
 type ContactPreferenceOption = "whatsapp" | "ligacao" | "email";
+type CommunicationStyleOption =
+  | "detalhado"
+  | "objetivo"
+  | "equilibrado"
+  | "a_confirmar";
+type AnxietyLevelOption = "baixa" | "moderada" | "alta";
+type DrinkPreferenceOption =
+  | "agua"
+  | "cafe"
+  | "cha"
+  | "sem_preferencia"
+  | "nao_deseja";
 
 const reasonOptions: MainReasonOption[] = [
   { value: "routine", label: "Consulta de rotina" },
@@ -120,6 +132,33 @@ const contactPreferenceOptions: Array<{
   { value: "email", label: "E-mail" },
 ];
 
+const communicationStyleOptions: Array<{
+  value: CommunicationStyleOption;
+  label: string;
+}> = [
+  { value: "detalhado", label: "Explicações detalhadas" },
+  { value: "objetivo", label: "Explicações objetivas" },
+  { value: "equilibrado", label: "Equilíbrio entre detalhe e objetividade" },
+  { value: "a_confirmar", label: "Prefiro decidir no dia" },
+];
+
+const anxietyLevelOptions: Array<{ value: AnxietyLevelOption; label: string }> = [
+  { value: "baixa", label: "Baixa ansiedade" },
+  { value: "moderada", label: "Ansiedade moderada" },
+  { value: "alta", label: "Ansiedade alta" },
+];
+
+const drinkPreferenceOptions: Array<{
+  value: DrinkPreferenceOption;
+  label: string;
+}> = [
+  { value: "agua", label: "Água" },
+  { value: "cafe", label: "Café" },
+  { value: "cha", label: "Chá" },
+  { value: "sem_preferencia", label: "Sem preferência" },
+  { value: "nao_deseja", label: "Não desejo bebida" },
+];
+
 function toggleArrayItem<T extends string>(
   values: T[],
   target: T,
@@ -147,7 +186,6 @@ export function PatientPanelForm({
   const consultationType = initialAppointment.consultationType;
   const [durationMinutes, setDurationMinutes] = useState("60");
   const status = initialAppointment.status;
-  const isBookedPatient = status === "confirmed" || status === "rescheduled";
 
   const [companionPlan, setCompanionPlan] =
     useState<CompanionOption>("a_confirmar");
@@ -170,6 +208,14 @@ export function PatientPanelForm({
   const [accessibilityNeeds, setAccessibilityNeeds] = useState("");
   const [continuousDrops, setContinuousDrops] = useState(false);
   const [isFirstConsultation, setIsFirstConsultation] = useState(false);
+  const [consultationFocus, setConsultationFocus] = useState("");
+  const [communicationStyle, setCommunicationStyle] =
+    useState<CommunicationStyleOption>("equilibrado");
+  const [anxietyLevel, setAnxietyLevel] = useState<AnxietyLevelOption>("baixa");
+  const [preferredMusic, setPreferredMusic] = useState("");
+  const [drinkPreference, setDrinkPreference] =
+    useState<DrinkPreferenceOption>("agua");
+  const [otherComfortPreference, setOtherComfortPreference] = useState("");
 
   useEffect(() => {
     const draftRaw = window.localStorage.getItem(DASHBOARD_STORAGE_KEY);
@@ -189,6 +235,12 @@ export function PatientPanelForm({
         accessibilityNeeds: string;
         continuousDrops: boolean;
         isFirstConsultation: boolean;
+        consultationFocus: string;
+        communicationStyle: CommunicationStyleOption;
+        anxietyLevel: AnxietyLevelOption;
+        preferredMusic: string;
+        drinkPreference: DrinkPreferenceOption;
+        otherComfortPreference: string;
       }>;
 
       if (typeof draft.durationMinutes === "string")
@@ -206,6 +258,16 @@ export function PatientPanelForm({
         setContinuousDrops(draft.continuousDrops);
       if (typeof draft.isFirstConsultation === "boolean")
         setIsFirstConsultation(draft.isFirstConsultation);
+      if (typeof draft.consultationFocus === "string")
+        setConsultationFocus(draft.consultationFocus);
+      if (draft.communicationStyle)
+        setCommunicationStyle(draft.communicationStyle);
+      if (draft.anxietyLevel) setAnxietyLevel(draft.anxietyLevel);
+      if (typeof draft.preferredMusic === "string")
+        setPreferredMusic(draft.preferredMusic);
+      if (draft.drinkPreference) setDrinkPreference(draft.drinkPreference);
+      if (typeof draft.otherComfortPreference === "string")
+        setOtherComfortPreference(draft.otherComfortPreference);
     } catch {
       window.localStorage.removeItem(DASHBOARD_STORAGE_KEY);
     }
@@ -229,6 +291,12 @@ export function PatientPanelForm({
         accessibilityNeeds,
         continuousDrops,
         isFirstConsultation,
+        consultationFocus,
+        communicationStyle,
+        anxietyLevel,
+        preferredMusic,
+        drinkPreference,
+        otherComfortPreference,
       }),
     );
   }, [
@@ -247,6 +315,12 @@ export function PatientPanelForm({
     accessibilityNeeds,
     continuousDrops,
     isFirstConsultation,
+    consultationFocus,
+    communicationStyle,
+    anxietyLevel,
+    preferredMusic,
+    drinkPreference,
+    otherComfortPreference,
   ]);
 
   const dilatationResult = useMemo(
@@ -321,23 +395,11 @@ export function PatientPanelForm({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="date">Data</Label>
-                <Input
-                  id="date"
-                  type="date"
-                  value={date}
-                  readOnly
-                  disabled
-                />
+                <Input id="date" type="date" value={date} readOnly disabled />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="time">Horário</Label>
-                <Input
-                  id="time"
-                  type="time"
-                  value={time}
-                  readOnly
-                  disabled
-                />
+                <Input id="time" type="time" value={time} readOnly disabled />
               </div>
             </div>
 
@@ -352,7 +414,6 @@ export function PatientPanelForm({
                       durationMinutes === option.value ? "default" : "outline"
                     }
                     onClick={() => setDurationMinutes(option.value)}
-                    disabled={isBookedPatient}
                   >
                     {option.label}
                   </Button>
@@ -380,13 +441,10 @@ export function PatientPanelForm({
 
           <section className="space-y-4 rounded-xl border border-border/70 p-4">
             <h3 className="text-sm font-medium">Pré-consulta</h3>
-            {isBookedPatient ? (
-              <p className="text-xs text-muted-foreground">
-                Com a consulta marcada, os campos abaixo ficam bloqueados neste
-                painel. Para preencher ou atualizar a pré-consulta, use a página
-                de detalhes.
-              </p>
-            ) : null}
+            <p className="text-xs text-muted-foreground">
+              Coletamos apenas o que ajuda a personalizar o atendimento no dia:
+              logística, contexto clínico e preferências de comunicação.
+            </p>
 
             <div className="space-y-2">
               <Label>Acompanhante e direção</Label>
@@ -399,7 +457,6 @@ export function PatientPanelForm({
                       companionPlan === option.value ? "default" : "outline"
                     }
                     onClick={() => setCompanionPlan(option.value)}
-                    disabled={isBookedPatient}
                   >
                     {option.label}
                   </Button>
@@ -412,7 +469,6 @@ export function PatientPanelForm({
                     type="button"
                     variant={drivePlan === option.value ? "default" : "outline"}
                     onClick={() => setDrivePlan(option.value)}
-                    disabled={isBookedPatient}
                   >
                     {option.label}
                   </Button>
@@ -431,7 +487,6 @@ export function PatientPanelForm({
                       extraTimePlan === option.value ? "default" : "outline"
                     }
                     onClick={() => setExtraTimePlan(option.value)}
-                    disabled={isBookedPatient}
                   >
                     {option.label}
                   </Button>
@@ -445,7 +500,6 @@ export function PatientPanelForm({
                   id="hasExams"
                   checked={hasExams}
                   onChange={(event) => setHasExams(event.currentTarget.checked)}
-                  disabled={isBookedPatient}
                 />
                 <Label htmlFor="hasExams">Exames para levar</Label>
               </div>
@@ -453,15 +507,21 @@ export function PatientPanelForm({
                 value={examList}
                 onChange={(event) => setExamList(event.target.value)}
                 placeholder="Quais exames você tem para levar"
-                disabled={!hasExams || isBookedPatient}
-                readOnly={isBookedPatient}
+                disabled={!hasExams}
               />
             </div>
-            {isBookedPatient ? (
-              <Button variant="outline" asChild>
-                <Link href="/detalhes">Preencher pré-consulta</Link>
-              </Button>
-            ) : null}
+
+            <div className="space-y-2">
+              <Label htmlFor="consultationFocus">
+                Objetivo principal desta consulta
+              </Label>
+              <Textarea
+                id="consultationFocus"
+                value={consultationFocus}
+                onChange={(event) => setConsultationFocus(event.target.value)}
+                placeholder="Ex.: confirmar grau para dirigir à noite e revisar sensibilidade à luz."
+              />
+            </div>
           </section>
 
           <section className="space-y-4 rounded-xl border border-border/70 p-4">
@@ -660,7 +720,6 @@ export function PatientPanelForm({
                       contactPreference === option.value ? "default" : "outline"
                     }
                     onClick={() => setContactPreference(option.value)}
-                    disabled={isBookedPatient}
                   >
                     {option.label}
                   </Button>
@@ -677,8 +736,6 @@ export function PatientPanelForm({
                 value={accessibilityNeeds}
                 onChange={(event) => setAccessibilityNeeds(event.target.value)}
                 placeholder="Ex.: apoio de mobilidade, prioridade de acesso"
-                disabled={isBookedPatient}
-                readOnly={isBookedPatient}
               />
             </div>
 
@@ -689,7 +746,6 @@ export function PatientPanelForm({
                   onChange={(event) =>
                     setContinuousDrops(event.currentTarget.checked)
                   }
-                  disabled={isBookedPatient}
                 />
                 Uso de colírios contínuos
               </label>
@@ -699,11 +755,106 @@ export function PatientPanelForm({
                   onChange={(event) =>
                     setIsFirstConsultation(event.currentTarget.checked)
                   }
-                  disabled={isBookedPatient}
                 />
                 Primeira consulta com o médico
               </label>
             </div>
+
+            <details className="rounded-lg border border-border/70 p-3">
+              <summary className="cursor-pointer list-none text-sm font-medium">
+                Recursos adicionais (opcional)
+              </summary>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Preferências de conforto para tornar sua experiência mais
+                tranquila no consultório.
+              </p>
+
+              <div className="mt-4 space-y-4">
+                <div className="space-y-2">
+                  <Label>Como prefere receber explicações?</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {communicationStyleOptions.map((option) => (
+                      <Button
+                        key={option.value}
+                        type="button"
+                        variant={
+                          communicationStyle === option.value
+                            ? "default"
+                            : "outline"
+                        }
+                        onClick={() => setCommunicationStyle(option.value)}
+                      >
+                        {option.label}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Nível de ansiedade para o atendimento</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {anxietyLevelOptions.map((option) => (
+                      <Button
+                        key={option.value}
+                        type="button"
+                        variant={
+                          anxietyLevel === option.value ? "default" : "outline"
+                        }
+                        onClick={() => setAnxietyLevel(option.value)}
+                      >
+                        {option.label}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="preferredMusic">
+                    Música ou estilo musical preferido
+                  </Label>
+                  <Input
+                    id="preferredMusic"
+                    value={preferredMusic}
+                    onChange={(event) => setPreferredMusic(event.target.value)}
+                    placeholder="Ex.: instrumental, MPB, ambiente silencioso"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Preferência de bebida</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {drinkPreferenceOptions.map((option) => (
+                      <Button
+                        key={option.value}
+                        type="button"
+                        variant={
+                          drinkPreference === option.value
+                            ? "default"
+                            : "outline"
+                        }
+                        onClick={() => setDrinkPreference(option.value)}
+                      >
+                        {option.label}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="otherComfortPreference">
+                    Outra preferência de conforto
+                  </Label>
+                  <Textarea
+                    id="otherComfortPreference"
+                    value={otherComfortPreference}
+                    onChange={(event) =>
+                      setOtherComfortPreference(event.target.value)
+                    }
+                    placeholder="Ex.: prefiro aguardar em local com menos luz ou com acompanhante."
+                  />
+                </div>
+              </div>
+            </details>
           </section>
         </CardContent>
       </Card>

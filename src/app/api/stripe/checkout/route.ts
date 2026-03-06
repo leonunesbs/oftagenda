@@ -62,6 +62,14 @@ export async function POST(request: Request) {
 
       const desiredHoldExpiresAt =
         draft.holdExpiresAt ?? Date.now() + CHECKOUT_SESSION_DURATION_SECONDS * 1000;
+      const successParams = new URLSearchParams({
+        payment: "success",
+        session_id: "{CHECKOUT_SESSION_ID}",
+        location: parsed.data.location,
+        date: parsed.data.date,
+        time: parsed.data.time,
+      });
+
       const session = await stripe.checkout.sessions.create({
         expires_at: Math.floor(desiredHoldExpiresAt / 1000),
         mode: "payment",
@@ -77,7 +85,7 @@ export async function POST(request: Request) {
             time: parsed.data.time,
           },
         },
-        success_url: `${origin}/dashboard?payment=success&session_id={CHECKOUT_SESSION_ID}`,
+        success_url: `${origin}/dashboard?${successParams.toString()}`,
         cancel_url: `${origin}/agendar/resumo?${cancelParams.toString()}`,
         metadata: {
           reservationId: String(draft.reservationId),

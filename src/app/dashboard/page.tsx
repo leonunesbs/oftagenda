@@ -10,7 +10,29 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { getAuthenticatedConvexHttpClient } from "@/lib/convex-server";
 
-export default async function DashboardPage() {
+type DashboardPageProps = {
+  searchParams?:
+    | Promise<{
+        payment?: string;
+        location?: string;
+        date?: string;
+        time?: string;
+      }>
+    | {
+        payment?: string;
+        location?: string;
+        date?: string;
+        time?: string;
+      };
+};
+
+export default async function DashboardPage({ searchParams }: DashboardPageProps) {
+  const params = (await searchParams) ?? {};
+  const payment = params.payment ?? "";
+  const locationFromParams = params.location ?? "";
+  const dateFromParams = params.date ?? "";
+  const timeFromParams = params.time ?? "";
+  const paymentJustSucceeded = payment === "success";
   const authData = await auth();
   const role = await getUserRoleFromClerkAuth(authData);
   const isAdmin = role === "admin";
@@ -73,6 +95,22 @@ export default async function DashboardPage() {
 
   const bookingConfirmed = dashboardState.hasConfirmedBooking;
   const nextAppointment = dashboardState.nextAppointment;
+  const appointmentStart = resolveAppointmentStart({
+    nextAppointmentTimestamp: nextAppointment?.scheduledFor,
+    dateFromParams,
+    timeFromParams,
+  });
+  const appointmentLocation = nextAppointment?.location || locationFromParams || "Local a confirmar";
+  const calendarLinks = appointmentStart
+    ? buildCalendarLinks({
+        title: "Consulta com Dr Leonardo",
+        description:
+          "Sua consulta está confirmada. Se precisar, entre em contato pelo WhatsApp para confirmar ou reagendar.",
+        location: appointmentLocation,
+        startsAt: appointmentStart,
+        durationMinutes: 60,
+      })
+    : null;
   const initialPanelData = {
     location: nextAppointment?.location ?? "",
     date: nextAppointment?.scheduledFor
@@ -102,6 +140,36 @@ export default async function DashboardPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
+          {paymentJustSucceeded ? (
+            <div className="space-y-3 rounded-xl border border-emerald-500/40 bg-emerald-500/5 p-4">
+              <h3 className="font-medium text-emerald-900 dark:text-emerald-200">
+                Pagamento confirmado! Seja muito bem-vindo(a).
+              </h3>
+              <p className="text-sm text-emerald-800/90 dark:text-emerald-200/90">
+                Sua consulta foi reservada com sucesso. Agora começa a melhor parte: aquela expectativa boa
+                para chegar logo o dia de cuidar da sua visão.
+              </p>
+              {calendarLinks ? (
+                <div className="flex flex-wrap gap-2">
+                  <Button asChild size="sm">
+                    <Link href={calendarLinks.googleCalendarHref} target="_blank" rel="noreferrer">
+                      Salvar no Google Agenda
+                    </Link>
+                  </Button>
+                  <Button asChild size="sm" variant="outline">
+                    <a href={calendarLinks.icsHref} download="consulta-dr-leonardo.ics">
+                      Salvar no calendário do celular
+                    </a>
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-xs text-emerald-800/80 dark:text-emerald-200/80">
+                  Assim que os dados da consulta estiverem disponíveis, você poderá salvar no calendário.
+                </p>
+              )}
+            </div>
+          ) : null}
+
           {isAdmin ? (
             <div className="space-y-3 rounded-xl border border-border p-4">
               <h3 className="font-medium">Acesso administrativo</h3>
@@ -190,4 +258,100 @@ export default async function DashboardPage() {
       </Card>
     </section>
   );
+}
+
+function resolveAppointmentStart({
+  nextAppointmentTimestamp,
+  dateFromParams,
+  timeFromParams,
+}: {
+  nextAppointmentTimestamp?: number;
+  dateFromParams: string;
+  timeFromParams: string;
+}) {
+  if (typeof nextAppointmentTimestamp === "number") {
+    return new Date(nextAppointmentTimestamp);
+  }
+
+  const dateMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateFromParams);
+  const timeMatch = /^(\d{2}):(\d{2})$/.exec(timeFromParams);
+  if (!dateMatch || !timeMatch) {
+    return null;
+  }
+
+  const [, year, month, day] = dateMatch;
+  const [, hour, minute] = timeMatch;
+  return new Date(
+    Number(year),
+    Number(month) - 1,
+    Number(day),
+    Number(hour),
+    Number(minute),
+    0,
+    0,
+  );
+}
+
+function buildCalendarLinks({
+  title,
+  description,
+  location,
+  startsAt,
+  durationMinutes,
+}: {
+  title: string;
+  description: string;
+  location: string;
+  startsAt: Date;
+  durationMinutes: number;
+}) {
+  const endsAt = new Date(startsAt.getTime() + durationMinutes * 60 * 1000);
+  const startCalendar = formatCalendarDate(startsAt);
+  const endCalendar = formatCalendarDate(endsAt);
+  const googleParams = new URLSearchParams({
+    action: "TEMPLATE",
+    text: title,
+    details: description,
+    location,
+    dates: `${startCalendar}/${endCalendar}`,
+  });
+
+  const icsContent = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//oftagenda//Booking Calendar//PT-BR",
+    "BEGIN:VEVENT",
+    `UID:${createIcsUid(startsAt)}@oftagenda`,
+    `DTSTAMP:${formatCalendarDate(new Date())}`,
+    `DTSTART:${startCalendar}`,
+    `DTEND:${endCalendar}`,
+    `SUMMARY:${escapeIcsText(title)}`,
+    `DESCRIPTION:${escapeIcsText(description)}`,
+    `LOCATION:${escapeIcsText(location)}`,
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ].join("\r\n");
+
+  return {
+    googleCalendarHref: `https://calendar.google.com/calendar/render?${googleParams.toString()}`,
+    icsHref: `data:text/calendar;charset=utf-8,${encodeURIComponent(icsContent)}`,
+  };
+}
+
+function formatCalendarDate(date: Date) {
+  const year = String(date.getFullYear());
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hour = String(date.getHours()).padStart(2, "0");
+  const minute = String(date.getMinutes()).padStart(2, "0");
+  const second = String(date.getSeconds()).padStart(2, "0");
+  return `${year}${month}${day}T${hour}${minute}${second}`;
+}
+
+function createIcsUid(startsAt: Date) {
+  return `consulta-${startsAt.getTime()}`;
+}
+
+function escapeIcsText(value: string) {
+  return value.replaceAll("\\", "\\\\").replaceAll(";", "\\;").replaceAll(",", "\\,").replaceAll("\n", "\\n");
 }

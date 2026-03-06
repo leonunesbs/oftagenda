@@ -2,6 +2,7 @@ import Link from "next/link";
 import { buildAvailabilityGroups, getAdminSnapshot } from "@/app/dashboard/admin/_lib/admin-dashboard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export default async function AdminAvailabilityPage() {
   const data = await getAdminSnapshot();
@@ -19,21 +20,33 @@ export default async function AdminAvailabilityPage() {
             <Link href="/dashboard/admin/nova-disponibilidade">Nova disponibilidade</Link>
           </Button>
         </div>
-        <div className="grid gap-2 md:grid-cols-2">
-          {availabilityGroups.map((group) => (
-            <div key={`availability-card-${group.representativeId}`} className="rounded-lg border p-3">
-              <p className="text-sm font-medium">{group.name}</p>
-              <p className="text-xs text-muted-foreground">
-                {group.slots.length} faixa(s) - {group.slots[0]?.timezone ?? "sem timezone"}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Vinculado a {group.linkedEventsCount.toString()} evento(s)
-              </p>
-              <Button className="mt-3" size="sm" variant="outline" asChild>
-                <Link href={`/dashboard/admin/disponibilidade/${group.representativeId}`}>Editar horários</Link>
-              </Button>
-            </div>
-          ))}
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Grupo</TableHead>
+                <TableHead>Faixas</TableHead>
+                <TableHead>Timezone</TableHead>
+                <TableHead>Eventos vinculados</TableHead>
+                <TableHead className="w-[140px]">Ação</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {availabilityGroups.map((group) => (
+                <TableRow key={`availability-row-${group.representativeId}`}>
+                  <TableCell className="font-medium">{group.name}</TableCell>
+                  <TableCell>{group.slots.length}</TableCell>
+                  <TableCell>{group.slots[0]?.timezone ?? "sem timezone"}</TableCell>
+                  <TableCell>{group.linkedEventsCount.toString()}</TableCell>
+                  <TableCell>
+                    <Button size="sm" variant="outline" asChild>
+                      <Link href={`/dashboard/admin/disponibilidade/${group.representativeId}`}>Editar horários</Link>
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
         {availabilityGroups.length === 0 ? (
           <p className="text-xs text-muted-foreground">Nenhuma disponibilidade cadastrada.</p>

@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export default async function AdminPaymentsPage() {
   const data = await getAdminSnapshot();
@@ -36,7 +37,7 @@ export default async function AdminPaymentsPage() {
             <form action={createPaymentAction} className="grid gap-2 rounded-lg border p-3">
               <Label htmlFor="payment-reservationId">ID da reserva (opcional)</Label>
               <Input id="payment-reservationId" name="reservationId" placeholder="ex: j57..." />
-              <Label htmlFor="payment-clerkUserId">ID de usuario Clerk (se nao houver reserva)</Label>
+              <Label htmlFor="payment-clerkUserId">ID de usuário Clerk (se não houver reserva)</Label>
               <Input id="payment-clerkUserId" name="clerkUserId" placeholder="user_..." />
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-2">
@@ -63,37 +64,53 @@ export default async function AdminPaymentsPage() {
                 </select>
               </div>
               <Input name="externalId" placeholder="ID externo opcional" />
-              <Input name="notes" placeholder="Observacao opcional" />
+              <Input name="notes" placeholder="Observação opcional" />
               <Button type="submit">Salvar pagamento</Button>
             </form>
           </DialogContent>
         </Dialog>
 
-        <div className="space-y-2">
-          {data.payments.map((payment) => (
-            <div key={payment._id} className="rounded-lg border p-3">
-              <div className="mb-2 flex items-center justify-between gap-2">
-                <p className="font-medium">{formatMoney(payment.amountCents, payment.currency)}</p>
-                <Badge variant={payment.status === "paid" ? "default" : "outline"}>{payment.status}</Badge>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {payment.method} - {payment.currency} - usuário {payment.clerkUserId}
-              </p>
-              <form action={setPaymentStatusAction} className="mt-2 grid gap-2">
-                <input type="hidden" name="paymentId" value={payment._id} />
-                <select name="status" className={selectClassName} defaultValue={payment.status}>
-                  <option value="pending">pending</option>
-                  <option value="paid">paid</option>
-                  <option value="refunded">refunded</option>
-                  <option value="failed">failed</option>
-                </select>
-                <Input name="notes" defaultValue={payment.notes ?? ""} placeholder="Observação" />
-                <Button size="sm" type="submit">
-                  Atualizar pagamento
-                </Button>
-              </form>
-            </div>
-          ))}
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Valor</TableHead>
+                <TableHead>Método</TableHead>
+                <TableHead>Usuário</TableHead>
+                <TableHead>Status atual</TableHead>
+                <TableHead className="w-[280px]">Atualizar</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.payments.map((payment) => (
+                <TableRow key={payment._id}>
+                  <TableCell className="font-medium">{formatMoney(payment.amountCents, payment.currency)}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {payment.method} / {payment.currency}
+                  </TableCell>
+                  <TableCell className="text-xs">{payment.clerkUserId}</TableCell>
+                  <TableCell>
+                    <Badge variant={payment.status === "paid" ? "default" : "outline"}>{payment.status}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <form action={setPaymentStatusAction} className="grid gap-2">
+                      <input type="hidden" name="paymentId" value={payment._id} />
+                      <select name="status" className={selectClassName} defaultValue={payment.status}>
+                        <option value="pending">pending</option>
+                        <option value="paid">paid</option>
+                        <option value="refunded">refunded</option>
+                        <option value="failed">failed</option>
+                      </select>
+                      <Input name="notes" defaultValue={payment.notes ?? ""} placeholder="Observação" />
+                      <Button size="sm" type="submit">
+                        Atualizar
+                      </Button>
+                    </form>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       </CardContent>
     </Card>

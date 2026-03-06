@@ -44,7 +44,7 @@ export async function getBookingBootstrapData(options?: {
     locations = Array.isArray(response) ? (response as BookingLocationOption[]) : [];
   } catch (error) {
     locationsError =
-      error instanceof Error ? error.message : "Falha ao carregar eventos disponiveis.";
+      error instanceof Error ? error.message : "Falha ao carregar eventos disponíveis.";
   }
 
   const availabilityByLocation: Record<string, LocationAvailabilityResponse> = {};

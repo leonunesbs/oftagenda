@@ -19,11 +19,11 @@ import { Switch } from "@/components/ui/switch";
 const weekdayLongLabels = [
   "Domingo",
   "Segunda-feira",
-  "Terca-feira",
+  "Terça-feira",
   "Quarta-feira",
   "Quinta-feira",
   "Sexta-feira",
-  "Sabado",
+  "Sábado",
 ];
 
 type SlotInputState = {
@@ -181,19 +181,19 @@ export function AdminAvailabilityCreateDialog({
         <DialogHeader>
           <DialogTitle>Cadastrar disponibilidade</DialogTitle>
           <DialogDescription>
-            Defina o nome e ative os dias da semana com Switch. Em cada dia ativo, configure um ou varios horários.
+            Defina o nome e ative os dias da semana com o Switch. Em cada dia ativo, configure um ou vários horários.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <Input
             value={groupName}
             onChange={(event) => setGroupName(event.target.value)}
-            placeholder="Ex.: Manha clinica / Semana A"
+            placeholder="Ex.: Manhã clínica / Semana A"
           />
           <Input
             value={groupTimezone}
             onChange={(event) => setGroupTimezone(event.target.value)}
-            placeholder="Timezone unica (ex.: America/Fortaleza)"
+            placeholder="Timezone única (ex.: America/Fortaleza)"
           />
           <div className="max-h-[58vh] space-y-3 overflow-y-auto pr-1">
             {days.map((day, weekday) => (
@@ -209,7 +209,7 @@ export function AdminAvailabilityCreateDialog({
                         checked={day.allowMultiple}
                         onCheckedChange={(checked) => setAllowMultiple(weekday, Boolean(checked))}
                       />
-                      <p className="text-xs text-muted-foreground">Multiplos horários</p>
+                      <p className="text-xs text-muted-foreground">Múltiplos horários</p>
                     </div>
                   ) : null}
                 </div>

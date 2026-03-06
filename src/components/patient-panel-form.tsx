@@ -478,7 +478,6 @@ export function PatientPanelForm({
                     type="button"
                     variant={reason === option.value ? "default" : "outline"}
                     onClick={() => setReason(option.value)}
-                    disabled={isBookedPatient}
                   >
                     {option.label}
                   </Button>
@@ -510,7 +509,6 @@ export function PatientPanelForm({
                             ),
                           )
                         }
-                        disabled={isBookedPatient}
                       />
                       <span>{option.label}</span>
                     </label>
@@ -543,7 +541,6 @@ export function PatientPanelForm({
                             ),
                           )
                         }
-                        disabled={isBookedPatient}
                       />
                       <span>{option.label}</span>
                     </label>
@@ -563,7 +560,6 @@ export function PatientPanelForm({
                       lastDilation === option.value ? "default" : "outline"
                     }
                     onClick={() => setLastDilation(option.value)}
-                    disabled={isBookedPatient}
                   >
                     {option.label}
                   </Button>
@@ -581,8 +577,6 @@ export function PatientPanelForm({
                 value={oneSentenceSummary}
                 onChange={(event) => setOneSentenceSummary(event.target.value)}
                 placeholder="Resumo rápido da principal queixa"
-                disabled={isBookedPatient}
-                readOnly={isBookedPatient}
               />
             </div>
           </section>

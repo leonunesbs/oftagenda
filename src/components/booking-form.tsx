@@ -362,7 +362,7 @@ export function BookingForm({
     if (!isAuthenticated) {
       if (!clerkEnabled) {
         setError(
-          "Nao foi possivel iniciar o login agora. Tente novamente em instantes.",
+          "Não foi possível iniciar o login agora. Tente novamente em instantes.",
         );
         return;
       }
@@ -419,9 +419,9 @@ export function BookingForm({
             <div className="space-y-1">
               <Label>1. Escolha o local de atendimento</Label>
               <p className="text-xs text-muted-foreground">
-                Escolha o local onde voce deseja ser atendido para visualizar as
-                datas e horários disponiveis. Estamos aqui para tornar seu
-                agendamento simples, rapido e tranquilo.
+                Escolha o local onde você deseja ser atendido para visualizar as
+                datas e horários disponíveis. Estamos aqui para tornar seu
+                agendamento simples, rápido e tranquilo.
               </p>
             </div>
             {locations.length > 0 ? (
@@ -462,7 +462,7 @@ export function BookingForm({
               </div>
             ) : (
               <p className="rounded-xl border border-dashed border-border/70 p-3 text-xs text-muted-foreground">
-                Nenhum evento ativo disponivel para agendamento.
+                Nenhum evento ativo disponível para agendamento.
               </p>
             )}
             {locationsError ? (
@@ -481,7 +481,7 @@ export function BookingForm({
               <Label>2. Escolha a data</Label>
               <p className="text-xs text-muted-foreground">
                 {hasLocation
-                  ? "Selecione no calendario um dia disponivel para este local."
+                  ? "Selecione no calendário um dia disponível para este local."
                   : "Primeiro selecione o evento."}
               </p>
             </div>
@@ -557,7 +557,7 @@ export function BookingForm({
             !availabilityError &&
             availableDates.length === 0 ? (
               <p className="text-xs text-muted-foreground">
-                Nao ha datas disponiveis para este local.
+                Não há datas disponíveis para este local.
               </p>
             ) : null}
           </section>
@@ -585,7 +585,7 @@ export function BookingForm({
                 <Label>3. Escolha o horário</Label>
                 <p className="text-xs text-muted-foreground">
                   {canPickTime
-                    ? `Horários disponiveis para ${selectedLocation?.label}.`
+                    ? `Horários disponíveis para ${selectedLocation?.label}.`
                     : "Selecione evento e data para carregar os horários abaixo."}
                 </p>
               </div>
@@ -606,7 +606,7 @@ export function BookingForm({
 
               {canPickTime && filteredTimeSlots.length === 0 ? (
                 <p className="text-xs text-muted-foreground">
-                  Nao ha horários livres para esta data.
+                  Não há horários livres para esta data.
                 </p>
               ) : null}
 

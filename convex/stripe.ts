@@ -68,6 +68,13 @@ export const createCheckoutDraft = mutation({
         item.startsAt === slotTimestamp &&
         item.status === "pending",
     );
+    await assertCanCreateNewBookingDraft(
+      ctx,
+      identity.subject,
+      existingReservations,
+      existingDraft?._id ?? null,
+      now,
+    );
 
     let reservationId: Id<"reservations">;
     if (existingDraft) {
@@ -703,6 +710,42 @@ async function findOrCreatePatient(
     throw new Error("Falha ao criar paciente.");
   }
   return patient;
+}
+
+async function assertCanCreateNewBookingDraft(
+  ctx: MutationCtx,
+  clerkUserId: string,
+  reservations: Doc<"reservations">[],
+  allowedReservationId: Id<"reservations"> | null,
+  now: number,
+) {
+  const appointments = await ctx.db
+    .query("appointments")
+    .withIndex("by_clerk_user_id", (q) => q.eq("clerkUserId", clerkUserId))
+    .collect();
+  const hasActiveAppointment = appointments.some(
+    (item) => item.status === "confirmed" || item.status === "rescheduled",
+  );
+  if (hasActiveAppointment) {
+    throw new Error(
+      "Você já possui um agendamento ativo. Use o painel para remarcação, sem criar novo agendamento.",
+    );
+  }
+
+  const hasOtherPendingReservation = reservations.some((item) => {
+    if (item.status !== "pending" || getReservationHoldExpiresAt(item) <= now) {
+      return false;
+    }
+    if (allowedReservationId && item._id === allowedReservationId) {
+      return false;
+    }
+    return true;
+  });
+  if (hasOtherPendingReservation) {
+    throw new Error(
+      "Você já possui um agendamento aguardando remarcação. Finalize ou cancele o pendente atual.",
+    );
+  }
 }
 
 function resolveAvailabilityGroupName(availability: { name?: string; _id?: unknown } | undefined) {

@@ -36,6 +36,7 @@ export const confirmBooking = mutation({
 
     const now = Date.now();
     const clerkUserId = identity.subject;
+    await assertCanCreateNewBooking(ctx, clerkUserId, now);
     const patient = await findOrCreatePatient(ctx, clerkUserId, args.name, args.phone, args.email, now);
 
     const activeEventTypes = await ctx.db
@@ -524,6 +525,37 @@ async function findOrCreatePatient(
   return created as Doc<"patients">;
 }
 
+async function assertCanCreateNewBooking(ctx: MutationCtx, clerkUserId: string, now: number) {
+  const [appointments, reservations] = await Promise.all([
+    ctx.db
+      .query("appointments")
+      .withIndex("by_clerk_user_id", (q) => q.eq("clerkUserId", clerkUserId))
+      .collect(),
+    ctx.db
+      .query("reservations")
+      .withIndex("by_clerk_user_id", (q) => q.eq("clerkUserId", clerkUserId))
+      .collect(),
+  ]);
+
+  const hasActiveAppointment = appointments.some(
+    (item) => item.status === "confirmed" || item.status === "rescheduled",
+  );
+  if (hasActiveAppointment) {
+    throw new Error(
+      "Você já possui um agendamento ativo. Use o painel para remarcação, sem criar novo agendamento.",
+    );
+  }
+
+  const hasPendingReschedule = reservations.some(
+    (item) => item.status === "pending" && getReservationHoldExpiresAt(item) > now,
+  );
+  if (hasPendingReschedule) {
+    throw new Error(
+      "Você já possui um agendamento aguardando remarcação. Finalize ou cancele o pendente atual.",
+    );
+  }
+}
+
 function clampDaysAhead(value: number) {
   if (value < 1) {
     return 1;
@@ -571,7 +603,7 @@ async function buildReschedulePolicy(
   if (scheduledFor - now < RESCHEDULE_MIN_NOTICE_MS) {
     return {
       canReschedule: false,
-      reason: "Remarcação disponível somente até 24h antes da consulta.",
+      reason: "Remarcação disponível somente a partir de 24h de antecedência da consulta.",
       maxReschedules: RESCHEDULE_MAX_PER_APPOINTMENT,
       reschedulesUsed,
       minNoticeHours: 24,
@@ -748,7 +780,7 @@ function assertRescheduleWindow(slotTimestamp: number, now: number) {
     throw new Error("Novo horário inválido para remarcação.");
   }
   if (slotTimestamp - now < RESCHEDULE_MIN_NOTICE_MS) {
-    throw new Error("Escolha um horário com pelo menos 24h de antecedência.");
+    throw new Error("Escolha um horário com no mínimo 24h de antecedência.");
   }
   const maxAllowedTimestamp = now + RESCHEDULE_MAX_DAYS_AHEAD * 24 * 60 * 60_000;
   if (slotTimestamp > maxAllowedTimestamp) {

@@ -26,11 +26,11 @@ import { Switch } from "@/components/ui/switch";
 const weekdayLongLabels = [
   "Domingo",
   "Segunda-feira",
-  "Terca-feira",
+  "Terça-feira",
   "Quarta-feira",
   "Quinta-feira",
   "Sexta-feira",
-  "Sabado",
+  "Sábado",
 ];
 
 type SlotInputState = {
@@ -296,7 +296,7 @@ export function AdminAvailabilityEditor({
       return;
     }
     if (!overrideAllDayUnavailable && overrideSlots.length === 0) {
-      setOverrideFeedback({ type: "error", message: "Adicione pelo menos um horário para a substituicao." });
+      setOverrideFeedback({ type: "error", message: "Adicione pelo menos um horário para a substituição." });
       return;
     }
 
@@ -319,17 +319,17 @@ export function AdminAvailabilityEditor({
           ),
         );
         await upsertAvailabilityDateOverridesAction(formData);
-        setOverrideFeedback({ type: "success", message: "Substituicao salva com sucesso." });
+        setOverrideFeedback({ type: "success", message: "Substituição salva com sucesso." });
         router.refresh();
       } catch (error) {
-        const message = error instanceof Error ? error.message : "Falha ao salvar substituicao.";
+        const message = error instanceof Error ? error.message : "Falha ao salvar substituição.";
         setOverrideFeedback({ type: "error", message });
       }
     });
   }
 
   function deleteOverride(overrideId: string) {
-    const shouldDelete = window.confirm("Tem certeza que deseja excluir esta substituicao de data?");
+    const shouldDelete = window.confirm("Tem certeza de que deseja excluir esta substituição de data?");
     if (!shouldDelete) {
       return;
     }
@@ -342,7 +342,7 @@ export function AdminAvailabilityEditor({
         await deleteAvailabilityDateOverrideAction(formData);
         router.refresh();
       } catch (error) {
-        const message = error instanceof Error ? error.message : "Falha ao excluir substituicao por data.";
+        const message = error instanceof Error ? error.message : "Falha ao excluir substituição por data.";
         setOverrideFeedback({ type: "error", message });
       } finally {
         setDeletingOverrideId(null);
@@ -411,7 +411,7 @@ export function AdminAvailabilityEditor({
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-2">
         <p className="text-xs text-muted-foreground">
-          Dias com faixas configuradas: {flattenedDayCount}. Use o botao + para adicionar novos horários no mesmo dia.
+          Dias com faixas configuradas: {flattenedDayCount}. Use o botão + para adicionar novos horários no mesmo dia.
         </p>
         {showCreateButton ? (
           <Button size="sm" asChild>
@@ -420,7 +420,7 @@ export function AdminAvailabilityEditor({
         ) : null}
       </div>
 
-      {!hasGroups ? <p className="text-xs text-muted-foreground">Crie uma disponibilidade para comecar.</p> : null}
+      {!hasGroups ? <p className="text-xs text-muted-foreground">Crie uma disponibilidade para começar.</p> : null}
 
       {groupStates.map((group, groupIndex) => (
         <div key={`availability-editor-${group.name}`} className="space-y-4 rounded-lg border border-border/70 p-4">
@@ -434,7 +434,7 @@ export function AdminAvailabilityEditor({
                 value={group.timezone}
                 onChange={(event) => updateGroupTimezone(groupIndex, event.target.value)}
                 className="h-8 w-52"
-                placeholder="Timezone unica"
+                placeholder="Timezone única"
                 aria-label={`Timezone da disponibilidade ${group.name}`}
               />
               <p className="text-[11px] text-muted-foreground">
@@ -444,7 +444,7 @@ export function AdminAvailabilityEditor({
           </div>
           {(overridesByGroup[group.name] ?? []).length > 0 ? (
             <div className="space-y-2 rounded-lg border border-border/70 bg-muted/10 p-3">
-              <p className="text-xs font-medium">Substituicoes por data</p>
+              <p className="text-xs font-medium">Substituições por data</p>
               <div className="flex flex-wrap gap-2">
                 {(overridesByGroup[group.name] ?? []).slice(0, 12).map((override) => (
                   <div
@@ -453,7 +453,7 @@ export function AdminAvailabilityEditor({
                   >
                     <span>
                       {formatIsoDate(override.date)}{" "}
-                      {override.allDayUnavailable ? "(indisponivel)" : `${override.slots.length} faixa(s)`}
+                      {override.allDayUnavailable ? "(indisponível)" : `${override.slots.length} faixa(s)`}
                     </span>
                     <Button
                       type="button"
@@ -495,7 +495,7 @@ export function AdminAvailabilityEditor({
                             setAllowMultiple(groupIndex, weekday, Boolean(checked))
                           }
                         />
-                        <p className="text-xs text-muted-foreground">Multiplos horários</p>
+                        <p className="text-xs text-muted-foreground">Múltiplos horários</p>
                       </div>
                     ) : null}
                     <Button
@@ -545,7 +545,7 @@ export function AdminAvailabilityEditor({
                         updateSlot(groupIndex, weekday, slotIndex, { startTime: event.target.value })
                       }
                       title="Use formato 24h (HH:mm)"
-                      aria-label={`Inicio ${weekdayLongLabels[weekday]} ${slotIndex + 1}`}
+                      aria-label={`Início ${weekdayLongLabels[weekday]} ${slotIndex + 1}`}
                     />
                     <span className="hidden text-center text-sm text-muted-foreground xl:block">-</span>
                     <Input
@@ -604,7 +604,7 @@ export function AdminAvailabilityEditor({
           </DialogHeader>
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="space-y-3 rounded-lg border border-border/70 bg-muted/10 p-3">
-              <p className="text-sm font-medium">Datas da substituicao</p>
+              <p className="text-sm font-medium">Datas da substituição</p>
               <Calendar
                 mode="multiple"
                 locale={ptBR}
@@ -622,13 +622,13 @@ export function AdminAvailabilityEditor({
               )}
             </div>
             <div className="space-y-3 rounded-lg border border-border/70 bg-muted/10 p-3">
-              <p className="text-sm font-medium">Horários para substituir</p>
+              <p className="text-sm font-medium">Horários para substituição</p>
               <div className="flex items-center gap-2">
                 <Switch
                   checked={overrideAllDayUnavailable}
                   onCheckedChange={(checked) => setOverrideAllDayUnavailable(Boolean(checked))}
                 />
-                <p className="text-sm">Marcar indisponivel (o dia todo)</p>
+                <p className="text-sm">Marcar indisponível (o dia todo)</p>
               </div>
               {!overrideAllDayUnavailable
                 ? overrideSlots.map((slot, slotIndex) => (
@@ -705,7 +705,7 @@ export function AdminAvailabilityEditor({
               Fechar
             </Button>
             <Button type="button" onClick={saveOverrides} disabled={isOverridePending}>
-              {isOverridePending ? "Salvando..." : "Salvar substituicao"}
+              {isOverridePending ? "Salvando..." : "Salvar substituição"}
             </Button>
           </DialogFooter>
         </DialogContent>

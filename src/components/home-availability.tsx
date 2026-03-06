@@ -106,7 +106,7 @@ export function HomeAvailability() {
         const response = await fetch("/api/booking/locations");
         const data = await response.json();
         if (!response.ok || !data?.ok) {
-          throw new Error(data?.error ?? "Nao foi possivel carregar locais.");
+          throw new Error(data?.error ?? "Não foi possível carregar os locais.");
         }
 
         const locationsResponse = Array.isArray(data.locations) ? data.locations : [];
@@ -165,7 +165,7 @@ export function HomeAvailability() {
         const data = await response.json();
 
         if (!response.ok || !data?.ok) {
-          throw new Error(data?.error ?? "Nao foi possivel carregar as disponibilidades.");
+          throw new Error(data?.error ?? "Não foi possível carregar as disponibilidades.");
         }
 
         if (!cancelled) {
@@ -289,7 +289,7 @@ export function HomeAvailability() {
               {step.index + 1}. {step.title}
             </p>
             <p className="text-xs text-muted-foreground">
-              {step.done ? "Concluido" : activeSlide === step.index ? "Em andamento" : "Pendente"}
+              {step.done ? "Concluído" : activeSlide === step.index ? "Em andamento" : "Pendente"}
             </p>
           </button>
         ))}
@@ -315,7 +315,7 @@ export function HomeAvailability() {
                 <div className="space-y-1">
                   <Label>Locais de atendimento</Label>
                   <p className="text-xs text-muted-foreground">
-                    As datas e horários sao exibidos somente apos a selecao do local.
+                    As datas e os horários são exibidos somente após a seleção do local.
                   </p>
                 </div>
                 <RadioGroup>
@@ -345,7 +345,7 @@ export function HomeAvailability() {
                     onClick={() => carouselApi?.scrollTo(1)}
                     disabled={!hasLocation}
                   >
-                    Avancar para data
+                    Avançar para data
                   </Button>
                 </div>
               </CardContent>
@@ -360,7 +360,7 @@ export function HomeAvailability() {
                     <CardTitle className="text-base md:text-lg">2. Selecione a data</CardTitle>
                     <CardDescription>
                       {hasLocation
-                        ? "Escolha um dia disponivel para este local."
+                        ? "Escolha um dia disponível para este local."
                         : "Primeiro escolha o local para desbloquear as disponibilidades."}
                     </CardDescription>
                   </div>
@@ -375,7 +375,7 @@ export function HomeAvailability() {
                   disabled={!hasLocation}
                   aria-busy={isLoadingAvailability}
                 >
-                  <Label>Datas disponiveis</Label>
+                  <Label>Datas disponíveis</Label>
                   {isLoadingAvailability ? <p className="text-sm text-muted-foreground">Buscando agenda...</p> : null}
                   {availabilityError ? (
                     <p className="text-sm text-destructive">{availabilityError}</p>
@@ -412,7 +412,7 @@ export function HomeAvailability() {
                   ) : null}
                   {hasLocation && !isLoadingAvailability && !availabilityError && availableDates.length === 0 ? (
                     <p className="text-sm text-muted-foreground">
-                      Nao ha datas disponiveis para este local.
+                      Não há datas disponíveis para este local.
                     </p>
                   ) : null}
                 </fieldset>
@@ -425,7 +425,7 @@ export function HomeAvailability() {
                     onClick={() => carouselApi?.scrollTo(2)}
                     disabled={!selectedDate}
                   >
-                    Avancar para horário
+                    Avançar para horário
                   </Button>
                 </div>
               </CardContent>
@@ -455,7 +455,7 @@ export function HomeAvailability() {
                   disabled={!canPickTime}
                   aria-busy={isLoadingAvailability}
                 >
-                  <Label>Horários disponiveis</Label>
+                  <Label>Horários disponíveis</Label>
                   {isLoadingAvailability ? (
                     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                       {Array.from({ length: 6 }).map((_, index) => (
@@ -482,7 +482,7 @@ export function HomeAvailability() {
                   )}
                   {canPickTime && availableSlots.length === 0 ? (
                     <p className="text-sm text-muted-foreground">
-                      Nao ha horários livres para esta data.
+                      Não há horários livres para esta data.
                     </p>
                   ) : null}
                   {selectedTime ? (
@@ -492,7 +492,7 @@ export function HomeAvailability() {
                   ) : null}
                 </fieldset>
                 <div className="rounded-2xl border border-white/10 bg-background/35 p-4 text-sm text-muted-foreground">
-                  Atendimento presencial e online com confirmacao automatica.
+                  Atendimento presencial e online com confirmação automática.
                 </div>
                 <div className="flex flex-wrap justify-between gap-2">
                   <Button type="button" variant="outline" onClick={() => carouselApi?.scrollTo(1)}>

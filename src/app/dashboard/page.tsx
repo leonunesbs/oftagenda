@@ -140,6 +140,7 @@ export default async function DashboardPage({
   rematchBootstrap = await getBookingBootstrapData({ daysAhead: 30 });
 
   const bookingConfirmed = dashboardState.hasConfirmedBooking;
+  const hasPendingReschedule = dashboardState.pendingReservations.length > 0;
   const nextAppointment = dashboardState.nextAppointment;
   const appointmentStart = resolveAppointmentStart(nextAppointment?.scheduledFor);
   const appointmentLocation = nextAppointment?.location || "Local a confirmar";
@@ -237,6 +238,17 @@ export default async function DashboardPage({
 
           {bookingConfirmed ? (
             <PatientPanelForm initialAppointment={initialPanelData} />
+          ) : hasPendingReschedule ? (
+            <div className="space-y-4 rounded-xl border border-amber-500/40 bg-amber-500/5 p-4">
+              <h3 className="font-medium">Agendamento aguardando remarcação</h3>
+              <p className="text-sm text-muted-foreground">
+                Você já possui agendamento pendente. Enquanto ele estiver ativo,
+                não é possível criar um novo agendamento.
+              </p>
+              <Button asChild variant="outline">
+                <Link href="#agendamentos-pendentes">Ver pendentes</Link>
+              </Button>
+            </div>
           ) : (
             <div className="space-y-4 rounded-xl border border-border p-4">
               <h3 className="font-medium">Agendar consulta</h3>
@@ -281,7 +293,7 @@ export default async function DashboardPage({
 
           <Separator />
 
-          <div className="space-y-2">
+          <div id="agendamentos-pendentes" className="space-y-2">
             <h3 className="font-medium">Agendamentos pendentes</h3>
             <PendingReservationsList
               reservations={dashboardState.pendingReservations}

@@ -100,19 +100,20 @@ Para os dados de saude da triagem de dilatacao, o cliente cifra o payload antes 
 1. Gerar chave privada RSA 4096 (guardar em local seguro):
 
 ```bash
-openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:4096 -out triage-e2e-private.pem
+mkdir -p .secrets/triage-e2e
+openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:4096 -out .secrets/triage-e2e/private-key.pem
 ```
 
 2. Derivar chave publica:
 
 ```bash
-openssl rsa -pubout -in triage-e2e-private.pem -out triage-e2e-public.pem
+openssl rsa -pubout -in .secrets/triage-e2e/private-key.pem -out .secrets/triage-e2e/public-key.pem
 ```
 
 3. Converter a chave publica para DER/SPKI e base64 em uma linha:
 
 ```bash
-openssl pkey -pubin -in triage-e2e-public.pem -outform DER | base64 | tr -d '\n'
+openssl pkey -pubin -in .secrets/triage-e2e/public-key.pem -outform DER | base64 | tr -d '\n'
 ```
 
 4. Copiar a saida do comando acima para `NEXT_PUBLIC_TRIAGE_E2E_PUBLIC_KEY`.
@@ -123,12 +124,12 @@ openssl pkey -pubin -in triage-e2e-public.pem -outform DER | base64 | tr -d '\n'
 
 ```bash
 # opcao A: PEM escapado em uma linha
-awk 'NF {sub(/\r/, ""); printf "%s\\n",$0;}' triage-e2e-private.pem
+awk 'NF {sub(/\r/, ""); printf "%s\\n",$0;}' .secrets/triage-e2e/private-key.pem
 ```
 
 ```bash
 # opcao B: DER base64 em uma linha
-openssl pkey -in triage-e2e-private.pem -outform DER | base64 | tr -d '\n'
+openssl pkey -in .secrets/triage-e2e/private-key.pem -outform DER | base64 | tr -d '\n'
 ```
 
 ### Rotacao de chave

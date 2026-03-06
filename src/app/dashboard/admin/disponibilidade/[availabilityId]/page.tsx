@@ -20,7 +20,7 @@ export default async function AvailabilityDetailsPage({
     return (
       <section className="mx-auto w-full max-w-4xl space-y-4">
         <div className="flex items-center justify-between gap-2">
-          <h1 className="text-lg font-semibold">Disponibilidade nao encontrada</h1>
+          <h1 className="text-lg font-semibold">Disponibilidade não encontrada</h1>
           <Button asChild variant="outline" size="sm">
             <Link href="/dashboard/admin/disponibilidade">Voltar</Link>
           </Button>

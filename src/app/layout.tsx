@@ -126,9 +126,9 @@ export default function RootLayout({
           <ClerkProvider localization={ptBR}>
             <ConvexClientProvider>
               <TooltipProvider>
-                <div className="min-h-screen bg-background">
+                <div className="flex min-h-screen flex-col bg-background">
                   <AppHeader clerkEnabled />
-                  <main className="mx-auto w-full max-w-5xl px-4 py-10 md:px-6 md:py-14">{children}</main>
+                  <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10 md:px-6 md:py-14">{children}</main>
                   {legalFooter}
                   <AnalyticsPageview />
                   <AnalyticsConsent />
@@ -139,9 +139,9 @@ export default function RootLayout({
           </ClerkProvider>
         ) : (
           <TooltipProvider>
-            <div className="min-h-screen bg-background">
+            <div className="flex min-h-screen flex-col bg-background">
               <AppHeader clerkEnabled={false} />
-              <main className="mx-auto w-full max-w-5xl px-4 py-10 md:px-6 md:py-14">{children}</main>
+              <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10 md:px-6 md:py-14">{children}</main>
               {legalFooter}
               <AnalyticsPageview />
               <AnalyticsConsent />

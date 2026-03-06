@@ -6,6 +6,7 @@ import { auth } from "@clerk/nextjs/server";
 
 import { BookingFormContainer } from "@/components/booking-form-container";
 import { BookingFormFallback } from "@/components/booking-form-fallback";
+import { ScrollToIdButton } from "@/components/scroll-to-id-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 import { isClerkConfigured } from "@/lib/access";
@@ -113,9 +114,9 @@ export default async function HomePage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap items-center gap-3">
-            <Button asChild className="h-10 rounded-xl px-5 text-sm transition-transform duration-200 hover:-translate-y-0.5">
-              <Link href="#agendamento">Agendar</Link>
-            </Button>
+            <ScrollToIdButton className="h-10 rounded-xl px-5 text-sm transition-transform duration-200 hover:-translate-y-0.5" targetId="agendamento">
+              Agendar
+            </ScrollToIdButton>
             {clerkEnabled ? (
               <Button
                 variant="secondary"

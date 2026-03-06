@@ -51,11 +51,11 @@ export function StartCheckoutButton({
   }
 
   return (
-    <div className="flex flex-col items-end gap-2">
-      <Button type="button" onClick={handleStartCheckout} disabled={isLoading}>
+    <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
+      <Button type="button" onClick={handleStartCheckout} disabled={isLoading} className="w-full sm:w-auto">
         {isLoading ? "Redirecionando..." : label}
       </Button>
-      <p className="rounded-md border border-border/60 bg-muted/30 px-3 py-1.5 text-xs text-muted-foreground">
+      <p className="w-full rounded-md border border-border/60 bg-muted/30 px-3 py-1.5 text-center text-xs text-muted-foreground sm:w-auto sm:text-left">
         Link de pagamento e bloqueio do horário válidos por 30 minutos.
       </p>
       {error ? <p className="text-sm text-destructive">{error}</p> : null}

@@ -72,8 +72,8 @@ export default async function ResumoPreAgendamentoPage({
   const addressHref = locationAddress ? buildAddressHref(locationAddress) : "";
 
   return (
-    <section className="mx-auto w-full max-w-4xl">
-      <Card className="border-border/70 bg-card/95 shadow-sm">
+    <section className="mx-auto flex min-h-[55vh] w-full max-w-4xl items-center">
+      <Card className="w-full border-border/70 bg-card/95 shadow-sm">
         <CardHeader className="space-y-2">
           <CardTitle>Resumo do pré-agendamento</CardTitle>
           <CardDescription>
@@ -110,7 +110,7 @@ export default async function ResumoPreAgendamentoPage({
             </div>
           </div>
 
-          <div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-end">
+          <div className="flex w-full flex-col gap-2 border-t border-border/70 pt-4 sm:flex-row sm:items-start sm:justify-between">
             <Button asChild variant="outline" className="w-full sm:w-auto">
               <Link href="/agendar">Editar agendamento</Link>
             </Button>

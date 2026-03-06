@@ -30,4 +30,14 @@ export const triageSchema = z.object({
   oneSentenceSummary: z.string().trim().max(240).optional(),
 })
 
+export const encryptedTriagePayloadSchema = z.object({
+  version: z.literal("v1"),
+  algorithm: z.literal("RSA-OAEP/AES-GCM-256"),
+  keyVersion: z.string().trim().min(1).max(64),
+  wrappedKeyB64: z.string().trim().min(1),
+  ivB64: z.string().trim().min(1),
+  ciphertextB64: z.string().trim().min(1),
+})
+
 export type TriagePayload = z.infer<typeof triageSchema>
+export type EncryptedTriagePayload = z.infer<typeof encryptedTriagePayloadSchema>

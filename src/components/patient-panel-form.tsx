@@ -51,11 +51,11 @@ type ContactPreferenceOption = "whatsapp" | "ligacao" | "email";
 const reasonOptions: MainReasonOption[] = [
   { value: "routine", label: "Consulta de rotina" },
   { value: "glasses", label: "Atualizar grau" },
-  { value: "blurred", label: "Visao embacada" },
+  { value: "blurred", label: "Visão embaçada" },
   { value: "pain", label: "Dor ocular" },
   { value: "retina_follow", label: "Acompanhamento de retina" },
   { value: "glaucoma_follow", label: "Acompanhamento de glaucoma" },
-  { value: "postop", label: "Pos-operatorio" },
+  { value: "postop", label: "Pós-operatório" },
   { value: "other", label: "Outro" },
 ];
 
@@ -65,8 +65,8 @@ const conditionOptions: Array<{
 }> = [
   { value: "diabetes", label: "Diabetes" },
   { value: "glaucoma", label: "Glaucoma" },
-  { value: "prior_surgery", label: "Cirurgia ocular previa" },
-  { value: "hypertension", label: "Pressao alta" },
+  { value: "prior_surgery", label: "Cirurgia ocular prévia" },
+  { value: "hypertension", label: "Pressão alta" },
 ];
 
 const symptomOptions: Array<{
@@ -74,16 +74,16 @@ const symptomOptions: Array<{
   label: string;
 }> = [
   { value: "floaters", label: "Moscas volantes ou manchas" },
-  { value: "flashes", label: "Claroes" },
-  { value: "sudden_loss", label: "Perda subita de visao" },
+  { value: "flashes", label: "Clarões" },
+  { value: "sudden_loss", label: "Perda súbita de visão" },
 ];
 
 const lastDilationOptions: Array<{ value: LastDilationOption; label: string }> =
   [
-    { value: "lt6m", label: "Ha menos de 6 meses" },
+    { value: "lt6m", label: "Há menos de 6 meses" },
     { value: "6to12m", label: "Entre 6 e 12 meses" },
-    { value: "gt1y", label: "Ha mais de 1 ano" },
-    { value: "unknown", label: "Nao lembro" },
+    { value: "gt1y", label: "Há mais de 1 ano" },
+    { value: "unknown", label: "Não lembro" },
   ];
 
 const companionOptions: Array<{ value: CompanionOption; label: string }> = [
@@ -94,8 +94,8 @@ const companionOptions: Array<{ value: CompanionOption; label: string }> = [
 
 const driveOptions: Array<{ value: DriveOption; label: string }> = [
   { value: "sim", label: "Pretende dirigir" },
-  { value: "nao", label: "Nao pretende dirigir" },
-  { value: "nao_se_aplica", label: "Sem direcao no dia" },
+  { value: "nao", label: "Não pretende dirigir" },
+  { value: "nao_se_aplica", label: "Sem direção no dia" },
 ];
 
 const extraTimeOptions: Array<{ value: ExtraTimeOption; label: string }> = [
@@ -109,12 +109,6 @@ const durationOptions: MultiOption[] = [
   { value: "45", label: "45 minutos" },
   { value: "60", label: "60 minutos" },
   { value: "90", label: "90 minutos" },
-];
-
-const statusOptions: MultiOption[] = [
-  { value: "confirmed", label: "Confirmada" },
-  { value: "rescheduled", label: "Reagendada" },
-  { value: "pending", label: "A confirmar" },
 ];
 
 const contactPreferenceOptions: Array<{
@@ -147,14 +141,13 @@ function formatStatusLabel(status: string) {
 export function PatientPanelForm({
   initialAppointment,
 }: PatientPanelFormProps) {
-  const [location, setLocation] = useState(initialAppointment.location);
-  const [date, setDate] = useState(initialAppointment.date);
-  const [time, setTime] = useState(initialAppointment.time);
-  const [consultationType, setConsultationType] = useState(
-    initialAppointment.consultationType,
-  );
+  const location = initialAppointment.location;
+  const date = initialAppointment.date;
+  const time = initialAppointment.time;
+  const consultationType = initialAppointment.consultationType;
   const [durationMinutes, setDurationMinutes] = useState("60");
-  const [status, setStatus] = useState(initialAppointment.status);
+  const status = initialAppointment.status;
+  const isBookedPatient = status === "confirmed" || status === "rescheduled";
 
   const [companionPlan, setCompanionPlan] =
     useState<CompanionOption>("a_confirmar");
@@ -186,47 +179,25 @@ export function PatientPanelForm({
 
     try {
       const draft = JSON.parse(draftRaw) as Partial<{
-        location: string;
-        date: string;
-        time: string;
-        consultationType: string;
         durationMinutes: string;
-        status: string;
         companionPlan: CompanionOption;
         drivePlan: DriveOption;
         extraTimePlan: ExtraTimeOption;
         hasExams: boolean;
         examList: string;
-        reason: TriagePayload["reason"];
-        conditions: TriagePayload["conditions"];
-        symptoms: TriagePayload["symptoms"];
-        lastDilation: LastDilationOption;
-        oneSentenceSummary: string;
         contactPreference: ContactPreferenceOption;
         accessibilityNeeds: string;
         continuousDrops: boolean;
         isFirstConsultation: boolean;
       }>;
 
-      if (typeof draft.location === "string") setLocation(draft.location);
-      if (typeof draft.date === "string") setDate(draft.date);
-      if (typeof draft.time === "string") setTime(draft.time);
-      if (typeof draft.consultationType === "string")
-        setConsultationType(draft.consultationType);
       if (typeof draft.durationMinutes === "string")
         setDurationMinutes(draft.durationMinutes);
-      if (typeof draft.status === "string") setStatus(draft.status);
       if (draft.companionPlan) setCompanionPlan(draft.companionPlan);
       if (draft.drivePlan) setDrivePlan(draft.drivePlan);
       if (draft.extraTimePlan) setExtraTimePlan(draft.extraTimePlan);
       if (typeof draft.hasExams === "boolean") setHasExams(draft.hasExams);
       if (typeof draft.examList === "string") setExamList(draft.examList);
-      if (draft.reason) setReason(draft.reason);
-      if (Array.isArray(draft.conditions)) setConditions(draft.conditions);
-      if (Array.isArray(draft.symptoms)) setSymptoms(draft.symptoms);
-      if (draft.lastDilation) setLastDilation(draft.lastDilation);
-      if (typeof draft.oneSentenceSummary === "string")
-        setOneSentenceSummary(draft.oneSentenceSummary);
       if (draft.contactPreference)
         setContactPreference(draft.contactPreference);
       if (typeof draft.accessibilityNeeds === "string")
@@ -249,17 +220,11 @@ export function PatientPanelForm({
         time,
         consultationType,
         durationMinutes,
-        status,
         companionPlan,
         drivePlan,
         extraTimePlan,
         hasExams,
         examList,
-        reason,
-        conditions,
-        symptoms,
-        lastDilation,
-        oneSentenceSummary,
         contactPreference,
         accessibilityNeeds,
         continuousDrops,
@@ -278,11 +243,6 @@ export function PatientPanelForm({
     extraTimePlan,
     hasExams,
     examList,
-    reason,
-    conditions,
-    symptoms,
-    lastDilation,
-    oneSentenceSummary,
     contactPreference,
     accessibilityNeeds,
     continuousDrops,
@@ -305,14 +265,14 @@ export function PatientPanelForm({
     dilatationResult.level === "ALTA"
       ? "Alta"
       : dilatationResult.level === "POSSIVEL"
-        ? "Possivel"
+        ? "Possível"
         : "Baixa";
 
   const preparationChecklist = useMemo(() => {
     const checklist = [
-      "Chegar com antecedencia",
-      "Levar oculos atuais",
-      "Levar lista de colirios em uso",
+      "Chegar com antecedência",
+      "Levar óculos atuais",
+      "Levar lista de colírios em uso",
       "Levar exames anteriores",
     ];
 
@@ -329,7 +289,7 @@ export function PatientPanelForm({
         <CardHeader>
           <CardTitle>Painel do paciente</CardTitle>
           <CardDescription>
-            Formulario de organizacao da consulta com seletores rapidos e acoes
+            Formulário de organização da consulta com seletores rápidos e ações
             diretas.
           </CardDescription>
         </CardHeader>
@@ -344,7 +304,8 @@ export function PatientPanelForm({
                 <Input
                   id="location"
                   value={location}
-                  onChange={(event) => setLocation(event.target.value)}
+                  readOnly
+                  disabled
                   placeholder="Ex.: Fortaleza - CE"
                 />
               </div>
@@ -353,8 +314,9 @@ export function PatientPanelForm({
                 <Input
                   id="consultationType"
                   value={consultationType}
-                  onChange={(event) => setConsultationType(event.target.value)}
-                  placeholder="Ex.: Consulta oftalmologica"
+                  readOnly
+                  disabled
+                  placeholder="Ex.: Consulta oftalmológica"
                 />
               </div>
               <div className="space-y-2">
@@ -363,7 +325,8 @@ export function PatientPanelForm({
                   id="date"
                   type="date"
                   value={date}
-                  onChange={(event) => setDate(event.target.value)}
+                  readOnly
+                  disabled
                 />
               </div>
               <div className="space-y-2">
@@ -372,13 +335,14 @@ export function PatientPanelForm({
                   id="time"
                   type="time"
                   value={time}
-                  onChange={(event) => setTime(event.target.value)}
+                  readOnly
+                  disabled
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label>Duracao prevista</Label>
+              <Label>Duração estimada em 30 minutos</Label>
               <div className="flex flex-wrap gap-2">
                 {durationOptions.map((option) => (
                   <Button
@@ -388,6 +352,7 @@ export function PatientPanelForm({
                       durationMinutes === option.value ? "default" : "outline"
                     }
                     onClick={() => setDurationMinutes(option.value)}
+                    disabled={isBookedPatient}
                   >
                     {option.label}
                   </Button>
@@ -397,18 +362,7 @@ export function PatientPanelForm({
 
             <div className="space-y-2">
               <Label>Status</Label>
-              <div className="flex flex-wrap gap-2">
-                {statusOptions.map((option) => (
-                  <Button
-                    key={option.value}
-                    type="button"
-                    variant={status === option.value ? "default" : "outline"}
-                    onClick={() => setStatus(option.value)}
-                  >
-                    {option.label}
-                  </Button>
-                ))}
-              </div>
+              <Input value={formatStatusLabel(status)} readOnly disabled />
             </div>
 
             <div className="flex flex-wrap gap-2">
@@ -425,10 +379,17 @@ export function PatientPanelForm({
           </section>
 
           <section className="space-y-4 rounded-xl border border-border/70 p-4">
-            <h3 className="text-sm font-medium">Pre-consulta</h3>
+            <h3 className="text-sm font-medium">Pré-consulta</h3>
+            {isBookedPatient ? (
+              <p className="text-xs text-muted-foreground">
+                Com a consulta marcada, os campos abaixo ficam bloqueados neste
+                painel. Para preencher ou atualizar a pré-consulta, use a página
+                de detalhes.
+              </p>
+            ) : null}
 
             <div className="space-y-2">
-              <Label>Acompanhante e direcao</Label>
+              <Label>Acompanhante e direção</Label>
               <div className="flex flex-wrap gap-2">
                 {companionOptions.map((option) => (
                   <Button
@@ -438,6 +399,7 @@ export function PatientPanelForm({
                       companionPlan === option.value ? "default" : "outline"
                     }
                     onClick={() => setCompanionPlan(option.value)}
+                    disabled={isBookedPatient}
                   >
                     {option.label}
                   </Button>
@@ -450,6 +412,7 @@ export function PatientPanelForm({
                     type="button"
                     variant={drivePlan === option.value ? "default" : "outline"}
                     onClick={() => setDrivePlan(option.value)}
+                    disabled={isBookedPatient}
                   >
                     {option.label}
                   </Button>
@@ -458,7 +421,7 @@ export function PatientPanelForm({
             </div>
 
             <div className="space-y-2">
-              <Label>Tempo disponivel no dia</Label>
+              <Label>Tempo disponível no dia</Label>
               <div className="flex flex-wrap gap-2">
                 {extraTimeOptions.map((option) => (
                   <Button
@@ -468,6 +431,7 @@ export function PatientPanelForm({
                       extraTimePlan === option.value ? "default" : "outline"
                     }
                     onClick={() => setExtraTimePlan(option.value)}
+                    disabled={isBookedPatient}
                   >
                     {option.label}
                   </Button>
@@ -481,21 +445,28 @@ export function PatientPanelForm({
                   id="hasExams"
                   checked={hasExams}
                   onChange={(event) => setHasExams(event.currentTarget.checked)}
+                  disabled={isBookedPatient}
                 />
                 <Label htmlFor="hasExams">Exames para levar</Label>
               </div>
               <Textarea
                 value={examList}
                 onChange={(event) => setExamList(event.target.value)}
-                placeholder="Quais exames voce tem para levar"
-                disabled={!hasExams}
+                placeholder="Quais exames você tem para levar"
+                disabled={!hasExams || isBookedPatient}
+                readOnly={isBookedPatient}
               />
             </div>
+            {isBookedPatient ? (
+              <Button variant="outline" asChild>
+                <Link href="/detalhes">Preencher pré-consulta</Link>
+              </Button>
+            ) : null}
           </section>
 
           <section className="space-y-4 rounded-xl border border-border/70 p-4">
             <h3 className="text-sm font-medium">
-              Triagem para previsao de dilatacao
+              Triagem para previsão de dilatação
             </h3>
 
             <div className="space-y-2">
@@ -507,6 +478,7 @@ export function PatientPanelForm({
                     type="button"
                     variant={reason === option.value ? "default" : "outline"}
                     onClick={() => setReason(option.value)}
+                    disabled={isBookedPatient}
                   >
                     {option.label}
                   </Button>
@@ -515,7 +487,7 @@ export function PatientPanelForm({
             </div>
 
             <div className="space-y-2">
-              <Label>Condicoes</Label>
+              <Label>Condições</Label>
               <div className="grid gap-2 md:grid-cols-2">
                 {conditionOptions.map((option) => {
                   const checked = conditions.includes(option.value);
@@ -538,6 +510,7 @@ export function PatientPanelForm({
                             ),
                           )
                         }
+                        disabled={isBookedPatient}
                       />
                       <span>{option.label}</span>
                     </label>
@@ -570,6 +543,7 @@ export function PatientPanelForm({
                             ),
                           )
                         }
+                        disabled={isBookedPatient}
                       />
                       <span>{option.label}</span>
                     </label>
@@ -579,7 +553,7 @@ export function PatientPanelForm({
             </div>
 
             <div className="space-y-2">
-              <Label>Ultima dilatacao</Label>
+              <Label>Última dilatação</Label>
               <div className="flex flex-wrap gap-2">
                 {lastDilationOptions.map((option) => (
                   <Button
@@ -589,6 +563,7 @@ export function PatientPanelForm({
                       lastDilation === option.value ? "default" : "outline"
                     }
                     onClick={() => setLastDilation(option.value)}
+                    disabled={isBookedPatient}
                   >
                     {option.label}
                   </Button>
@@ -598,7 +573,7 @@ export function PatientPanelForm({
 
             <div className="space-y-2">
               <Label htmlFor="oneSentenceSummary">
-                Em uma frase, o que mais incomoda
+                Em uma frase, o que mais incomoda?
               </Label>
               <Textarea
                 id="oneSentenceSummary"
@@ -606,29 +581,31 @@ export function PatientPanelForm({
                 value={oneSentenceSummary}
                 onChange={(event) => setOneSentenceSummary(event.target.value)}
                 placeholder="Resumo rápido da principal queixa"
+                disabled={isBookedPatient}
+                readOnly={isBookedPatient}
               />
             </div>
           </section>
 
           <section className="space-y-4 rounded-xl border border-border/70 p-4">
-            <h3 className="text-sm font-medium">Saidas do painel</h3>
+            <h3 className="text-sm font-medium">Saídas do painel</h3>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2 rounded-lg border border-border/70 p-3 text-sm">
                 <p className="font-medium">Resumo da consulta</p>
                 <p>
                   Data e horário:{" "}
-                  {date && time ? `${date} as ${time}` : "A confirmar"}
+                  {date && time ? `${date} às ${time}` : "A confirmar"}
                 </p>
                 <p>Local: {location || "A confirmar"}</p>
-                <p>Tipo: {consultationType || "Consulta oftalmologica"}</p>
+                <p>Tipo: {consultationType || "Consulta oftalmológica"}</p>
                 <p>Status: {formatStatusLabel(status)}</p>
               </div>
               <div className="space-y-2 rounded-lg border border-border/70 p-3 text-sm">
-                <p className="font-medium">Previsao de dilatacao</p>
-                <p>Nivel de probabilidade: {probabilityLabel}</p>
+                <p className="font-medium">Previsão de dilatação</p>
+                <p>Nível de probabilidade: {probabilityLabel}</p>
                 <p className="text-muted-foreground">
-                  Mensagem conservadora: existe chance de dilatacao conforme
-                  avaliacao clinica. A decisao final acontece no consultorio.
+                  Mensagem conservadora: existe chance de dilatação conforme
+                  avaliação clínica. A decisão final acontece no consultório.
                 </p>
               </div>
             </div>
@@ -640,17 +617,17 @@ export function PatientPanelForm({
                   target="_blank"
                   rel="noreferrer"
                 >
-                  Falar com a secretaria
+                  Falar com a secretária
                 </Link>
               </Button>
               <Button variant="outline" asChild>
-                <Link href="/agendar">Reagendar</Link>
+                <Link href="#remarcacao-consulta">Ir para remarcação</Link>
               </Button>
             </div>
           </section>
 
           <section className="space-y-4 rounded-xl border border-border/70 p-4">
-            <h3 className="text-sm font-medium">Checklist automatico</h3>
+            <h3 className="text-sm font-medium">Checklist automático</h3>
             <ul className="list-inside list-disc space-y-1 text-sm text-muted-foreground">
               {preparationChecklist.map((item) => (
                 <li key={item}>{item}</li>
@@ -661,14 +638,14 @@ export function PatientPanelForm({
           <section className="space-y-4 rounded-xl border border-border/70 p-4">
             <h3 className="text-sm font-medium">O que acontece na consulta</h3>
             <ul className="list-inside list-disc space-y-1 text-sm text-muted-foreground">
-              <li>Dilatacao pode deixar a visao embacada por algumas horas.</li>
+              <li>Dilatação pode deixar a visão embaçada por algumas horas.</li>
               <li>O tempo total varia conforme necessidade de exame.</li>
-              <li>Exames podem ser solicitados conforme avaliacao.</li>
-              <li>Acompanhante e recomendado quando houver dilatacao.</li>
+              <li>Exames podem ser solicitados conforme avaliação.</li>
+              <li>Acompanhante é recomendado quando houver dilatação.</li>
               <li>
-                Seus dados sao usados apenas para organizar o atendimento.
+                Seus dados são usados apenas para organizar o atendimento.
               </li>
-              <li>A decisao final sobre dilatacao e sempre no consultorio.</li>
+              <li>A decisão final sobre dilatação é sempre no consultório.</li>
             </ul>
           </section>
 
@@ -679,7 +656,7 @@ export function PatientPanelForm({
               Inputs opcionais para fases futuras
             </h3>
             <div className="space-y-2">
-              <Label>Preferencia de contato</Label>
+              <Label>Preferência de contato</Label>
               <div className="flex flex-wrap gap-2">
                 {contactPreferenceOptions.map((option) => (
                   <Button
@@ -689,6 +666,7 @@ export function PatientPanelForm({
                       contactPreference === option.value ? "default" : "outline"
                     }
                     onClick={() => setContactPreference(option.value)}
+                    disabled={isBookedPatient}
                   >
                     {option.label}
                   </Button>
@@ -705,6 +683,8 @@ export function PatientPanelForm({
                 value={accessibilityNeeds}
                 onChange={(event) => setAccessibilityNeeds(event.target.value)}
                 placeholder="Ex.: apoio de mobilidade, prioridade de acesso"
+                disabled={isBookedPatient}
+                readOnly={isBookedPatient}
               />
             </div>
 
@@ -715,8 +695,9 @@ export function PatientPanelForm({
                   onChange={(event) =>
                     setContinuousDrops(event.currentTarget.checked)
                   }
+                  disabled={isBookedPatient}
                 />
-                Uso de colirios continuos
+                Uso de colírios contínuos
               </label>
               <label className="flex items-center gap-2">
                 <Checkbox
@@ -724,8 +705,9 @@ export function PatientPanelForm({
                   onChange={(event) =>
                     setIsFirstConsultation(event.currentTarget.checked)
                   }
+                  disabled={isBookedPatient}
                 />
-                Primeira consulta com o medico
+                Primeira consulta com o médico
               </label>
             </div>
           </section>

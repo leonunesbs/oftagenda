@@ -5,6 +5,7 @@ import { useMemo, useState, useTransition } from "react"
 import { calculateDilatationGuidance } from "@/domain/triage/dilatation"
 import type { TriagePayload } from "@/domain/triage/schema"
 import { triageSchema } from "@/domain/triage/schema"
+import { encryptTriagePayload } from "@/lib/triage-e2e"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -93,10 +94,16 @@ export function DetailsForm() {
 
     startSubmittingTransition(async () => {
       try {
+        const encryptedPayload = await encryptTriagePayload(parsed.data)
+        const guidance = calculateDilatationGuidance(parsed.data)
         const response = await fetch("/api/details/submit", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(parsed.data),
+          body: JSON.stringify({
+            encryptedPayload,
+            score: guidance.score,
+            level: guidance.level,
+          }),
         })
 
         if (!response.ok) {

@@ -30,6 +30,8 @@ cp .env.example .env.local
    - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
    - `CLERK_SECRET_KEY`
    - `CLERK_FRONTEND_API_URL`
+   - `NEXT_PUBLIC_TRIAGE_E2E_PUBLIC_KEY`
+   - `NEXT_PUBLIC_TRIAGE_E2E_KEY_VERSION`
 
 4. Instale dependencias:
 
@@ -80,8 +82,46 @@ pnpm run dev:next   # apenas Next.js
   - persiste agendamento no Convex e registra evento no historico
   - mantem cookie de fallback `booking_confirmed=true`
 - `POST /api/details/submit`
-  - valida payload de triagem com Zod
-  - persiste triagem no Convex vinculada ao agendamento ativo
+  - valida envelope criptografado com Zod
+  - persiste triagem cifrada no Convex vinculada ao agendamento ativo
+
+## Criptografia ponta a ponta da triagem
+
+Para os dados de saude da triagem de dilatacao, o cliente cifra o payload antes do envio usando `RSA-OAEP/AES-GCM-256`.
+
+### Variaveis necessarias
+
+- `NEXT_PUBLIC_TRIAGE_E2E_PUBLIC_KEY`: chave publica RSA em base64 no formato SPKI (sem headers PEM)
+- `NEXT_PUBLIC_TRIAGE_E2E_KEY_VERSION`: versao da chave para rotacao (ex.: `v1`)
+
+### Como gerar as chaves (OpenSSL)
+
+1. Gerar chave privada RSA 4096 (guardar em local seguro):
+
+```bash
+openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:4096 -out triage-e2e-private.pem
+```
+
+2. Derivar chave publica:
+
+```bash
+openssl rsa -pubout -in triage-e2e-private.pem -out triage-e2e-public.pem
+```
+
+3. Converter a chave publica para DER/SPKI e base64 em uma linha:
+
+```bash
+openssl pkey -pubin -in triage-e2e-public.pem -outform DER | base64 | tr -d '\n'
+```
+
+4. Copiar a saida do comando acima para `NEXT_PUBLIC_TRIAGE_E2E_PUBLIC_KEY`.
+
+5. Definir `NEXT_PUBLIC_TRIAGE_E2E_KEY_VERSION` (ex.: `v1`).
+
+### Rotacao de chave
+
+- Gere novo par de chaves e publique a nova chave publica com versao incrementada (`v2`, `v3`, ...).
+- Mantenha as chaves privadas antigas para leitura/decriptacao historica, enquanto houver dados cifrados com elas.
 
 ## Fluxo do MVP
 

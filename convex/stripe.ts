@@ -229,6 +229,49 @@ export const releaseCheckoutDraft = mutation({
   },
 });
 
+export const cancelPendingReservation = mutation({
+  args: {
+    reservationId: v.id("reservations"),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (identity === null) {
+      throw new Error("Not authenticated");
+    }
+
+    const reservation = await ctx.db.get(args.reservationId);
+    if (!reservation || reservation.clerkUserId !== identity.subject) {
+      throw new Error("Reserva não encontrada.");
+    }
+    if (reservation.status !== "pending") {
+      return { ok: true, alreadyClosed: true };
+    }
+
+    const pendingPayment = await ctx.db
+      .query("payments")
+      .withIndex("by_reservation_id", (q) => q.eq("reservationId", reservation._id))
+      .filter((q) => q.eq(q.field("status"), "pending"))
+      .first();
+
+    const now = Date.now();
+    await ctx.db.patch(reservation._id, {
+      status: "cancelled",
+      notes: "Reserva cancelada pelo paciente no painel.",
+      updatedAt: now,
+    });
+
+    if (pendingPayment) {
+      await ctx.db.patch(pendingPayment._id, {
+        status: "failed",
+        notes: "Pagamento cancelado pelo paciente no painel.",
+        updatedAt: now,
+      });
+    }
+
+    return { ok: true };
+  },
+});
+
 export const reconcileStripeEvent = mutation({
   args: {
     eventId: v.string(),

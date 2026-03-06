@@ -12,6 +12,8 @@ export const clientEnv = createEnv({
     NEXT_PUBLIC_GTM_ID: z.string().optional(),
     NEXT_PUBLIC_META_PIXEL_ID: z.string().optional(),
     NEXT_PUBLIC_GOOGLE_ADS_ID: z.string().optional(),
+    NEXT_PUBLIC_TRIAGE_E2E_PUBLIC_KEY: z.string().optional(),
+    NEXT_PUBLIC_TRIAGE_E2E_KEY_VERSION: z.string().optional(),
   },
 
   experimental__runtimeEnv: {
@@ -19,6 +21,8 @@ export const clientEnv = createEnv({
     NEXT_PUBLIC_GTM_ID: process.env.NEXT_PUBLIC_GTM_ID,
     NEXT_PUBLIC_META_PIXEL_ID: process.env.NEXT_PUBLIC_META_PIXEL_ID,
     NEXT_PUBLIC_GOOGLE_ADS_ID: process.env.NEXT_PUBLIC_GOOGLE_ADS_ID,
+    NEXT_PUBLIC_TRIAGE_E2E_PUBLIC_KEY: process.env.NEXT_PUBLIC_TRIAGE_E2E_PUBLIC_KEY,
+    NEXT_PUBLIC_TRIAGE_E2E_KEY_VERSION: process.env.NEXT_PUBLIC_TRIAGE_E2E_KEY_VERSION,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

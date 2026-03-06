@@ -2,7 +2,10 @@ import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 
 import { BookingConfirmedEvent } from "@/components/booking-confirmed-event";
+import { CheckoutReturnUrlCleaner } from "@/components/checkout-return-url-cleaner";
+import { PendingReservationsList } from "@/components/pending-reservations-list";
 import { PatientPanelForm } from "@/components/patient-panel-form";
+import { RescheduleAppointmentCard } from "@/components/reschedule-appointment-card";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -12,6 +15,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { getBookingBootstrapData } from "@/lib/booking-bootstrap";
 import { getUserRoleFromClerkAuth, hasConfirmedBooking } from "@/lib/access";
 import { getAuthenticatedConvexHttpClient } from "@/lib/convex-server";
 import { api } from "../../../convex/_generated/api";
@@ -20,15 +24,9 @@ type DashboardPageProps = {
   searchParams?:
     | Promise<{
         payment?: string;
-        location?: string;
-        date?: string;
-        time?: string;
       }>
     | {
         payment?: string;
-        location?: string;
-        date?: string;
-        time?: string;
       };
 };
 
@@ -37,9 +35,6 @@ export default async function DashboardPage({
 }: DashboardPageProps) {
   const params = (await searchParams) ?? {};
   const payment = params.payment ?? "";
-  const locationFromParams = params.location ?? "";
-  const dateFromParams = params.date ?? "";
-  const timeFromParams = params.time ?? "";
   const paymentJustSucceeded = payment === "success";
   const authData = await auth();
   const role = await getUserRoleFromClerkAuth(authData);
@@ -60,7 +55,18 @@ export default async function DashboardPage({
       holdExpiresAt: number;
       location: string;
       consultationType: string;
+      checkoutLocation: string;
+      checkoutDate: string;
+      checkoutTime: string;
     }>;
+    reschedulePolicy: {
+      canReschedule: boolean;
+      reason: string | null;
+      maxReschedules: number;
+      reschedulesUsed: number;
+      minNoticeHours: number;
+      maxDaysAhead: number;
+    };
     history: Array<{
       _id: string;
       status: string;
@@ -71,7 +77,21 @@ export default async function DashboardPage({
     hasConfirmedBooking: false,
     nextAppointment: null,
     pendingReservations: [],
+    reschedulePolicy: {
+      canReschedule: false,
+      reason: "Nenhuma consulta ativa encontrada.",
+      maxReschedules: 1,
+      reschedulesUsed: 0,
+      minNoticeHours: 24,
+      maxDaysAhead: 30,
+    },
     history: [],
+  };
+  let rematchBootstrap: Awaited<ReturnType<typeof getBookingBootstrapData>> = {
+    locations: [],
+    locationsError: null,
+    availabilityByLocation: {},
+    availabilityErrorsByLocation: {},
   };
 
   try {
@@ -94,7 +114,18 @@ export default async function DashboardPage({
         holdExpiresAt: item.holdExpiresAt,
         location: item.location,
         consultationType: item.consultationType,
+        checkoutLocation: item.checkoutLocation,
+        checkoutDate: item.checkoutDate,
+        checkoutTime: item.checkoutTime,
       })),
+      reschedulePolicy: {
+        canReschedule: data.reschedulePolicy.canReschedule,
+        reason: data.reschedulePolicy.reason,
+        maxReschedules: data.reschedulePolicy.maxReschedules,
+        reschedulesUsed: data.reschedulePolicy.reschedulesUsed,
+        minNoticeHours: data.reschedulePolicy.minNoticeHours,
+        maxDaysAhead: data.reschedulePolicy.maxDaysAhead,
+      },
       history: data.history.map((item) => ({
         _id: item._id,
         status: item.status,
@@ -106,15 +137,12 @@ export default async function DashboardPage({
     dashboardState.hasConfirmedBooking = await hasConfirmedBooking();
   }
 
+  rematchBootstrap = await getBookingBootstrapData({ daysAhead: 30 });
+
   const bookingConfirmed = dashboardState.hasConfirmedBooking;
   const nextAppointment = dashboardState.nextAppointment;
-  const appointmentStart = resolveAppointmentStart({
-    nextAppointmentTimestamp: nextAppointment?.scheduledFor,
-    dateFromParams,
-    timeFromParams,
-  });
-  const appointmentLocation =
-    nextAppointment?.location || locationFromParams || "Local a confirmar";
+  const appointmentStart = resolveAppointmentStart(nextAppointment?.scheduledFor);
+  const appointmentLocation = nextAppointment?.location || "Local a confirmar";
   const calendarLinks = appointmentStart
     ? buildCalendarLinks({
         title: "Consulta com Dr Leonardo",
@@ -138,13 +166,14 @@ export default async function DashboardPage({
         })
       : "",
     consultationType:
-      nextAppointment?.consultationType ?? "Consulta oftalmologica",
+      nextAppointment?.consultationType ?? "Consulta oftalmológica",
     status: nextAppointment?.status ?? "pending",
   };
 
   return (
     <section className="mx-auto w-full max-w-3xl space-y-6">
       <BookingConfirmedEvent enabled={bookingConfirmed} />
+      <CheckoutReturnUrlCleaner enabled={paymentJustSucceeded} />
       <Card className="border-border/70">
         <CardHeader>
           <CardTitle>Status do agendamento</CardTitle>
@@ -222,6 +251,19 @@ export default async function DashboardPage({
 
           <Separator />
 
+          {bookingConfirmed ? (
+            <>
+              <RescheduleAppointmentCard
+                policy={dashboardState.reschedulePolicy}
+                locations={rematchBootstrap.locations}
+                availabilityByLocation={rematchBootstrap.availabilityByLocation}
+                availabilityErrorsByLocation={rematchBootstrap.availabilityErrorsByLocation}
+                initialLocation={nextAppointment?.location}
+              />
+              <Separator />
+            </>
+          ) : null}
+
           <div className="space-y-3">
             <Button variant="secondary" asChild>
               <Link
@@ -229,11 +271,11 @@ export default async function DashboardPage({
                 target="_blank"
                 rel="noreferrer"
               >
-                Confirmar/reagendar no WhatsApp
+                Falar no WhatsApp
               </Link>
             </Button>
             <p className="text-xs text-muted-foreground">
-              A decisão final sobre dilatação é feita durante a consulta.
+              Em caso de urgência ou regra não atendida, o suporte humano continua disponível.
             </p>
           </div>
 
@@ -241,26 +283,9 @@ export default async function DashboardPage({
 
           <div className="space-y-2">
             <h3 className="font-medium">Agendamentos pendentes</h3>
-            {dashboardState.pendingReservations.length > 0 ? (
-              <ul className="space-y-1 text-sm text-muted-foreground">
-                {dashboardState.pendingReservations.map((item) => (
-                  <li key={item._id}>
-                    {item.consultationType} - {item.location} -{" "}
-                    {new Date(item.startsAt).toLocaleString("pt-BR")} (reservado
-                    ate{" "}
-                    {new Date(item.holdExpiresAt).toLocaleTimeString("pt-BR", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                    )
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                Nenhum agendamento pendente de pagamento no momento.
-              </p>
-            )}
+            <PendingReservationsList
+              reservations={dashboardState.pendingReservations}
+            />
           </div>
 
           <Separator />
@@ -289,36 +314,11 @@ export default async function DashboardPage({
   );
 }
 
-function resolveAppointmentStart({
-  nextAppointmentTimestamp,
-  dateFromParams,
-  timeFromParams,
-}: {
-  nextAppointmentTimestamp?: number;
-  dateFromParams: string;
-  timeFromParams: string;
-}) {
+function resolveAppointmentStart(nextAppointmentTimestamp?: number) {
   if (typeof nextAppointmentTimestamp === "number") {
     return new Date(nextAppointmentTimestamp);
   }
-
-  const dateMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateFromParams);
-  const timeMatch = /^(\d{2}):(\d{2})$/.exec(timeFromParams);
-  if (!dateMatch || !timeMatch) {
-    return null;
-  }
-
-  const [, year, month, day] = dateMatch;
-  const [, hour, minute] = timeMatch;
-  return new Date(
-    Number(year),
-    Number(month) - 1,
-    Number(day),
-    Number(hour),
-    Number(minute),
-    0,
-    0,
-  );
+  return null;
 }
 
 function buildCalendarLinks({

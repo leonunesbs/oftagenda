@@ -1,12 +1,19 @@
 import { NextResponse } from "next/server"
+import { z } from "zod/v4"
 
 import { api } from "@convex/_generated/api"
-import { triageSchema } from "@/domain/triage/schema"
+import { encryptedTriagePayloadSchema } from "@/domain/triage/schema"
 import { getAuthenticatedConvexHttpClient } from "@/lib/convex-server"
+
+const submitEncryptedTriageSchema = z.object({
+  encryptedPayload: encryptedTriagePayloadSchema,
+  score: z.number().int().min(-1).max(32),
+  level: z.enum(["ALTA", "POSSIVEL", "BAIXA"]),
+})
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null)
-  const parsed = triageSchema.safeParse(body)
+  const parsed = submitEncryptedTriageSchema.safeParse(body)
 
   if (!parsed.success) {
     return NextResponse.json(

@@ -2,68 +2,18 @@ import { v } from "convex/values";
 
 import { mutation } from "./_generated/server";
 
-const reasonValidator = v.union(
-  v.literal("routine"),
-  v.literal("glasses"),
-  v.literal("blurred"),
-  v.literal("pain"),
-  v.literal("retina_follow"),
-  v.literal("glaucoma_follow"),
-  v.literal("postop"),
-  v.literal("other"),
-);
-
-const conditionValidator = v.union(
-  v.literal("diabetes"),
-  v.literal("hypertension"),
-  v.literal("glaucoma"),
-  v.literal("prior_surgery"),
-);
-
-const symptomValidator = v.union(
-  v.literal("floaters"),
-  v.literal("flashes"),
-  v.literal("sudden_loss"),
-);
-
-const lastDilationValidator = v.union(
-  v.literal("lt6m"),
-  v.literal("6to12m"),
-  v.literal("gt1y"),
-  v.literal("unknown"),
-);
-
-const reasonScore: Record<string, number> = {
-  retina_follow: 2,
-  blurred: 2,
-  routine: 1,
-  pain: 1,
-  glaucoma_follow: 1,
-  postop: 1,
-  glasses: 0,
-  other: 0,
-};
-
-const conditionScore: Record<string, number> = {
-  diabetes: 2,
-  prior_surgery: 1,
-  glaucoma: 1,
-  hypertension: 0,
-};
-
-const symptomScore: Record<string, number> = {
-  floaters: 3,
-  flashes: 3,
-  sudden_loss: 4,
-};
-
 export const submitDetails = mutation({
   args: {
-    reason: reasonValidator,
-    conditions: v.array(conditionValidator),
-    symptoms: v.array(symptomValidator),
-    lastDilation: lastDilationValidator,
-    oneSentenceSummary: v.optional(v.string()),
+    encryptedPayload: v.object({
+      version: v.literal("v1"),
+      algorithm: v.literal("RSA-OAEP/AES-GCM-256"),
+      keyVersion: v.string(),
+      wrappedKeyB64: v.string(),
+      ivB64: v.string(),
+      ciphertextB64: v.string(),
+    }),
+    score: v.number(),
+    level: v.union(v.literal("ALTA"), v.literal("POSSIVEL"), v.literal("BAIXA")),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -86,8 +36,6 @@ export const submitDetails = mutation({
     }
 
     const now = Date.now();
-    const score = computeScore(args.reason, args.conditions, args.symptoms, args.lastDilation);
-    const level = score >= 4 ? "ALTA" : score >= 2 ? "POSSIVEL" : "BAIXA";
 
     const existing = await ctx.db
       .query("appointment_details")
@@ -96,26 +44,28 @@ export const submitDetails = mutation({
 
     if (existing) {
       await ctx.db.patch(existing._id, {
-        reason: args.reason,
-        conditions: args.conditions,
-        symptoms: args.symptoms,
-        lastDilation: args.lastDilation,
-        oneSentenceSummary: args.oneSentenceSummary,
-        dilatationLevel: level,
-        dilatationScore: score,
+        triageCiphertext: args.encryptedPayload.ciphertextB64,
+        triageWrappedKey: args.encryptedPayload.wrappedKeyB64,
+        triageIv: args.encryptedPayload.ivB64,
+        encryptionVersion: args.encryptedPayload.version,
+        encryptionAlgorithm: args.encryptedPayload.algorithm,
+        encryptionKeyVersion: args.encryptedPayload.keyVersion,
+        dilatationLevel: args.level,
+        dilatationScore: args.score,
         updatedAt: now,
       });
     } else {
       await ctx.db.insert("appointment_details", {
         appointmentId: activeAppointment._id,
         clerkUserId,
-        reason: args.reason,
-        conditions: args.conditions,
-        symptoms: args.symptoms,
-        lastDilation: args.lastDilation,
-        oneSentenceSummary: args.oneSentenceSummary,
-        dilatationLevel: level,
-        dilatationScore: score,
+        triageCiphertext: args.encryptedPayload.ciphertextB64,
+        triageWrappedKey: args.encryptedPayload.wrappedKeyB64,
+        triageIv: args.encryptedPayload.ivB64,
+        encryptionVersion: args.encryptedPayload.version,
+        encryptionAlgorithm: args.encryptedPayload.algorithm,
+        encryptionKeyVersion: args.encryptedPayload.keyVersion,
+        dilatationLevel: args.level,
+        dilatationScore: args.score,
         submittedAt: now,
         updatedAt: now,
       });
@@ -131,23 +81,9 @@ export const submitDetails = mutation({
 
     return {
       appointmentId: activeAppointment._id,
-      score,
-      level,
+      score: args.score,
+      level: args.level,
       advisory: "A decisao final sobre dilatacao e sempre feita no consultorio.",
     };
   },
 });
-
-function computeScore(
-  reason: string,
-  conditions: string[],
-  symptoms: string[],
-  lastDilation: string,
-) {
-  const conditionsTotal = conditions.reduce((sum, item) => sum + (conditionScore[item] ?? 0), 0);
-  const symptomsTotal = symptoms.reduce((sum, item) => sum + (symptomScore[item] ?? 0), 0);
-  const reasonTotal = reasonScore[reason] ?? 0;
-  const dilationAdjustment = lastDilation === "lt6m" ? -1 : 0;
-
-  return reasonTotal + conditionsTotal + symptomsTotal + dilationAdjustment;
-}

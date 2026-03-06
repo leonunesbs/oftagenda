@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 
-import { api } from "@convex/_generated/api";
 import { bookingCheckoutSchema } from "@/domain/booking/schema";
-import { getAuthenticatedConvexHttpClient } from "@/lib/convex-server";
 import { requireMemberApiAccess } from "@/lib/access";
+import { getAuthenticatedConvexHttpClient } from "@/lib/convex-server";
 import { getStripeClient } from "@/lib/stripe";
+import { api } from "@convex/_generated/api";
 
 export const runtime = "nodejs";
 const CHECKOUT_SESSION_DURATION_SECONDS = 30 * 60;
@@ -13,8 +13,14 @@ export async function POST(request: Request) {
   try {
     await requireMemberApiAccess();
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Falha de autorização.";
-    const status = message === "Not authenticated" ? 401 : message === "Not authorized" ? 403 : 500;
+    const message =
+      error instanceof Error ? error.message : "Falha de autorização.";
+    const status =
+      message === "Not authenticated"
+        ? 401
+        : message === "Not authorized"
+          ? 403
+          : 500;
     return NextResponse.json({ ok: false, error: message }, { status });
   }
 
@@ -33,7 +39,10 @@ export async function POST(request: Request) {
 
   try {
     const { client, userId } = await getAuthenticatedConvexHttpClient();
-    const draft = await client.mutation(api.stripe.createCheckoutDraft, parsed.data);
+    const draft = await client.mutation(
+      api.stripe.createCheckoutDraft,
+      parsed.data,
+    );
 
     const stripe = getStripeClient();
     const origin = new URL(request.url).origin;
@@ -61,14 +70,9 @@ export async function POST(request: Request) {
           ];
 
       const desiredHoldExpiresAt =
-        draft.holdExpiresAt ?? Date.now() + CHECKOUT_SESSION_DURATION_SECONDS * 1000;
-      const successParams = new URLSearchParams({
-        payment: "success",
-        session_id: "{CHECKOUT_SESSION_ID}",
-        location: parsed.data.location,
-        date: parsed.data.date,
-        time: parsed.data.time,
-      });
+        draft.holdExpiresAt ??
+        Date.now() + CHECKOUT_SESSION_DURATION_SECONDS * 1000;
+      const successUrl = `${origin}/dashboard?payment=success`;
 
       const session = await stripe.checkout.sessions.create({
         expires_at: Math.floor(desiredHoldExpiresAt / 1000),
@@ -85,7 +89,7 @@ export async function POST(request: Request) {
             time: parsed.data.time,
           },
         },
-        success_url: `${origin}/dashboard?${successParams.toString()}`,
+        success_url: successUrl,
         cancel_url: `${origin}/agendar/resumo?${cancelParams.toString()}`,
         metadata: {
           reservationId: String(draft.reservationId),
@@ -103,13 +107,16 @@ export async function POST(request: Request) {
         paymentId: draft.paymentId,
         checkoutSessionId: session.id,
         paymentIntentId:
-          typeof session.payment_intent === "string" ? session.payment_intent : undefined,
+          typeof session.payment_intent === "string"
+            ? session.payment_intent
+            : undefined,
         amountCents:
           typeof session.amount_total === "number" && session.amount_total > 0
             ? session.amount_total
             : draft.amountCents,
         holdExpiresAt:
-          typeof session.expires_at === "number" && Number.isFinite(session.expires_at)
+          typeof session.expires_at === "number" &&
+          Number.isFinite(session.expires_at)
             ? session.expires_at * 1000
             : draft.holdExpiresAt,
       });
@@ -134,9 +141,13 @@ export async function POST(request: Request) {
       throw stripeError;
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Falha ao iniciar checkout Stripe.";
-    const status = message.toLowerCase().includes("not authenticated") ? 401 : 500;
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Falha ao iniciar checkout Stripe.";
+    const status = message.toLowerCase().includes("not authenticated")
+      ? 401
+      : 500;
     return NextResponse.json({ ok: false, error: message }, { status });
   }
 }
-

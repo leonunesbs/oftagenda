@@ -28,8 +28,14 @@ export type BookingBootstrapData = {
   availabilityErrorsByLocation: Record<string, string>;
 };
 
-export async function getBookingBootstrapData(): Promise<BookingBootstrapData> {
+export async function getBookingBootstrapData(options?: {
+  daysAhead?: number;
+}): Promise<BookingBootstrapData> {
   const client = getConvexHttpClient();
+  const daysAhead =
+    typeof options?.daysAhead === "number" && Number.isFinite(options.daysAhead)
+      ? Math.max(1, Math.floor(options.daysAhead))
+      : 14;
   let locations: BookingLocationOption[] = [];
   let locationsError: string | null = null;
 
@@ -49,7 +55,7 @@ export async function getBookingBootstrapData(): Promise<BookingBootstrapData> {
       try {
         const options = await client.query(api.appointments.getBookingOptionsByLocation, {
           location: locationOption.value,
-          daysAhead: 14,
+          daysAhead,
         });
         availabilityByLocation[locationOption.value] =
           (options as LocationAvailabilityResponse) ?? {

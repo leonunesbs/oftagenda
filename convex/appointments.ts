@@ -3,8 +3,12 @@ import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 import type { MutationCtx } from "./_generated/server";
+import type { QueryCtx } from "./_generated/server";
 
 const RESERVATION_HOLD_DURATION_MS = 15 * 60_000;
+const RESCHEDULE_MIN_NOTICE_MS = 24 * 60 * 60_000;
+const RESCHEDULE_MAX_DAYS_AHEAD = 30;
+const RESCHEDULE_MAX_PER_APPOINTMENT = 1;
 
 const bookingLocationValidator = v.string();
 
@@ -295,7 +299,7 @@ export const getDashboardState = query({
       throw new Error("Not authenticated");
     }
 
-    const [appointments, reservations, eventTypes] = await Promise.all([
+    const [appointments, reservations, eventTypes, availabilities] = await Promise.all([
       ctx.db
         .query("appointments")
         .withIndex("by_clerk_user_id", (q) => q.eq("clerkUserId", identity.subject))
@@ -305,6 +309,7 @@ export const getDashboardState = query({
         .withIndex("by_clerk_user_id", (q) => q.eq("clerkUserId", identity.subject))
         .collect(),
       ctx.db.query("event_types").collect(),
+      ctx.db.query("availabilities").collect(),
     ]);
 
     const sorted = [...appointments].sort((a, b) => b.requestedAt - a.requestedAt);
@@ -312,26 +317,150 @@ export const getDashboardState = query({
       sorted.find((item) => item.status === "confirmed" || item.status === "rescheduled") ?? null;
     const now = Date.now();
     const eventTypeById = new Map(eventTypes.map((item) => [String(item._id), item]));
+    const availabilityById = new Map(availabilities.map((item) => [String(item._id), item]));
     const pendingReservations = [...reservations]
       .filter((item) => item.status === "pending" && getReservationHoldExpiresAt(item) > now)
       .sort((a, b) => a.startsAt - b.startsAt)
       .slice(0, 8)
       .map((item) => {
         const eventType = eventTypeById.get(String(item.eventTypeId));
+        const availability =
+          availabilityById.get(String(item.availabilityId)) ??
+          (eventType?.availabilityId
+            ? availabilityById.get(String(eventType.availabilityId))
+            : undefined);
+        const timezone = availability?.timezone ?? "America/Fortaleza";
         return {
           _id: item._id,
           startsAt: item.startsAt,
           holdExpiresAt: getReservationHoldExpiresAt(item),
           location: eventType?.location ?? "fortaleza",
           consultationType: eventType?.name ?? eventType?.title ?? "Consulta oftalmologica",
+          checkoutLocation: eventType?.slug ?? "",
+          checkoutDate: formatDateInTimezone(item.startsAt, timezone),
+          checkoutTime: formatTimeInTimezone(item.startsAt, timezone),
         };
       });
+
+    const reschedulePolicy = nextAppointment
+      ? await buildReschedulePolicy(ctx, nextAppointment, now)
+      : {
+          canReschedule: false,
+          reason: "Nenhuma consulta ativa encontrada.",
+          maxReschedules: RESCHEDULE_MAX_PER_APPOINTMENT,
+          reschedulesUsed: 0,
+          minNoticeHours: 24,
+          maxDaysAhead: RESCHEDULE_MAX_DAYS_AHEAD,
+        };
 
     return {
       hasConfirmedBooking: nextAppointment !== null,
       nextAppointment,
+      reschedulePolicy,
       pendingReservations,
       history: sorted.slice(0, 8),
+    };
+  },
+});
+
+export const rescheduleOwnAppointment = mutation({
+  args: {
+    location: bookingLocationValidator,
+    date: v.string(),
+    time: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (identity === null) {
+      throw new Error("Not authenticated");
+    }
+
+    const now = Date.now();
+    const appointments = await ctx.db
+      .query("appointments")
+      .withIndex("by_clerk_user_id", (q) => q.eq("clerkUserId", identity.subject))
+      .collect();
+    const sorted = [...appointments].sort((a, b) => b.requestedAt - a.requestedAt);
+    const appointment =
+      sorted.find((item) => item.status === "confirmed" || item.status === "rescheduled") ?? null;
+    if (!appointment) {
+      throw new Error("Nenhuma consulta ativa encontrada para remarcação.");
+    }
+
+    const policy = await buildReschedulePolicy(ctx, appointment, now);
+    if (!policy.canReschedule) {
+      throw new Error(policy.reason ?? "Consulta indisponível para remarcação.");
+    }
+
+    const eventType = await resolveSingleActiveEventType(ctx, args.location);
+    const availability = eventType.availabilityId ? await ctx.db.get(eventType.availabilityId) : null;
+    if (!availability) {
+      throw new Error("Evento sem disponibilidade configurada.");
+    }
+
+    const slotTimestamp = parseIsoDateAndTimeToTimestamp(args.date, args.time, availability.timezone);
+    assertRescheduleWindow(slotTimestamp, now);
+    await assertSlotIsAvailable(ctx, eventType, args.date, args.time);
+
+    const previousScheduledFor = appointment.scheduledFor ?? null;
+    const previousReservationId = appointment.reservationId ?? null;
+    const endsAt = slotTimestamp + eventType.durationMinutes * 60_000;
+
+    const newReservationId = await ctx.db.insert("reservations", {
+      clerkUserId: identity.subject,
+      eventTypeId: eventType._id,
+      availabilityId: availability._id,
+      appointmentId: appointment._id,
+      startsAt: slotTimestamp,
+      endsAt,
+      status: "confirmed",
+      notes: "Reserva remarcada pelo paciente sem custo adicional.",
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    if (previousReservationId) {
+      const previousReservation = await ctx.db.get(previousReservationId);
+      if (previousReservation && previousReservation.status === "confirmed") {
+        await ctx.db.patch(previousReservationId, {
+          status: "cancelled",
+          notes: "Reserva substituída por remarcação realizada pelo paciente.",
+          updatedAt: now,
+        });
+      }
+    }
+
+    await ctx.db.patch(appointment._id, {
+      location: eventType.location,
+      eventTypeId: eventType._id,
+      reservationId: newReservationId,
+      preferredPeriod: inferPreferredPeriod(slotTimestamp),
+      status: "rescheduled",
+      scheduledFor: slotTimestamp,
+      consultationType: eventType.name ?? eventType.title ?? "Consulta oftalmologica",
+      updatedAt: now,
+    });
+
+    await ctx.db.insert("appointment_events", {
+      appointmentId: appointment._id,
+      clerkUserId: identity.subject,
+      eventType: "rescheduled",
+      notes: "Remarcação concluída no painel do paciente sem custo adicional.",
+      payload: JSON.stringify({
+        previousScheduledFor,
+        newScheduledFor: slotTimestamp,
+        previousReservationId,
+        newReservationId,
+      }),
+      createdAt: now,
+    });
+
+    return {
+      ok: true,
+      appointmentId: appointment._id,
+      scheduledFor: slotTimestamp,
+      location: eventType.location,
+      consultationType: eventType.name ?? eventType.title ?? "Consulta oftalmologica",
     };
   },
 });
@@ -403,6 +532,61 @@ function clampDaysAhead(value: number) {
     return 30;
   }
   return Math.floor(value);
+}
+
+async function buildReschedulePolicy(
+  ctx: MutationCtx | QueryCtx,
+  appointment: Doc<"appointments">,
+  now: number,
+) {
+  const scheduledFor = appointment.scheduledFor;
+  if (typeof scheduledFor !== "number") {
+    return {
+      canReschedule: false,
+      reason: "Consulta ainda sem horário definido.",
+      maxReschedules: RESCHEDULE_MAX_PER_APPOINTMENT,
+      reschedulesUsed: 0,
+      minNoticeHours: 24,
+      maxDaysAhead: RESCHEDULE_MAX_DAYS_AHEAD,
+    };
+  }
+
+  const history = await ctx.db
+    .query("appointment_events")
+    .withIndex("by_appointment_id", (q) => q.eq("appointmentId", appointment._id))
+    .collect();
+  const reschedulesUsed = history.filter((item) => item.eventType === "rescheduled").length;
+
+  if (reschedulesUsed >= RESCHEDULE_MAX_PER_APPOINTMENT) {
+    return {
+      canReschedule: false,
+      reason: "Você já utilizou o limite de 1 remarcação sem custo.",
+      maxReschedules: RESCHEDULE_MAX_PER_APPOINTMENT,
+      reschedulesUsed,
+      minNoticeHours: 24,
+      maxDaysAhead: RESCHEDULE_MAX_DAYS_AHEAD,
+    };
+  }
+
+  if (scheduledFor - now < RESCHEDULE_MIN_NOTICE_MS) {
+    return {
+      canReschedule: false,
+      reason: "Remarcação disponível somente até 24h antes da consulta.",
+      maxReschedules: RESCHEDULE_MAX_PER_APPOINTMENT,
+      reschedulesUsed,
+      minNoticeHours: 24,
+      maxDaysAhead: RESCHEDULE_MAX_DAYS_AHEAD,
+    };
+  }
+
+  return {
+    canReschedule: true,
+    reason: null,
+    maxReschedules: RESCHEDULE_MAX_PER_APPOINTMENT,
+    reschedulesUsed,
+    minNoticeHours: 24,
+    maxDaysAhead: RESCHEDULE_MAX_DAYS_AHEAD,
+  };
 }
 
 function toIsoDate(date: Date) {
@@ -531,6 +715,221 @@ function hasCheckoutPricingConfigured(eventType: { stripePriceId?: string; price
   }
   const parsed = Number(stripePriceId.replace(/\./g, "").replace(",", "."));
   return Number.isFinite(parsed) && parsed > 0;
+}
+
+async function resolveSingleActiveEventType(ctx: MutationCtx, location: string) {
+  const normalizedInput = location.trim().toLowerCase();
+  const activeEventTypes = await ctx.db
+    .query("event_types")
+    .withIndex("by_active", (q) => q.eq("active", true))
+    .collect();
+  const candidates = activeEventTypes.filter(
+    (item) => item.slug.trim().toLowerCase() === normalizedInput,
+  );
+
+  if (candidates.length === 0) {
+    throw new Error(`Evento selecionado não encontrado para slug "${location.trim()}".`);
+  }
+  if (candidates.length > 1) {
+    throw new Error(
+      `Mais de um evento ativo encontrado para slug "${location.trim()}". Mantenha apenas um evento ativo por slug.`,
+    );
+  }
+
+  const eventType = candidates[0]!;
+  if (!eventType.availabilityId || !hasCheckoutPricingConfigured(eventType)) {
+    throw new Error("Evento selecionado não está pronto para novos agendamentos.");
+  }
+  return eventType;
+}
+
+function assertRescheduleWindow(slotTimestamp: number, now: number) {
+  if (!Number.isFinite(slotTimestamp)) {
+    throw new Error("Novo horário inválido para remarcação.");
+  }
+  if (slotTimestamp - now < RESCHEDULE_MIN_NOTICE_MS) {
+    throw new Error("Escolha um horário com pelo menos 24h de antecedência.");
+  }
+  const maxAllowedTimestamp = now + RESCHEDULE_MAX_DAYS_AHEAD * 24 * 60 * 60_000;
+  if (slotTimestamp > maxAllowedTimestamp) {
+    throw new Error("A nova data deve estar dentro de 30 dias a partir de hoje.");
+  }
+}
+
+async function assertSlotIsAvailable(
+  ctx: MutationCtx,
+  eventType: Doc<"event_types">,
+  isoDate: string,
+  time: string,
+) {
+  if (!eventType.availabilityId) {
+    throw new Error("Evento sem disponibilidade configurada.");
+  }
+  const referenceAvailability = await ctx.db.get(eventType.availabilityId);
+  if (!referenceAvailability) {
+    throw new Error("Disponibilidade base não encontrada.");
+  }
+  const groupName = resolveAvailabilityGroupName(referenceAvailability);
+  const weekday = new Date(`${isoDate}T12:00:00`).getDay();
+  const now = Date.now();
+  if (Number.isNaN(weekday)) {
+    throw new Error("Data inválida.");
+  }
+  if (!isValidTimeValue(time)) {
+    throw new Error("Horário inválido.");
+  }
+  if (!isIsoDateTimeInFutureForTimezone(isoDate, time, referenceAvailability.timezone, now)) {
+    throw new Error("Horário já está no passado. Escolha um horário futuro.");
+  }
+
+  const [allAvailabilities, allOverrides, allReservations] = await Promise.all([
+    ctx.db.query("availabilities").collect(),
+    ctx.db.query("availability_overrides").collect(),
+    ctx.db.query("reservations").collect(),
+  ]);
+  const groupAvailabilities = allAvailabilities.filter(
+    (item) => item.status === "active" && resolveAvailabilityGroupName(item) === groupName,
+  );
+  if (groupAvailabilities.length === 0) {
+    throw new Error("Sem disponibilidade ativa para o evento.");
+  }
+
+  const override = allOverrides.find((item) => item.groupName === groupName && item.date === isoDate);
+  const availableSlots = new Set<string>();
+  if (override) {
+    if (!override.allDayUnavailable) {
+      const activeSlots = override.slots.filter((slot) => slot.status === "active");
+      for (const slot of activeSlots) {
+        for (const generatedSlot of buildSlotsWithinRange(
+          slot.startTime,
+          slot.endTime,
+          eventType.durationMinutes,
+        )) {
+          availableSlots.add(generatedSlot);
+        }
+      }
+    }
+  } else {
+    const weekdaySlots = groupAvailabilities.filter((item) => item.weekday === weekday);
+    for (const weeklySlot of weekdaySlots) {
+      for (const generatedSlot of buildSlotsWithinRange(
+        weeklySlot.startTime,
+        weeklySlot.endTime,
+        eventType.durationMinutes,
+      )) {
+        availableSlots.add(generatedSlot);
+      }
+    }
+  }
+
+  if (!availableSlots.has(time)) {
+    throw new Error("Horário não está mais disponível para este evento.");
+  }
+
+  const activeReservations = allReservations.filter(
+    (reservation) => reservation.eventTypeId === eventType._id && isReservationBlocking(reservation, now),
+  );
+  const reservedKeys = new Set<string>();
+  for (const reservation of activeReservations) {
+    const availability = allAvailabilities.find((item) => item._id === reservation.availabilityId);
+    if (!availability) {
+      continue;
+    }
+    const reservationGroup = resolveAvailabilityGroupName(availability);
+    const dateKey = formatDateInTimezone(reservation.startsAt, availability.timezone);
+    const timeKey = formatTimeInTimezone(reservation.startsAt, availability.timezone);
+    reservedKeys.add(buildSlotKey(reservationGroup, dateKey, timeKey));
+  }
+
+  if (reservedKeys.has(buildSlotKey(groupName, isoDate, time))) {
+    throw new Error("Este horário acabou de ser reservado. Escolha outro horário.");
+  }
+}
+
+function parseIsoDateAndTimeToTimestamp(date: string, time: string, timezone: string) {
+  const normalizedDate = date.trim();
+  const normalizedTime = time.trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(normalizedDate) || !isValidTimeValue(normalizedTime)) {
+    throw new Error("Data ou horário inválidos.");
+  }
+
+  const [yearRaw, monthRaw, dayRaw] = normalizedDate.split("-");
+  const [hourRaw, minuteRaw] = normalizedTime.split(":");
+  const year = Number(yearRaw);
+  const month = Number(monthRaw);
+  const day = Number(dayRaw);
+  const hour = Number(hourRaw);
+  const minute = Number(minuteRaw);
+  if (
+    !Number.isInteger(year) ||
+    !Number.isInteger(month) ||
+    !Number.isInteger(day) ||
+    !Number.isInteger(hour) ||
+    !Number.isInteger(minute)
+  ) {
+    throw new Error("Data ou horário inválidos.");
+  }
+
+  const desiredWallClockUtc = Date.UTC(year, month - 1, day, hour, minute, 0, 0);
+  let timestamp = desiredWallClockUtc;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const offsetMs = getTimezoneOffsetMs(timezone, timestamp);
+    timestamp = desiredWallClockUtc - offsetMs;
+  }
+
+  const resolvedDate = formatDateInTimezone(timestamp, timezone);
+  const resolvedTime = formatTimeInTimezone(timestamp, timezone);
+  if (resolvedDate !== normalizedDate || resolvedTime !== normalizedTime) {
+    throw new Error("Data ou horário inválidos para o fuso horário da disponibilidade.");
+  }
+
+  return timestamp;
+}
+
+function getTimezoneOffsetMs(timezone: string, timestamp: number) {
+  const zonedParts = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  })
+    .formatToParts(new Date(timestamp))
+    .reduce<Record<string, string>>((acc, part) => {
+      if (part.type !== "literal") {
+        acc[part.type] = part.value;
+      }
+      return acc;
+    }, {});
+
+  const zonedTimestampAsUtc = Date.UTC(
+    Number(zonedParts.year ?? "0"),
+    Number(zonedParts.month ?? "1") - 1,
+    Number(zonedParts.day ?? "1"),
+    Number(zonedParts.hour ?? "0"),
+    Number(zonedParts.minute ?? "0"),
+    Number(zonedParts.second ?? "0"),
+    0,
+  );
+  return zonedTimestampAsUtc - timestamp;
+}
+
+function isValidTimeValue(value: string) {
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
+}
+
+function inferPreferredPeriod(timestamp: number) {
+  const hour = new Date(timestamp).getHours();
+  if (hour < 12) {
+    return "manha" as const;
+  }
+  if (hour < 18) {
+    return "tarde" as const;
+  }
+  return "noite" as const;
 }
 
 function normalizeAmountCents(value: number | undefined) {

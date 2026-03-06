@@ -42,7 +42,7 @@ const physicianSchema = {
   "@type": "Physician",
   name: "Dr. Leonardo Nunes",
   medicalSpecialty: ["Ophthalmology"],
-  areaServed: ["Fortaleza - CE", "Sao Domingos do Maranhao - MA", "Fortuna - MA"],
+  areaServed: ["Fortaleza - CE", "São Domingos do Maranhão - MA", "Fortuna - MA"],
   knowsAbout: [
     "Consulta oftalmológica",
     "Retina clínica e cirúrgica",
@@ -56,7 +56,7 @@ const clinicSchema = {
   "@type": "MedicalClinic",
   name: "Minha Agenda - Oftalmologia",
   medicalSpecialty: ["Ophthalmology"],
-  areaServed: ["Fortaleza - CE", "Sao Domingos do Maranhao - MA", "Fortuna - MA"],
+  areaServed: ["Fortaleza - CE", "São Domingos do Maranhão - MA", "Fortuna - MA"],
   availableService: [
     {
       "@context": "https://schema.org",
@@ -103,13 +103,13 @@ export default async function HomePage() {
         <Card className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-2 motion-safe:duration-500 rounded-3xl border-white/10 bg-linear-to-br from-card/95 via-card/90 to-card/65 backdrop-blur-2xl">
           <CardHeader className="space-y-4">
             <p className="inline-flex w-fit rounded-full border border-border/70 bg-muted/30 px-3 py-1 text-xs text-muted-foreground">
-              Área exclusiva para pacientes da Minha Agenda
+              Área exclusiva para pacientes de Dr Leonardo
             </p>
             <h1 id="home-hero" className="max-w-3xl text-3xl font-semibold tracking-tight md:text-5xl">
               Minha Agenda
             </h1>
             <CardDescription className="max-w-2xl text-sm text-muted-foreground md:text-base">
-              Aqui, cada paciente é especial: atendimento com tempo, clareza e precisão.
+              Aqui, cada paciente é especial: atendimento de Leonardo Nunes com tempo, clareza e precisão.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap items-center gap-3">
@@ -130,11 +130,11 @@ export default async function HomePage() {
                 disabled
                 className="h-10 rounded-xl px-5 text-sm transition-colors duration-200"
               >
-                Clerk nao configurado
+                Clerk não configurado
               </Button>
             )}
             <p className="w-full text-xs text-muted-foreground">
-              Atendimento individual para quem faz parte da Minha Agenda.
+              Atendimento individual com a assinatura de Dr Leonardo.
             </p>
           </CardContent>
         </Card>
@@ -170,16 +170,16 @@ export default async function HomePage() {
         <Card className="rounded-2xl border-border/70">
           <CardHeader className="space-y-2">
             <h2 id="home-conteudos-relacionados" className="text-xl font-semibold tracking-tight">
-              Conteudos de apoio para sua jornada
+              Conteúdos de apoio para sua jornada
             </h2>
             <CardDescription>
-              Entenda exames, sintomas e orientacoes antes da consulta em nosso hub educativo.
+              Entenda exames, sintomas e orientações antes da consulta em nosso hub educativo.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-3">
             <Button variant="outline" asChild>
               <Link href={oftleonardoContentUrl} target="_blank" rel="noreferrer">
-                Abrir hub de conteudos
+                Abrir hub de conteúdos
               </Link>
             </Button>
             <Button variant="outline" asChild>

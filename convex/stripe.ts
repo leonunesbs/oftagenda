@@ -28,7 +28,6 @@ export const createCheckoutDraft = mutation({
     }
 
     const now = Date.now();
-    const slotTimestamp = parseIsoDateAndTimeToTimestamp(args.date, args.time);
 
     const eventType = await resolveActiveEventType(ctx, args.location);
     const rawStripePriceId = eventType.stripePriceId?.trim() || readStripePriceIdFromEnv();
@@ -40,6 +39,15 @@ export const createCheckoutDraft = mutation({
     if (!eventType.availabilityId) {
       throw new Error("Evento sem disponibilidade configurada.");
     }
+    const referenceAvailability = await ctx.db.get(eventType.availabilityId);
+    if (!referenceAvailability) {
+      throw new Error("Disponibilidade base não encontrada.");
+    }
+    const slotTimestamp = parseIsoDateAndTimeToTimestamp(
+      args.date,
+      args.time,
+      referenceAvailability.timezone,
+    );
     if (!amountCents || amountCents <= 0) {
       throw new Error(
         "Evento sem valor válido para pagamento. Configure `priceCents` em centavos (ex.: 24700) no evento ou use um valor numérico válido no campo legado de preço.",
@@ -665,12 +673,76 @@ function resolveAvailabilityGroupName(availability: { name?: string; _id?: unkno
   return `Disponibilidade-${String(availability._id ?? "sem-id")}`;
 }
 
-function parseIsoDateAndTimeToTimestamp(date: string, time: string) {
-  const timestamp = Date.parse(`${date.trim()}T${time.trim()}:00`);
-  if (Number.isNaN(timestamp)) {
+function parseIsoDateAndTimeToTimestamp(date: string, time: string, timezone: string) {
+  const normalizedDate = date.trim();
+  const normalizedTime = time.trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(normalizedDate) || !isValidTimeValue(normalizedTime)) {
     throw new Error("Data ou horário inválidos.");
   }
+
+  const [yearRaw, monthRaw, dayRaw] = normalizedDate.split("-");
+  const [hourRaw, minuteRaw] = normalizedTime.split(":");
+  const year = Number(yearRaw);
+  const month = Number(monthRaw);
+  const day = Number(dayRaw);
+  const hour = Number(hourRaw);
+  const minute = Number(minuteRaw);
+  if (
+    !Number.isInteger(year) ||
+    !Number.isInteger(month) ||
+    !Number.isInteger(day) ||
+    !Number.isInteger(hour) ||
+    !Number.isInteger(minute)
+  ) {
+    throw new Error("Data ou horário inválidos.");
+  }
+
+  const desiredWallClockUtc = Date.UTC(year, month - 1, day, hour, minute, 0, 0);
+  let timestamp = desiredWallClockUtc;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const offsetMs = getTimezoneOffsetMs(timezone, timestamp);
+    timestamp = desiredWallClockUtc - offsetMs;
+  }
+
+  const resolvedDate = formatDateInTimezone(timestamp, timezone);
+  const resolvedTime = formatTimeInTimezone(timestamp, timezone);
+  if (resolvedDate !== normalizedDate || resolvedTime !== normalizedTime) {
+    throw new Error("Data ou horário inválidos para o fuso horário da disponibilidade.");
+  }
+
   return timestamp;
+}
+
+function getTimezoneOffsetMs(timezone: string, timestamp: number) {
+  const zonedParts = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  })
+    .formatToParts(new Date(timestamp))
+    .reduce<Record<string, string>>((acc, part) => {
+      if (part.type !== "literal") {
+        acc[part.type] = part.value;
+      }
+      return acc;
+    }, {});
+
+  const zonedTimestampAsUtc = Date.UTC(
+    Number(zonedParts.year ?? "0"),
+    Number(zonedParts.month ?? "1") - 1,
+    Number(zonedParts.day ?? "1"),
+    Number(zonedParts.hour ?? "0"),
+    Number(zonedParts.minute ?? "0"),
+    Number(zonedParts.second ?? "0"),
+    0,
+  );
+
+  return zonedTimestampAsUtc - timestamp;
 }
 
 function isValidTimeValue(value: string) {

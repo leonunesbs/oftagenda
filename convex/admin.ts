@@ -860,7 +860,11 @@ export const createReservation = mutation({
       args.time,
     );
 
-    const startsAt = parseIsoDateAndTimeToTimestamp(args.date, args.time);
+    const startsAt = parseIsoDateAndTimeToTimestamp(
+      args.date,
+      args.time,
+      matchedAvailability.timezone,
+    );
     const endsAt = startsAt + eventType.durationMinutes * 60_000;
     const now = Date.now();
 
@@ -912,7 +916,11 @@ export const updateReservation = mutation({
       args.time,
     );
 
-    const startsAt = parseIsoDateAndTimeToTimestamp(args.date, args.time);
+    const startsAt = parseIsoDateAndTimeToTimestamp(
+      args.date,
+      args.time,
+      matchedAvailability.timezone,
+    );
     const endsAt = startsAt + eventType.durationMinutes * 60_000;
     const now = Date.now();
 
@@ -1110,13 +1118,94 @@ function mapReservationToAppointmentStatus(status: "pending" | "confirmed" | "ca
   return null;
 }
 
-function parseIsoDateAndTimeToTimestamp(date: string, time: string) {
-  const raw = `${date.trim()}T${time.trim()}:00`;
-  const timestamp = Date.parse(raw);
-  if (Number.isNaN(timestamp)) {
+function parseIsoDateAndTimeToTimestamp(date: string, time: string, timezone: string) {
+  const normalizedDate = date.trim();
+  const normalizedTime = time.trim();
+  if (!isValidIsoDate(normalizedDate) || !isValidTimeValue(normalizedTime)) {
     throw new Error("Data ou horário invalidos");
   }
+
+  const [yearRaw, monthRaw, dayRaw] = normalizedDate.split("-");
+  const [hourRaw, minuteRaw] = normalizedTime.split(":");
+  const year = Number(yearRaw);
+  const month = Number(monthRaw);
+  const day = Number(dayRaw);
+  const hour = Number(hourRaw);
+  const minute = Number(minuteRaw);
+  if (
+    !Number.isInteger(year) ||
+    !Number.isInteger(month) ||
+    !Number.isInteger(day) ||
+    !Number.isInteger(hour) ||
+    !Number.isInteger(minute)
+  ) {
+    throw new Error("Data ou horário invalidos");
+  }
+
+  const desiredWallClockUtc = Date.UTC(year, month - 1, day, hour, minute, 0, 0);
+  let timestamp = desiredWallClockUtc;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const offsetMs = getTimezoneOffsetMs(timezone, timestamp);
+    timestamp = desiredWallClockUtc - offsetMs;
+  }
+
+  const resolvedDate = formatDateInTimezone(timestamp, timezone);
+  const resolvedTime = formatTimeInTimezone(timestamp, timezone);
+  if (resolvedDate !== normalizedDate || resolvedTime !== normalizedTime) {
+    throw new Error("Data ou horário invalido para o fuso da disponibilidade");
+  }
+
   return timestamp;
+}
+
+function getTimezoneOffsetMs(timezone: string, timestamp: number) {
+  const zonedParts = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  })
+    .formatToParts(new Date(timestamp))
+    .reduce<Record<string, string>>((acc, part) => {
+      if (part.type !== "literal") {
+        acc[part.type] = part.value;
+      }
+      return acc;
+    }, {});
+
+  const zonedTimestampAsUtc = Date.UTC(
+    Number(zonedParts.year ?? "0"),
+    Number(zonedParts.month ?? "1") - 1,
+    Number(zonedParts.day ?? "1"),
+    Number(zonedParts.hour ?? "0"),
+    Number(zonedParts.minute ?? "0"),
+    Number(zonedParts.second ?? "0"),
+    0,
+  );
+
+  return zonedTimestampAsUtc - timestamp;
+}
+
+function formatDateInTimezone(timestamp: number, timezone: string) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(timestamp));
+}
+
+function formatTimeInTimezone(timestamp: number, timezone: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    timeZone: timezone,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(new Date(timestamp));
 }
 
 function parseTimeToMinutes(value: string) {

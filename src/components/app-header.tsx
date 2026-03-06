@@ -67,7 +67,10 @@ export async function AppHeader({ clerkEnabled }: AppHeaderProps) {
           <span className="rounded-md border border-border/80 bg-muted/60 p-1">
             <HugeiconsIcon icon={LayoutBottomIcon} strokeWidth={2} className="size-4" />
           </span>
-          Minha Agenda
+          <span className="flex flex-col leading-tight">
+            <span>Minha Agenda</span>
+            <span className="text-[11px] font-normal text-muted-foreground">por Dr Leonardo</span>
+          </span>
         </Link>
 
         <nav className="hidden items-center gap-2 md:flex md:gap-3">
@@ -78,7 +81,7 @@ export async function AppHeader({ clerkEnabled }: AppHeaderProps) {
           ))}
           <Button variant="ghost" asChild>
             <Link href={oftleonardoContentUrl} target="_blank" rel="noreferrer">
-              Conteudos
+              Conteúdos
             </Link>
           </Button>
           <ColorModeToggle />
@@ -109,7 +112,7 @@ export async function AppHeader({ clerkEnabled }: AppHeaderProps) {
             <SheetContent side="right" className="w-[84vw] max-w-xs">
               <SheetHeader className="pb-3">
                 <SheetTitle>Menu</SheetTitle>
-                <SheetDescription>Acesse as principais paginas.</SheetDescription>
+                <SheetDescription>Acesse as principais páginas.</SheetDescription>
               </SheetHeader>
               <nav className="flex flex-col gap-2 px-6 pb-6">
                 {navItems.map((item) => (
@@ -125,7 +128,7 @@ export async function AppHeader({ clerkEnabled }: AppHeaderProps) {
                 <SheetClose asChild>
                   <Button variant="ghost" asChild className="justify-start">
                     <Link href={oftleonardoContentUrl} target="_blank" rel="noreferrer">
-                      Conteudos
+                      Conteúdos
                     </Link>
                   </Button>
                 </SheetClose>
@@ -142,7 +145,7 @@ export async function AppHeader({ clerkEnabled }: AppHeaderProps) {
                   )
                 ) : (
                   <Button variant="outline" disabled className="mt-2">
-                    Clerk nao configurado
+                    Clerk não configurado
                   </Button>
                 )}
               </nav>

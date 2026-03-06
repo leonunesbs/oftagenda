@@ -22,11 +22,14 @@ export default function ResumoInterceptPage() {
   const locationAddress = searchParams.get("locationAddress") ?? "";
   const date = searchParams.get("date") ?? "";
   const time = searchParams.get("time") ?? "";
+  const hasRedactedParams = [location, locationLabelFromParams, locationAddress, date, time].some(
+    isRedactedValue,
+  );
 
-  const locationLabel = locationLabelFromParams || location || "Local nao informado";
-  const dateLabel = date ? formatDateLabel(date) : "Data nao informada";
-  const timeLabel = time || "Horário nao informado";
-  const mapsHref = locationAddress ? buildMapsDirectionsUrl(locationAddress) : "";
+  const locationLabel = locationLabelFromParams || location || "Local não informado";
+  const dateLabel = date ? formatDateLabel(date) : "Data não informada";
+  const timeLabel = time || "Horário não informado";
+  const addressHref = locationAddress ? buildAddressHref(locationAddress) : "";
 
   return (
     <Dialog
@@ -39,48 +42,62 @@ export default function ResumoInterceptPage() {
     >
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Resumo do agendamento</DialogTitle>
+          <DialogTitle>{hasRedactedParams ? "Erro ao carregar agendamento" : "Resumo do agendamento"}</DialogTitle>
           <DialogDescription>
-            Confira os dados selecionados antes de confirmar.
+            {hasRedactedParams
+              ? "Detectamos dados inválidos na URL. Por segurança, inicie um novo agendamento."
+              : "Confira os dados selecionados antes de confirmar."}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="rounded-xl border border-border/70 bg-muted/20 p-4 text-sm">
-          <p>
-            <span className="font-medium text-foreground">Local:</span> {locationLabel}
+        {hasRedactedParams ? (
+          <p className="text-sm text-destructive">
+            Não foi possível validar os dados deste resumo.
           </p>
-          {locationAddress ? (
+        ) : (
+          <div className="rounded-xl border border-border/70 bg-muted/20 p-4 text-sm">
             <p>
-              <span className="font-medium text-foreground">Endereco:</span>{" "}
-              <a
-                href={mapsHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline underline-offset-4 transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                aria-label={`Abrir rotas no mapa para ${locationAddress}`}
-              >
-                {locationAddress}
-              </a>
+              <span className="font-medium text-foreground">Local:</span> {locationLabel}
             </p>
-          ) : null}
-          <p>
-            <span className="font-medium text-foreground">Data:</span> {dateLabel}
-          </p>
-          <p>
-            <span className="font-medium text-foreground">Horário:</span> {timeLabel}
-          </p>
-        </div>
+            {locationAddress ? (
+              <p>
+                <span className="font-medium text-foreground">Endereço:</span>{" "}
+                <a
+                  href={addressHref}
+                  className="underline underline-offset-4 transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  aria-label={`Abrir o endereço em um aplicativo de mapas: ${locationAddress}`}
+                >
+                  {locationAddress}
+                </a>
+              </p>
+            ) : null}
+            <p>
+              <span className="font-medium text-foreground">Data:</span> {dateLabel}
+            </p>
+            <p>
+              <span className="font-medium text-foreground">Horário:</span> {timeLabel}
+            </p>
+          </div>
+        )}
 
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => router.back()}>
-            Editar agendamento
-          </Button>
-          <StartCheckoutButton
-            location={location}
-            date={date}
-            time={time}
-            label="Seguir para pagamento"
-          />
+          {hasRedactedParams ? (
+            <Button type="button" onClick={() => router.push("/agendar")}>
+              Fazer novo agendamento
+            </Button>
+          ) : (
+            <>
+              <Button type="button" variant="outline" onClick={() => router.back()}>
+                Editar agendamento
+              </Button>
+              <StartCheckoutButton
+                location={location}
+                date={date}
+                time={time}
+                label="Seguir para pagamento"
+              />
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -95,6 +112,10 @@ function formatDateLabel(isoDate: string) {
   return `${day}/${month}/${year}`;
 }
 
-function buildMapsDirectionsUrl(address: string) {
-  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`;
+function buildAddressHref(address: string) {
+  return `geo:0,0?q=${encodeURIComponent(address)}`;
+}
+
+function isRedactedValue(value: string) {
+  return /(?:\[)?redacted(?:\])?/i.test(value.trim());
 }

@@ -7,14 +7,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import type {
   BookingLocationOption,
@@ -68,7 +60,6 @@ export function BookingForm({
   const [location, setLocation] = useState<BookingPayload["location"] | "">("");
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
-  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [locations] = useState<BookingLocationOption[]>(initialLocations);
   const [isEmbedded, setIsEmbedded] = useState(embedMode);
@@ -120,7 +111,6 @@ export function BookingForm({
     setLocation(nextLocation);
     setSelectedDate("");
     setSelectedTime("");
-    setIsConfirmDialogOpen(false);
     setError(null);
     scrollToSection(dateSectionRef);
   }
@@ -134,17 +124,6 @@ export function BookingForm({
   function handleTimeSelect(slot: string) {
     setSelectedTime(slot);
     setError(null);
-  }
-
-  function handleOpenConfirmationDialog() {
-    if (isStartingBooking) {
-      return;
-    }
-    if (!hasSelection) {
-      setError("Selecione local, data e horário para continuar.");
-      return;
-    }
-    setIsConfirmDialogOpen(true);
   }
 
   useEffect(() => {
@@ -163,12 +142,10 @@ export function BookingForm({
   useEffect(() => {
     if (!selectedDate) {
       setSelectedTime("");
-      setIsConfirmDialogOpen(false);
       return;
     }
     if (!filteredTimeSlots.includes(selectedTime)) {
       setSelectedTime("");
-      setIsConfirmDialogOpen(false);
     }
   }, [selectedDate, selectedTime, filteredTimeSlots]);
 
@@ -364,7 +341,6 @@ export function BookingForm({
     }
 
     window.localStorage.removeItem(DRAFT_STORAGE_KEY);
-    setIsConfirmDialogOpen(false);
     startStartingBookingTransition(() => {
       trackEvent("start_booking", {
         location,
@@ -608,82 +584,16 @@ export function BookingForm({
               <div className="flex justify-end">
                 <Button
                   type="button"
-                  onClick={handleOpenConfirmationDialog}
+                  onClick={handleStartBooking}
                   disabled={!hasSelection || isStartingBooking}
                 >
-                  Confirmar horário
+                  {isStartingBooking ? "Processando..." : "Confirmar horário"}
                 </Button>
               </div>
             </section>
           </div>
         </div>
       </CardContent>
-
-      <Dialog
-        open={isConfirmDialogOpen}
-        onOpenChange={(open) => {
-          if (isStartingBooking) {
-            return;
-          }
-          setIsConfirmDialogOpen(open);
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirmar agendamento</DialogTitle>
-            <DialogDescription>
-              Revise os dados antes de continuar.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="rounded-xl border border-border/70 bg-muted/20 p-4 text-sm">
-            <p>
-              <span className="font-medium text-foreground">Local:</span>{" "}
-              {selectedLocation?.label ?? "Nao informado"}
-            </p>
-            <p>
-              <span className="font-medium text-foreground">Data:</span>{" "}
-              {selectedDateOption
-                ? `${selectedDateOption.weekdayLabel}, ${selectedDateOption.label}`
-                : selectedDate
-                  ? formatDateLabel(selectedDate)
-                  : "Nao informada"}
-            </p>
-            <p>
-              <span className="font-medium text-foreground">Horário:</span>{" "}
-              {selectedTime || "Nao informado"}
-            </p>
-          </div>
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setIsConfirmDialogOpen(false)}
-              disabled={isStartingBooking}
-            >
-              Editar dados
-            </Button>
-            <Button
-              type="button"
-              onClick={handleStartBooking}
-              disabled={!hasSelection || isStartingBooking}
-            >
-              {isStartingBooking ? (
-                <span className="inline-flex items-center gap-2">
-                  <span
-                    className="size-3 animate-spin rounded-full border-2 border-current border-t-transparent"
-                    aria-hidden="true"
-                  />
-                  Processando...
-                </span>
-              ) : (
-                "Confirmar"
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </Card>
   );
 }

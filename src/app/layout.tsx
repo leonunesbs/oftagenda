@@ -94,6 +94,7 @@ export default function RootLayout({
   const legalFooter = (
     <footer className="mx-auto w-full max-w-5xl px-4 pb-8 pt-2 text-xs text-muted-foreground md:px-6">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border/70 pt-4">
+        <span className="text-[11px] tracking-wide text-muted-foreground/90">Plataforma oficial de Leonardo Nunes</span>
         <Link href="/termos-de-uso" className="underline underline-offset-2 hover:text-foreground">
           Termos de Uso
         </Link>

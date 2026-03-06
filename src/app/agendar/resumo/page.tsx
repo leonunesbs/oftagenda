@@ -1,8 +1,14 @@
-import Link from "next/link";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
-import { StartCheckoutButton } from "@/components/start-checkout-button";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import Link from "next/link";
+import { StartCheckoutButton } from "@/components/start-checkout-button";
 
 type ResumoPageProps = {
   searchParams?:
@@ -24,7 +30,9 @@ type ResumoPageProps = {
       };
 };
 
-export default async function ResumoPreAgendamentoPage({ searchParams }: ResumoPageProps) {
+export default async function ResumoPreAgendamentoPage({
+  searchParams,
+}: ResumoPageProps) {
   const params = (await searchParams) ?? {};
   const location = params.location ?? "";
   const locationLabelFromParams = params.locationLabel ?? "";
@@ -32,11 +40,36 @@ export default async function ResumoPreAgendamentoPage({ searchParams }: ResumoP
   const date = params.date ?? "";
   const time = params.time ?? "";
   const payment = params.payment ?? "";
+  const hasRedactedParams = [location, locationLabelFromParams, locationAddress, date, time, payment].some(
+    isRedactedValue,
+  );
 
-  const locationLabel = locationLabelFromParams || location || "Local não informado";
+  if (hasRedactedParams) {
+    return (
+      <section className="mx-auto w-full max-w-3xl">
+        <Card className="border-destructive/40 bg-card/95 shadow-sm">
+          <CardHeader className="space-y-2">
+            <CardTitle>Erro ao carregar agendamento</CardTitle>
+            <CardDescription>
+              Detectamos dados inválidos na URL deste pré-agendamento. Por segurança, inicie um novo
+              agendamento.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild>
+              <Link href="/agendar">Fazer novo agendamento</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </section>
+    );
+  }
+
+  const locationLabel =
+    locationLabelFromParams || location || "Local não informado";
   const dateLabel = date ? formatDateLabel(date) : "Data não informada";
   const timeLabel = time || "Horário não informado";
-  const mapsHref = locationAddress ? buildMapsDirectionsUrl(locationAddress) : "";
+  const addressHref = locationAddress ? buildAddressHref(locationAddress) : "";
 
   return (
     <section className="mx-auto w-full max-w-3xl">
@@ -44,37 +77,38 @@ export default async function ResumoPreAgendamentoPage({ searchParams }: ResumoP
         <CardHeader className="space-y-2">
           <CardTitle>Resumo do pré-agendamento</CardTitle>
           <CardDescription>
-            Confira os dados selecionados antes de seguir para a confirmação.
+            Confira os dados selecionados antes de seguir para a confirmação com Dr Leonardo.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="rounded-xl border border-border/70 bg-muted/20 p-4 text-sm">
             <p>
-              <span className="font-medium text-foreground">Local:</span> {locationLabel}
+              <span className="font-medium text-foreground">Local:</span>{" "}
+              {locationLabel}
             </p>
             {locationAddress ? (
               <p>
                 <span className="font-medium text-foreground">Endereço:</span>{" "}
                 <a
-                  href={mapsHref}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  href={addressHref}
                   className="underline underline-offset-4 transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                  aria-label={`Abrir rotas no mapa para ${locationAddress}`}
+                  aria-label={`Abrir o endereço em um aplicativo de mapas: ${locationAddress}`}
                 >
                   {locationAddress}
                 </a>
               </p>
             ) : null}
             <p>
-              <span className="font-medium text-foreground">Data:</span> {dateLabel}
+              <span className="font-medium text-foreground">Data:</span>{" "}
+              {dateLabel}
             </p>
             <p>
-              <span className="font-medium text-foreground">Horário:</span> {timeLabel}
+              <span className="font-medium text-foreground">Horário:</span>{" "}
+              {timeLabel}
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex gap-2 w-full">
             <Button asChild variant="outline">
               <Link href="/agendar">Editar agendamento</Link>
             </Button>
@@ -87,7 +121,8 @@ export default async function ResumoPreAgendamentoPage({ searchParams }: ResumoP
           </div>
           {payment === "cancelled" ? (
             <p className="text-sm text-destructive">
-              O checkout foi cancelado. Você pode tentar novamente quando quiser.
+              O checkout foi cancelado. Você pode tentar novamente quando
+              quiser.
             </p>
           ) : null}
         </CardContent>
@@ -104,6 +139,10 @@ function formatDateLabel(isoDate: string) {
   return `${day}/${month}/${year}`;
 }
 
-function buildMapsDirectionsUrl(address: string) {
-  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}`;
+function buildAddressHref(address: string) {
+  return `geo:0,0?q=${encodeURIComponent(address)}`;
+}
+
+function isRedactedValue(value: string) {
+  return /(?:\[)?redacted(?:\])?/i.test(value.trim());
 }

@@ -58,15 +58,18 @@ export function AnalyticsConsent() {
 
   useEffect(() => {
     const url = new URL(window.location.href);
-    let changed = false;
+    const keysToRemove: string[] = [];
     url.searchParams.forEach((value, key) => {
       if (hasPii(value) || /email|phone|telefone|celular|nome/i.test(key)) {
-        url.searchParams.set(key, "[redacted]");
-        changed = true;
+        keysToRemove.push(key);
       }
     });
-    if (changed) {
-      window.history.replaceState({}, "", url.toString());
+    if (keysToRemove.length > 0) {
+      for (const key of keysToRemove) {
+        url.searchParams.delete(key);
+      }
+      const sanitizedUrl = `${url.pathname}${url.search}${url.hash}`;
+      window.history.replaceState({}, "", sanitizedUrl);
     }
   }, []);
 

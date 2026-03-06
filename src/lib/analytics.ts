@@ -1,5 +1,3 @@
-import { sendGTMEvent } from "@next/third-parties/google";
-
 export type AnalyticsEventName =
   | "view_content"
   | "select_city"
@@ -12,8 +10,12 @@ declare global {
   interface Window {
     gtag?: (...args: unknown[]) => void;
     fbq?: (...args: unknown[]) => void;
+    dataLayer?: Array<Record<string, unknown> | IArguments>;
+    __oftConsent?: "granted" | "denied";
   }
 }
+
+const CONSENT_KEY = "oftcore:consent:v1";
 
 function sanitizeValue(value: string) {
   // Avoid sending PII in analytics fields.
@@ -33,13 +35,34 @@ function sanitizePayload(payload: Record<string, unknown>) {
   );
 }
 
+function hasGrantedConsent() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  try {
+    const saved = window.localStorage.getItem(CONSENT_KEY);
+    if (saved === "granted" || saved === "denied") {
+      return saved === "granted";
+    }
+  } catch {
+    // Some browsers/privacy contexts can block localStorage access.
+  }
+
+  return window.__oftConsent === "granted";
+}
+
 export function trackEvent(event: AnalyticsEventName, payload: Record<string, unknown> = {}) {
   if (typeof window === "undefined") {
     return;
   }
+  if (!hasGrantedConsent()) {
+    return;
+  }
 
   const safePayload = sanitizePayload(payload);
-  sendGTMEvent({ event, ...safePayload });
+  window.dataLayer = window.dataLayer || [];
+  window.dataLayer.push({ event, ...safePayload });
   window.gtag?.("event", event, safePayload);
 }
 

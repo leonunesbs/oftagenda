@@ -6,6 +6,7 @@ import Link from "next/link";
 import Script from "next/script";
 
 import { Button } from "@/components/ui/button";
+import { trackEvent } from "@/lib/analytics";
 import { clientEnv } from "@/lib/env/client";
 
 const CONSENT_KEY = "oftcore:consent:v1";
@@ -16,17 +17,31 @@ function readConsent(): ConsentValue | null {
   if (typeof window === "undefined") {
     return null;
   }
-  const value = window.localStorage.getItem(CONSENT_KEY);
-  if (value === "granted" || value === "denied") {
-    return value;
+  try {
+    const value = window.localStorage.getItem(CONSENT_KEY);
+    if (value === "granted" || value === "denied") {
+      return value;
+    }
+  } catch {
+    // Some browsers/privacy contexts can block localStorage access.
+    if (window.__oftConsent === "granted" || window.__oftConsent === "denied") {
+      return window.__oftConsent;
+    }
   }
   return null;
 }
 
 function hasPii(value: string) {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value) || /^\d{2}:\d{2}$/.test(value)) {
+    return false;
+  }
+
+  const digitsOnly = value.replace(/\D/g, "");
+  const looksLikePhone = digitsOnly.length >= 10 && digitsOnly.length <= 15;
+
   return (
     /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(value) ||
-    /\+?\d[\d\s().-]{7,}\d/.test(value)
+    looksLikePhone
   );
 }
 
@@ -34,7 +49,11 @@ export function AnalyticsConsent() {
   const [consent, setConsent] = useState<ConsentValue | null>(null);
 
   useEffect(() => {
-    setConsent(readConsent());
+    const savedConsent = readConsent();
+    setConsent(savedConsent);
+    if (savedConsent) {
+      window.__oftConsent = savedConsent;
+    }
   }, []);
 
   useEffect(() => {
@@ -63,8 +82,19 @@ export function AnalyticsConsent() {
   );
 
   function updateConsent(nextConsent: ConsentValue) {
-    window.localStorage.setItem(CONSENT_KEY, nextConsent);
+    try {
+      window.localStorage.setItem(CONSENT_KEY, nextConsent);
+    } catch {
+      // In restricted contexts (e.g., embedded third-party iframes), keep runtime consent in memory.
+    }
+    window.__oftConsent = nextConsent;
     setConsent(nextConsent);
+    if (nextConsent === "granted") {
+      // Trigger the first pageview right after consent is granted.
+      window.setTimeout(() => {
+        trackEvent("view_content", { path: window.location.pathname });
+      }, 0);
+    }
   }
 
   if (!hasAnyTrackingId) {

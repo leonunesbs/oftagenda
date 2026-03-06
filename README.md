@@ -93,6 +93,7 @@ Para os dados de saude da triagem de dilatacao, o cliente cifra o payload antes 
 
 - `NEXT_PUBLIC_TRIAGE_E2E_PUBLIC_KEY`: chave publica RSA em base64 no formato SPKI (sem headers PEM)
 - `NEXT_PUBLIC_TRIAGE_E2E_KEY_VERSION`: versao da chave para rotacao (ex.: `v1`)
+- `TRIAGE_E2E_PRIVATE_KEY`: chave privada RSA PKCS8 (PEM com `\n` ou base64 DER em linha unica) usada apenas no servidor para descriptografia autorizada
 
 ### Como gerar as chaves (OpenSSL)
 
@@ -117,6 +118,18 @@ openssl pkey -pubin -in triage-e2e-public.pem -outform DER | base64 | tr -d '\n'
 4. Copiar a saida do comando acima para `NEXT_PUBLIC_TRIAGE_E2E_PUBLIC_KEY`.
 
 5. Definir `NEXT_PUBLIC_TRIAGE_E2E_KEY_VERSION` (ex.: `v1`).
+
+6. Definir a chave privada no servidor (`TRIAGE_E2E_PRIVATE_KEY`) de uma destas formas:
+
+```bash
+# opcao A: PEM escapado em uma linha
+awk 'NF {sub(/\r/, ""); printf "%s\\n",$0;}' triage-e2e-private.pem
+```
+
+```bash
+# opcao B: DER base64 em uma linha
+openssl pkey -in triage-e2e-private.pem -outform DER | base64 | tr -d '\n'
+```
 
 ### Rotacao de chave
 

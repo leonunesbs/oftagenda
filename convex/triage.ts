@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 
-import { mutation } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 
 export const submitDetails = mutation({
   args: {
@@ -84,6 +84,59 @@ export const submitDetails = mutation({
       score: args.score,
       level: args.level,
       advisory: "A decisao final sobre dilatacao e sempre feita no consultorio.",
+    };
+  },
+});
+
+export const getLatestEncryptedDetails = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (identity === null) {
+      throw new Error("Not authenticated");
+    }
+
+    const appointments = await ctx.db
+      .query("appointments")
+      .withIndex("by_clerk_user_id", (q) => q.eq("clerkUserId", identity.subject))
+      .collect();
+    const activeAppointment = [...appointments]
+      .sort((a, b) => b.requestedAt - a.requestedAt)
+      .find((item) => item.status === "confirmed" || item.status === "rescheduled");
+
+    if (!activeAppointment) {
+      return null;
+    }
+
+    const details = await ctx.db
+      .query("appointment_details")
+      .withIndex("by_appointment_id", (q) => q.eq("appointmentId", activeAppointment._id))
+      .first();
+
+    if (
+      !details?.triageCiphertext ||
+      !details.triageWrappedKey ||
+      !details.triageIv ||
+      !details.encryptionVersion ||
+      !details.encryptionAlgorithm ||
+      !details.encryptionKeyVersion
+    ) {
+      return null;
+    }
+
+    return {
+      appointmentId: activeAppointment._id,
+      encryptedPayload: {
+        version: details.encryptionVersion,
+        algorithm: details.encryptionAlgorithm,
+        keyVersion: details.encryptionKeyVersion,
+        wrappedKeyB64: details.triageWrappedKey,
+        ivB64: details.triageIv,
+        ciphertextB64: details.triageCiphertext,
+      },
+      score: details.dilatationScore,
+      level: details.dilatationLevel,
+      updatedAt: details.updatedAt,
     };
   },
 });

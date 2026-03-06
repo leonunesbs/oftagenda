@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState, useTransition } from "react"
+import { useEffect, useMemo, useState, useTransition } from "react"
 
 import { calculateDilatationGuidance } from "@/domain/triage/dilatation"
 import type { TriagePayload } from "@/domain/triage/schema"
@@ -66,6 +66,7 @@ export function DetailsForm() {
     level: "ALTA" | "POSSIVEL" | "BAIXA"
     advisory: string
   } | null>(null)
+  const [hasHydratedExistingDetails, setHasHydratedExistingDetails] = useState(false)
 
   const localResult = useMemo(
     () => (submittedPayload ? calculateDilatationGuidance(submittedPayload) : null),
@@ -74,6 +75,52 @@ export function DetailsForm() {
   const result = serverResult
     ? { ...localResult, ...serverResult, checklist: localResult?.checklist ?? [] }
     : localResult
+
+  useEffect(() => {
+    let isCancelled = false
+
+    async function hydrateExistingDetails() {
+      try {
+        const response = await fetch("/api/details/latest", { method: "GET" })
+        if (!response.ok) {
+          return
+        }
+
+        const data = (await response.json()) as {
+          ok: boolean
+          details: null | {
+            payload: TriagePayload
+            score: number
+            level: "ALTA" | "POSSIVEL" | "BAIXA"
+          }
+        }
+
+        if (!data.ok || !data.details || isCancelled) {
+          return
+        }
+
+        setReason(data.details.payload.reason)
+        setSelectedConditions(data.details.payload.conditions)
+        setSelectedSymptoms(data.details.payload.symptoms)
+        setLastDilation(data.details.payload.lastDilation)
+        setOneSentenceSummary(data.details.payload.oneSentenceSummary ?? "")
+        setSubmittedPayload(data.details.payload)
+        setServerResult({
+          score: data.details.score,
+          level: data.details.level,
+          advisory: "A decisao final sobre dilatacao e sempre feita no consultorio.",
+        })
+        setHasHydratedExistingDetails(true)
+      } catch {
+        // Keep current form behavior if there is no previous details payload.
+      }
+    }
+
+    hydrateExistingDetails()
+    return () => {
+      isCancelled = true
+    }
+  }, [])
 
   async function handleSubmit() {
     setError(null)
@@ -227,6 +274,11 @@ export function DetailsForm() {
           </fieldset>
 
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
+          {hasHydratedExistingDetails ? (
+            <p className="text-xs text-muted-foreground">
+              Carregamos sua última triagem salva com segurança.
+            </p>
+          ) : null}
 
           <Button onClick={handleSubmit} disabled={isSubmitting}>
             {isSubmitting ? "Enviando..." : "Salvar detalhes"}

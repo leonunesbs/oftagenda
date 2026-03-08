@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 
-import { requireN8nApiKey } from "@/lib/integrations/n8n-auth";
 import { n8nResumoLinkSchema } from "@/lib/integrations/n8n-schemas";
 import { resolvePreBookingSummary } from "@/lib/pre-booking-summary";
 
@@ -8,11 +7,6 @@ export const runtime = "nodejs";
 const DEFAULT_FORWARD_ORIGIN = "https://agenda.oftleonardo.com.br";
 
 export async function POST(request: Request) {
-  const authError = requireN8nApiKey(request);
-  if (authError) {
-    return authError;
-  }
-
   const body = await request.json().catch(() => null);
   const parsed = n8nResumoLinkSchema.safeParse(body);
   if (!parsed.success) {

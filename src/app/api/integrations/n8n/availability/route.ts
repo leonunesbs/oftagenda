@@ -2,17 +2,11 @@ import { NextResponse } from "next/server";
 
 import { api } from "@convex/_generated/api";
 import { getConvexHttpClient } from "@/lib/convex-server";
-import { requireN8nApiKey } from "@/lib/integrations/n8n-auth";
 import { n8nAvailabilitySearchSchema } from "@/lib/integrations/n8n-schemas";
 
 export const runtime = "nodejs";
 
 export async function GET(request: Request) {
-  const authError = requireN8nApiKey(request);
-  if (authError) {
-    return authError;
-  }
-
   const url = new URL(request.url);
   const parsed = n8nAvailabilitySearchSchema.safeParse({
     location: url.searchParams.get("location"),

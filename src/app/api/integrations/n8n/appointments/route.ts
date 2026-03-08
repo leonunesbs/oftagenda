@@ -3,7 +3,6 @@ import { NextResponse } from "next/server";
 import type { Id } from "@convex/_generated/dataModel";
 import { api } from "@convex/_generated/api";
 import { getConvexHttpClient } from "@/lib/convex-server";
-import { requireN8nApiKey } from "@/lib/integrations/n8n-auth";
 import {
   n8nAppointmentLookupSchema,
   n8nUpdateAppointmentStatusSchema,
@@ -12,11 +11,6 @@ import {
 export const runtime = "nodejs";
 
 export async function GET(request: Request) {
-  const authError = requireN8nApiKey(request);
-  if (authError) {
-    return authError;
-  }
-
   const url = new URL(request.url);
   const parsed = n8nAppointmentLookupSchema.safeParse({
     phone: url.searchParams.get("phone"),
@@ -47,11 +41,6 @@ export async function GET(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  const authError = requireN8nApiKey(request);
-  if (authError) {
-    return authError;
-  }
-
   const body = await request.json().catch(() => null);
   const parsed = n8nUpdateAppointmentStatusSchema.safeParse(body);
   if (!parsed.success) {

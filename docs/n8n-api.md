@@ -2,19 +2,15 @@
 
 Esta API permite que o fluxo do n8n (chatbot) consulte disponibilidade e gerencie agendamentos por telefone.
 
-## Autenticacao
+## Configuracao
 
 Defina no servidor:
 
 ```env
-N8N_OFTAGENDA_API_KEY=coloque-uma-chave-forte-aqui
 N8N_OFTAGENDA_FORWARD_ORIGIN=https://agenda.oftleonardo.com.br
 ```
 
-Em cada request, envie:
-
-- `x-api-key: <N8N_OFTAGENDA_API_KEY>`
-- ou `Authorization: Bearer <N8N_OFTAGENDA_API_KEY>`
+Esta integracao nao exige autenticacao por header nesta versao.
 
 ## Endpoints
 

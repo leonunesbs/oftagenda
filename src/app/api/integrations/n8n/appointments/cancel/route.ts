@@ -3,17 +3,11 @@ import { NextResponse } from "next/server";
 import type { Id } from "@convex/_generated/dataModel";
 import { api } from "@convex/_generated/api";
 import { getConvexHttpClient } from "@/lib/convex-server";
-import { requireN8nApiKey } from "@/lib/integrations/n8n-auth";
 import { n8nCancelAppointmentSchema } from "@/lib/integrations/n8n-schemas";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
-  const authError = requireN8nApiKey(request);
-  if (authError) {
-    return authError;
-  }
-
   const body = await request.json().catch(() => null);
   const parsed = n8nCancelAppointmentSchema.safeParse(body);
   if (!parsed.success) {

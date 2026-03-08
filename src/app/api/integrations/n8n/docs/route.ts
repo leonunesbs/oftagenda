@@ -1,15 +1,8 @@
 import { NextResponse } from "next/server";
 
-import { requireN8nApiKey } from "@/lib/integrations/n8n-auth";
-
 export const runtime = "nodejs";
 
 export async function GET(request: Request) {
-  const authError = requireN8nApiKey(request);
-  if (authError) {
-    return authError;
-  }
-
   const requestOrigin = new URL(request.url).origin;
   const forwardOrigin =
     process.env.N8N_OFTAGENDA_FORWARD_ORIGIN?.trim() || "https://agenda.oftleonardo.com.br";
@@ -20,12 +13,12 @@ export async function GET(request: Request) {
     baseUrl: requestOrigin,
     setupChecklist: [
       "Defina a URL base real do seu OftAgenda (evite placeholders).",
-      "Envie o header x-api-key em todas as requisicoes.",
       "Use os endpoints abaixo com o prefixo /api/integrations/n8n.",
+      "Configure controles de acesso na infraestrutura (WAF/IP allowlist) se necessario.",
     ],
     auth: {
-      header: "x-api-key",
-      alternative: "Authorization: Bearer <N8N_OFTAGENDA_API_KEY>",
+      required: false,
+      note: "Sem autenticação por header nesta versão.",
     },
     endpoints: [
       {

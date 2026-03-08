@@ -2,16 +2,10 @@ import { NextResponse } from "next/server";
 
 import { api } from "@convex/_generated/api";
 import { getConvexHttpClient } from "@/lib/convex-server";
-import { requireN8nApiKey } from "@/lib/integrations/n8n-auth";
 
 export const runtime = "nodejs";
 
-export async function GET(request: Request) {
-  const authError = requireN8nApiKey(request);
-  if (authError) {
-    return authError;
-  }
-
+export async function GET() {
   try {
     const client = getConvexHttpClient();
     const locations = await client.query(api.appointments.getActiveBookingLocations, {});

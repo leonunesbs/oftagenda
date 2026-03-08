@@ -6,6 +6,8 @@ export const serverEnv = createEnv({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
     STRIPE_SECRET_KEY: z.string().optional(),
     STRIPE_WEBHOOK_SECRET: z.string().optional(),
+    N8N_OFTAGENDA_API_KEY: z.string().optional(),
+    N8N_OFTAGENDA_FORWARD_ORIGIN: z.string().url().optional(),
     TRIAGE_E2E_PRIVATE_KEY: z.string().optional(),
   },
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,

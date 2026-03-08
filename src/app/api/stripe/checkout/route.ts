@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { clerkClient } from "@clerk/nextjs/server";
+import { z } from "zod/v4";
 
 import { bookingCheckoutSchema } from "@/domain/booking/schema";
 import { requireMemberApiAccess } from "@/lib/access";
@@ -12,6 +14,9 @@ const ACTIVE_APPOINTMENT_ERROR =
   "Você já possui um agendamento ativo. Use o painel para remarcação, sem criar novo agendamento.";
 const PENDING_RESERVATION_ERROR =
   "Você já possui um agendamento aguardando remarcação. Finalize ou cancele o pendente atual.";
+const checkoutPayloadSchema = bookingCheckoutSchema.extend({
+  waUserId: z.string().trim().min(3).max(120).optional(),
+});
 
 export async function POST(request: Request) {
   try {
@@ -29,7 +34,7 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json().catch(() => null);
-  const parsed = bookingCheckoutSchema.safeParse(body);
+  const parsed = checkoutPayloadSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       {
@@ -43,9 +48,14 @@ export async function POST(request: Request) {
 
   try {
     const { client, userId } = await getAuthenticatedConvexHttpClient();
+    await linkWhatsAppContactToUser(userId, parsed.data.waUserId);
     const draft = await client.mutation(
       api.stripe.createCheckoutDraft,
-      parsed.data,
+      {
+        location: parsed.data.location,
+        date: parsed.data.date,
+        time: parsed.data.time,
+      },
     );
 
     const stripe = getStripeClient();
@@ -178,4 +188,44 @@ export async function POST(request: Request) {
     const status = message.toLowerCase().includes("not authenticated") ? 401 : 500;
     return NextResponse.json({ ok: false, error: message }, { status });
   }
+}
+
+async function linkWhatsAppContactToUser(clerkUserId: string, waUserId: string | undefined) {
+  const normalizedWaUserId = normalizeWhatsAppUserId(waUserId);
+  if (!normalizedWaUserId) {
+    return;
+  }
+
+  try {
+    const clerk = await clerkClient();
+    const user = await clerk.users.getUser(clerkUserId);
+    const publicMetadata =
+      user.publicMetadata && typeof user.publicMetadata === "object"
+        ? (user.publicMetadata as Record<string, unknown>)
+        : {};
+    const currentWaUserId = typeof publicMetadata.whatsappUserId === "string"
+      ? publicMetadata.whatsappUserId
+      : "";
+    if (currentWaUserId === normalizedWaUserId) {
+      return;
+    }
+
+    await clerk.users.updateUserMetadata(clerkUserId, {
+      publicMetadata: {
+        ...publicMetadata,
+        whatsappUserId: normalizedWaUserId,
+        whatsappLinkedAt: new Date().toISOString(),
+      },
+    });
+  } catch {
+    // Non-blocking: checkout should continue even if metadata sync fails.
+  }
+}
+
+function normalizeWhatsAppUserId(rawValue: string | undefined) {
+  const normalized = rawValue?.trim() ?? "";
+  if (!normalized) {
+    return "";
+  }
+  return normalized.slice(0, 120);
 }

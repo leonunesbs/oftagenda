@@ -1,16 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { trackEvent } from "@/lib/analytics";
+import Link from "next/link";
 
 type StartCheckoutButtonProps = {
   location: string;
   date: string;
   time: string;
   label?: string;
+  waUserId?: string;
 };
 
 type CheckoutErrorState = {
@@ -33,6 +34,7 @@ export function StartCheckoutButton({
   date,
   time,
   label = "Ir para pagamento",
+  waUserId,
 }: StartCheckoutButtonProps) {
   const [isLoading, startCheckoutTransition] = useTransition();
   const [error, setError] = useState<CheckoutErrorState | null>(null);
@@ -53,13 +55,20 @@ export function StartCheckoutButton({
     setError(null);
     startCheckoutTransition(async () => {
       try {
-        trackEvent("submit_booking", { location, date, time, step: "checkout" });
+        trackEvent("submit_booking", {
+          location,
+          date,
+          time,
+          step: "checkout",
+        });
         const response = await fetch("/api/stripe/checkout", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ location, date, time }),
+          body: JSON.stringify({ location, date, time, waUserId }),
         });
-        const data = (await response.json().catch(() => null)) as CheckoutApiResponse | null;
+        const data = (await response
+          .json()
+          .catch(() => null)) as CheckoutApiResponse | null;
         if (!response.ok || !data?.ok || typeof data.url !== "string") {
           const normalizedError = normalizeCheckoutError(data);
           setError(normalizedError);
@@ -92,7 +101,12 @@ export function StartCheckoutButton({
 
   return (
     <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
-      <Button type="button" onClick={handleStartCheckout} disabled={isLoading} className="w-full sm:w-auto">
+      <Button
+        type="button"
+        onClick={handleStartCheckout}
+        disabled={isLoading}
+        className="w-full sm:w-auto"
+      >
         {isLoading ? "Redirecionando..." : label}
       </Button>
       <p className="w-full rounded-md border border-border/60 bg-muted/30 px-3 py-1.5 text-center text-xs text-muted-foreground sm:w-auto sm:text-left">
@@ -102,14 +116,18 @@ export function StartCheckoutButton({
         <div className="w-full rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive sm:max-w-[24rem]">
           <p className="font-medium">{error.title}</p>
           {error.description ? (
-            <p className="mt-1 text-xs text-destructive/90">{error.description}</p>
+            <p className="mt-1 text-xs text-destructive/90">
+              {error.description}
+            </p>
           ) : null}
           {error.redirectTo ? (
             <div className="mt-2 flex items-center gap-2">
               <Button asChild size="sm" variant="outline">
                 <Link href={error.redirectTo}>Ir para meu agendamento</Link>
               </Button>
-              <span className="text-xs text-destructive/80">Redirecionando automaticamente...</span>
+              <span className="text-xs text-destructive/80">
+                Redirecionando automaticamente...
+              </span>
             </div>
           ) : null}
         </div>
@@ -118,19 +136,24 @@ export function StartCheckoutButton({
   );
 }
 
-function normalizeCheckoutError(data: CheckoutApiResponse | null): CheckoutErrorState {
+function normalizeCheckoutError(
+  data: CheckoutApiResponse | null,
+): CheckoutErrorState {
   if (data?.errorCode === "ACTIVE_APPOINTMENT_EXISTS" && data.redirectTo) {
     return {
       title: data.error || "Voce ja possui um agendamento ativo.",
       description:
-        data.errorDetails || "Leve ajuste de rota: voce sera enviado para gerenciar esse agendamento.",
+        data.errorDetails ||
+        "Leve ajuste de rota: voce sera enviado para gerenciar esse agendamento.",
       redirectTo: data.redirectTo,
     };
   }
   if (data?.errorCode === "PENDING_RESERVATION_EXISTS" && data.redirectTo) {
     return {
       title: data.error || "Voce ja possui um agendamento pendente.",
-      description: data.errorDetails || "Gerencie primeiro o agendamento pendente no painel.",
+      description:
+        data.errorDetails ||
+        "Gerencie primeiro o agendamento pendente no painel.",
       redirectTo: data.redirectTo,
     };
   }
@@ -138,11 +161,11 @@ function normalizeCheckoutError(data: CheckoutApiResponse | null): CheckoutError
     return {
       title: data.error,
       description: data.errorDetails,
-      redirectTo: typeof data.redirectTo === "string" ? data.redirectTo : undefined,
+      redirectTo:
+        typeof data.redirectTo === "string" ? data.redirectTo : undefined,
     };
   }
   return {
     title: "Nao foi possivel iniciar o checkout.",
   };
 }
-

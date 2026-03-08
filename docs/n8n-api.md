@@ -1,0 +1,155 @@
+# Integracao n8n <-> oftagenda
+
+Esta API permite que o fluxo do n8n (chatbot) consulte disponibilidade e gerencie agendamentos por telefone.
+
+## Autenticacao
+
+Defina no servidor:
+
+```env
+N8N_OFTAGENDA_API_KEY=coloque-uma-chave-forte-aqui
+N8N_OFTAGENDA_FORWARD_ORIGIN=https://agenda.oftleonardo.com.br
+```
+
+Em cada request, envie:
+
+- `x-api-key: <N8N_OFTAGENDA_API_KEY>`
+- ou `Authorization: Bearer <N8N_OFTAGENDA_API_KEY>`
+
+## Endpoints
+
+Base: `https://seu-dominio`
+
+### 1) Listar locais
+
+- `GET /api/integrations/n8n/locations`
+
+Resposta:
+
+```json
+{
+  "ok": true,
+  "locations": [
+    { "value": "fortaleza", "label": "Fortaleza", "address": "..." }
+  ]
+}
+```
+
+### 2) Consultar datas e horarios por local
+
+- `GET /api/integrations/n8n/availability?location=fortaleza&daysAhead=14`
+
+Resposta:
+
+```json
+{
+  "ok": true,
+  "options": {
+    "location": "fortaleza",
+    "dates": [
+      {
+        "isoDate": "2026-03-20",
+        "label": "20/03",
+        "weekdayLabel": "sex.",
+        "times": ["08:00", "08:30", "09:00"]
+      }
+    ]
+  }
+}
+```
+
+### 3) Consultar agendamentos por telefone
+
+- `GET /api/integrations/n8n/appointments?phone=5599999999999&includeHistory=true`
+
+Resposta:
+
+```json
+{
+  "ok": true,
+  "phone": "5599999999999",
+  "total": 1,
+  "activeAppointment": {
+    "appointmentId": "j57...",
+    "status": "confirmed"
+  },
+  "appointments": [
+    {
+      "appointmentId": "j57...",
+      "name": "Paciente",
+      "phone": "+55 (99) 99999-9999",
+      "email": "paciente@exemplo.com",
+      "location": "fortaleza",
+      "status": "confirmed",
+      "requestedAt": 1770000000000,
+      "scheduledFor": 1770003600000
+    }
+  ]
+}
+```
+
+### 4) Atualizar status de agendamento
+
+- `PATCH /api/integrations/n8n/appointments`
+
+Body:
+
+```json
+{
+  "appointmentId": "j57...",
+  "phone": "5599999999999",
+  "status": "cancelled",
+  "reason": "Paciente pediu cancelamento pelo WhatsApp"
+}
+```
+
+`status` permitido: `confirmed`, `rescheduled`, `cancelled`, `completed`.
+
+### 5) Cancelar agendamento (atalho)
+
+- `POST /api/integrations/n8n/appointments/cancel`
+
+Body:
+
+```json
+{
+  "appointmentId": "j57...",
+  "phone": "5599999999999",
+  "reason": "Paciente pediu cancelamento pelo WhatsApp"
+}
+```
+
+### 6) Gerar link de encaminhamento para pagina de resumo
+
+- `POST /api/integrations/n8n/resumo-link`
+
+Body:
+
+```json
+{
+  "location": "fortaleza",
+  "date": "2026-03-20",
+  "time": "14:00",
+  "waUserId": "5599999999999@c.us",
+  "source": "n8n"
+}
+```
+
+Resposta:
+
+```json
+{
+  "ok": true,
+  "summaryUrl": "https://agenda.oftleonardo.com.br/agendar/resumo?location=fortaleza&date=2026-03-20&time=14%3A00&waUserId=5599999999999%40c.us&source=n8n",
+  "valid": true
+}
+```
+
+Com esse `summaryUrl`, o chatbot pode encaminhar o paciente para revisar a selecao e seguir para pagamento.
+Ao iniciar o checkout autenticado, `waUserId` e vinculado ao usuario Clerk em `publicMetadata.whatsappUserId`.
+
+## Endpoint rapido de referencia
+
+- `GET /api/integrations/n8n/docs`
+
+Retorna um resumo JSON da integracao (rotas e exemplos) para facilitar configuração no n8n.

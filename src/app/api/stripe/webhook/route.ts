@@ -3,6 +3,7 @@ import Stripe from "stripe";
 
 import { api } from "@convex/_generated/api";
 import { getConvexHttpClient } from "@/lib/convex-server";
+import { sendAppointmentConfirmedNotification } from "@/lib/notifications";
 import { getStripeClient, getStripeWebhookSecret } from "@/lib/stripe";
 
 type ReconcileStatus = "paid" | "failed" | "expired" | "refunded";
@@ -32,7 +33,20 @@ export async function POST(request: Request) {
 
   try {
     const client = getConvexHttpClient();
-    await client.mutation(api.stripe.reconcileStripeEvent, normalized);
+    const result = await client.mutation(api.stripe.reconcileStripeEvent, normalized);
+    if (result.notification?.type === "appointment_confirmed") {
+      const delivery = await sendAppointmentConfirmedNotification(result.notification);
+      if (!delivery.ok) {
+        console.error(
+          "[stripe.webhook] falha ao enviar notificacao de confirmacao",
+          JSON.stringify({
+            appointmentId: result.notification.appointmentId,
+            status: delivery.status,
+            error: delivery.error,
+          }),
+        );
+      }
+    }
     return NextResponse.json({ ok: true });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Falha ao reconciliar webhook.";

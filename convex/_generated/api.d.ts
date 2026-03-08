@@ -11,6 +11,7 @@
 import type * as admin from "../admin.js";
 import type * as appointments from "../appointments.js";
 import type * as history from "../history.js";
+import type * as n8n from "../n8n.js";
 import type * as patients from "../patients.js";
 import type * as stripe from "../stripe.js";
 import type * as triage from "../triage.js";
@@ -25,6 +26,7 @@ declare const fullApi: ApiFromModules<{
   admin: typeof admin;
   appointments: typeof appointments;
   history: typeof history;
+  n8n: typeof n8n;
   patients: typeof patients;
   stripe: typeof stripe;
   triage: typeof triage;

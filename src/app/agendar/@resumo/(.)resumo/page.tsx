@@ -1,5 +1,4 @@
 import { resolvePreBookingSummary } from "@/lib/pre-booking-summary";
-
 import { ResumoDialog } from "./resumo-dialog";
 
 type ResumoInterceptPageProps = {
@@ -10,6 +9,7 @@ type ResumoInterceptPageProps = {
         date?: string;
         time?: string;
         payment?: string;
+        waUserId?: string;
       }>
     | {
         locationId?: string;
@@ -17,6 +17,7 @@ type ResumoInterceptPageProps = {
         date?: string;
         time?: string;
         payment?: string;
+        waUserId?: string;
       };
 };
 
@@ -36,6 +37,7 @@ export default async function ResumoInterceptPage({
       time={summary.time}
       timeLabel={summary.timeLabel}
       payment={summary.payment}
+      waUserId={params.waUserId}
       hasRedactedParams={summary.hasRedactedParams}
       hasInvalidSelection={summary.hasInvalidSelection}
     />

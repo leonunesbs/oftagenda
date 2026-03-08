@@ -22,6 +22,7 @@ type ResumoDialogProps = {
   time: string;
   timeLabel: string;
   payment: string;
+  waUserId?: string;
   hasRedactedParams: boolean;
   hasInvalidSelection: boolean;
 };
@@ -35,6 +36,7 @@ export function ResumoDialog({
   time,
   timeLabel,
   payment,
+  waUserId,
   hasRedactedParams,
   hasInvalidSelection,
 }: ResumoDialogProps) {
@@ -123,6 +125,7 @@ export function ResumoDialog({
                 date={date}
                 time={time}
                 label="Seguir para pagamento"
+                waUserId={waUserId}
               />
             </>
           )}

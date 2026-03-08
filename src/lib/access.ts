@@ -1,10 +1,13 @@
+import {
+  BOOKING_CONFIRMED_COOKIE,
+  isBookingConfirmedValue,
+} from "@/domain/booking/state";
 import { auth, clerkClient } from "@clerk/nextjs/server";
+
 import { ConvexHttpClient } from "convex/browser";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-
 import { api } from "../../convex/_generated/api";
-import { BOOKING_CONFIRMED_COOKIE, isBookingConfirmedValue } from "@/domain/booking/state";
 
 export function isClerkConfigured() {
   const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
@@ -73,7 +76,9 @@ async function ensureDefaultRoleMetadata(userId: string) {
   });
 }
 
-export async function getUserRoleFromClerkAuth(authData: { userId: string | null }) {
+export async function getUserRoleFromClerkAuth(authData: {
+  userId: string | null;
+}) {
   if (!authData.userId) {
     return null;
   }
@@ -89,7 +94,9 @@ function canAccessRole(role: UserRole | null, requiredRole: UserRole) {
   return ROLE_LEVEL[role] >= ROLE_LEVEL[requiredRole];
 }
 
-export async function isAdminFromClerkAuth(authData: { userId: string | null }) {
+export async function isAdminFromClerkAuth(authData: {
+  userId: string | null;
+}) {
   const role = await getUserRoleFromClerkAuth(authData);
   return canAccessRole(role, "admin");
 }
@@ -181,7 +188,9 @@ export async function hasConfirmedBooking() {
   }
 
   const cookieStore = await cookies();
-  return isBookingConfirmedValue(cookieStore.get(BOOKING_CONFIRMED_COOKIE)?.value);
+  return isBookingConfirmedValue(
+    cookieStore.get(BOOKING_CONFIRMED_COOKIE)?.value,
+  );
 }
 
 export async function requireConfirmedBooking(redirectTo = "/agendar") {

@@ -84,6 +84,11 @@ pnpm run dev:next   # apenas Next.js
 - `POST /api/details/submit`
   - valida envelope criptografado com Zod
   - persiste triagem cifrada no Convex vinculada ao agendamento ativo
+- `GET /api/integrations/n8n/docs`
+  - resumo dos endpoints de integração para n8n/chatbot
+  - exige `x-api-key` ou `Authorization: Bearer <N8N_OFTAGENDA_API_KEY>`
+  - suporta link de encaminhamento com `waUserId` para vincular WhatsApp ao `publicMetadata` do Clerk
+  - documentação completa em `docs/n8n-api.md`
 
 ## Criptografia ponta a ponta da triagem
 

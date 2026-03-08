@@ -333,8 +333,21 @@ export const reconcileStripeEvent = mutation({
       return { ok: true, ignored: true };
     }
 
+    let notification:
+      | {
+          type: "appointment_confirmed";
+          appointmentId: string;
+          patientName: string;
+          patientPhone: string;
+          location: string;
+          scheduledFor: number;
+          timezone: string;
+          consultationType: string;
+        }
+      | null = null;
+
     if (args.status === "paid") {
-      await markAsPaid(ctx, payment, reservation, args, now);
+      notification = await markAsPaid(ctx, payment, reservation, args, now);
     } else if (args.status === "refunded") {
       await markAsRefunded(ctx, payment, reservation, now);
     } else {
@@ -355,7 +368,7 @@ export const reconcileStripeEvent = mutation({
       createdAt: now,
     });
 
-    return { ok: true };
+    return { ok: true, notification };
   },
 });
 
@@ -380,7 +393,7 @@ async function markAsPaid(
       notes: "Pagamento recebido para reserva encerrada. Revisar e estornar no Stripe.",
       updatedAt: now,
     });
-    return;
+    return null;
   }
   if (reservation.status === "pending" && getReservationHoldExpiresAt(reservation) <= now) {
     await ctx.db.patch(payment._id, {
@@ -395,7 +408,7 @@ async function markAsPaid(
       notes: "Reserva expirada antes da confirmação do pagamento.",
       updatedAt: now,
     });
-    return;
+    return null;
   }
 
   const alreadyPaid = payment.status === "paid";
@@ -416,6 +429,7 @@ async function markAsPaid(
   if (!eventType) {
     throw new Error("Evento da reserva não encontrado.");
   }
+  const availability = await ctx.db.get(reservation.availabilityId);
 
   const patient = await findOrCreatePatient(
     ctx,
@@ -474,6 +488,21 @@ async function markAsPaid(
       createdAt: now,
     });
   }
+
+  if (alreadyPaid) {
+    return null;
+  }
+
+  return {
+    type: "appointment_confirmed" as const,
+    appointmentId: String(appointmentId),
+    patientName: patient.name,
+    patientPhone: patient.phone,
+    location: eventType.location,
+    scheduledFor: reservation.startsAt,
+    timezone: availability?.timezone ?? "America/Fortaleza",
+    consultationType: eventType.name ?? eventType.title ?? "Consulta oftalmologica",
+  };
 }
 
 async function markAsFailedOrExpired(

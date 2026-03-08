@@ -18,7 +18,16 @@ Em cada request, envie:
 
 ## Endpoints
 
-Base: `https://seu-dominio`
+Base (use o dominio real do OftAgenda, sem placeholder):
+
+- Producao: `https://agenda.oftleonardo.com.br`
+- Desenvolvimento local: `http://localhost:3000`
+
+Exemplos de URL completas:
+
+- `GET https://agenda.oftleonardo.com.br/api/integrations/n8n/locations`
+- `GET https://agenda.oftleonardo.com.br/api/integrations/n8n/availability?location=fortaleza&daysAhead=14`
+- `POST https://agenda.oftleonardo.com.br/api/integrations/n8n/resumo-link`
 
 ### 1) Listar locais
 

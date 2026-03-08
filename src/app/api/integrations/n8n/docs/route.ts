@@ -10,12 +10,19 @@ export async function GET(request: Request) {
     return authError;
   }
 
+  const requestOrigin = new URL(request.url).origin;
   const forwardOrigin =
     process.env.N8N_OFTAGENDA_FORWARD_ORIGIN?.trim() || "https://agenda.oftleonardo.com.br";
 
   return NextResponse.json({
     ok: true,
     integration: "oftagenda-n8n",
+    baseUrl: requestOrigin,
+    setupChecklist: [
+      "Defina a URL base real do seu OftAgenda (evite placeholders).",
+      "Envie o header x-api-key em todas as requisicoes.",
+      "Use os endpoints abaixo com o prefixo /api/integrations/n8n.",
+    ],
     auth: {
       header: "x-api-key",
       alternative: "Authorization: Bearer <N8N_OFTAGENDA_API_KEY>",

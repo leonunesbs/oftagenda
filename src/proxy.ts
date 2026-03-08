@@ -14,7 +14,10 @@ const clerkConfigured = isClerkConfigured();
 
 const proxy = clerkConfigured
   ? clerkMiddleware(async (auth, req) => {
-      if (req.nextUrl.pathname === "/api/stripe/webhook") {
+      if (
+        req.nextUrl.pathname === "/api/stripe/webhook" ||
+        req.nextUrl.pathname.startsWith("/api/integrations/n8n/")
+      ) {
         return;
       }
       if (isProtectedRoute(req)) {

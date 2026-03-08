@@ -33,11 +33,41 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import Link from "next/link";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
-export default async function AdminEventsPage() {
+const kindFilters = ["all", "consulta", "exame", "procedimento"] as const;
+
+const kindClassName: Record<"consulta" | "exame" | "procedimento", string> = {
+  consulta: "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200",
+  exame: "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200",
+  procedimento: "bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-200",
+};
+
+export default async function AdminEventsPage({
+  searchParams,
+}: {
+  searchParams?: { kind?: string };
+}) {
   const data = await getAdminSnapshot();
   const availabilityById = getAvailabilityById(data);
   const availabilityGroups = buildAvailabilityGroups(data);
+  const selectedKind = kindFilters.includes((searchParams?.kind as (typeof kindFilters)[number]) ?? "all")
+    ? ((searchParams?.kind as (typeof kindFilters)[number]) ?? "all")
+    : "all";
+  const eventTypes = data.eventTypes.filter((eventType) =>
+    selectedKind === "all" ? true : (eventType.kind ?? "consulta") === selectedKind,
+  );
 
   return (
     <Card className="border-border/70">
@@ -46,6 +76,15 @@ export default async function AdminEventsPage() {
         <CardDescription>CRUD completo para eventos que representam os locais da reserva.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        <div className="flex flex-wrap gap-2">
+          {kindFilters.map((kind) => (
+            <Button key={kind} variant={selectedKind === kind ? "default" : "outline"} size="sm" asChild>
+              <Link href={kind === "all" ? "/dashboard/admin/eventos" : `/dashboard/admin/eventos?kind=${kind}`}>
+                {kind === "all" ? "todos" : kind}
+              </Link>
+            </Button>
+          ))}
+        </div>
         <Dialog>
           <DialogTrigger asChild>
             <Button disabled={availabilityGroups.length === 0}>Cadastrar evento</Button>
@@ -126,7 +165,7 @@ export default async function AdminEventsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.eventTypes.map((eventType) => {
+              {eventTypes.map((eventType) => {
                 const linkedAvailability = eventType.availabilityId
                   ? availabilityById.get(String(eventType.availabilityId)) ?? null
                   : null;
@@ -141,7 +180,9 @@ export default async function AdminEventsPage() {
                   <TableRow key={eventType._id}>
                     <TableCell className="font-medium">{eventType.name ?? eventType.title}</TableCell>
                     <TableCell>{eventType.slug}</TableCell>
-                    <TableCell>{eventType.kind ?? "consulta"}</TableCell>
+                    <TableCell>
+                      <Badge className={kindClassName[eventType.kind ?? "consulta"]}>{eventType.kind ?? "consulta"}</Badge>
+                    </TableCell>
                     <TableCell>{eventType.durationMinutes} min</TableCell>
                     <TableCell>{formatMoney(eventType.priceCents ?? 0)}</TableCell>
                     <TableCell>{linkedAvailabilityGroup?.name ?? "Sem grupo"}</TableCell>
@@ -371,9 +412,25 @@ export default async function AdminEventsPage() {
                                             </form>
                                             <form action={deleteReservationAction}>
                                               <input type="hidden" name="reservationId" value={reservation._id} />
-                                              <Button size="sm" variant="destructive" type="submit">
-                                                Excluir reserva
-                                              </Button>
+                                              <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                  <Button size="sm" variant="destructive" type="button">
+                                                    Excluir reserva
+                                                  </Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                  <AlertDialogHeader>
+                                                    <AlertDialogTitle>Excluir esta reserva?</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                      Esta acao e irreversivel e remove a reserva da agenda.
+                                                    </AlertDialogDescription>
+                                                  </AlertDialogHeader>
+                                                  <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                    <AlertDialogAction type="submit">Excluir</AlertDialogAction>
+                                                  </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                              </AlertDialog>
                                             </form>
                                           </DialogContent>
                                         </Dialog>
@@ -395,9 +452,25 @@ export default async function AdminEventsPage() {
                         </form>
                         <form action={deleteEventTypeAction}>
                           <input type="hidden" name="eventTypeId" value={eventType._id} />
-                          <Button variant="destructive" size="sm" type="submit">
-                            Excluir
-                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="destructive" size="sm" type="button">
+                                Excluir
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Excluir este evento?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Esta acao remove o tipo de evento e nao pode ser desfeita.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction type="submit">Excluir</AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </form>
                       </div>
                     </TableCell>

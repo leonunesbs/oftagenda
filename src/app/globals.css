@@ -143,3 +143,32 @@ body.booking-embed-mode main {
   max-width: 100%;
   padding: 0.5rem;
 }
+
+html.admin-dashboard-mode [data-app-header],
+body.admin-dashboard-mode [data-app-header] {
+  display: none;
+}
+
+html.admin-dashboard-mode [data-app-main],
+body.admin-dashboard-mode [data-app-main] {
+  max-width: 100%;
+  padding: 0;
+}
+
+html.admin-dashboard-mode [data-app-legal-footer],
+body.admin-dashboard-mode [data-app-legal-footer] {
+  display: none;
+}
+
+body:has([data-admin-shell]) [data-app-header] {
+  display: none;
+}
+
+body:has([data-admin-shell]) [data-app-main] {
+  max-width: 100%;
+  padding: 0;
+}
+
+body:has([data-admin-shell]) [data-app-legal-footer] {
+  display: none;
+}

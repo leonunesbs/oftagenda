@@ -28,5 +28,4 @@ export const n8nUpdateAppointmentStatusSchema = z.object({
 export const n8nResumoLinkSchema = bookingCheckoutSchema.extend({
   payment: z.enum(["cancelled"]).optional(),
   source: z.string().trim().max(80).optional(),
-  waUserId: z.string().trim().min(3).max(120).optional(),
 });

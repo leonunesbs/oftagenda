@@ -135,7 +135,6 @@ Body:
   "location": "fortaleza",
   "date": "2026-03-20",
   "time": "14:00",
-  "waUserId": "5599999999999@c.us",
   "source": "n8n"
 }
 ```
@@ -145,13 +144,12 @@ Resposta:
 ```json
 {
   "ok": true,
-  "summaryUrl": "https://agenda.oftleonardo.com.br/agendar/resumo?location=fortaleza&date=2026-03-20&time=14%3A00&waUserId=5599999999999%40c.us&source=n8n",
+  "summaryUrl": "https://agenda.oftleonardo.com.br/agendar/resumo?location=fortaleza&date=2026-03-20&time=14%3A00&source=n8n",
   "valid": true
 }
 ```
 
 Com esse `summaryUrl`, o chatbot pode encaminhar o paciente para revisar a selecao e seguir para pagamento.
-Ao iniciar o checkout autenticado, `waUserId` e vinculado ao usuario Clerk em `publicMetadata.whatsappUserId`.
 
 ## Endpoint rapido de referencia
 

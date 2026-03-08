@@ -1,5 +1,5 @@
-import Link from "next/link";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
 
 import { auth } from "@clerk/nextjs/server";
@@ -8,9 +8,14 @@ import { BookingFormContainer } from "@/components/booking-form-container";
 import { BookingFormFallback } from "@/components/booking-form-fallback";
 import { ScrollToIdButton } from "@/components/scroll-to-id-button";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
-import { isClerkConfigured } from "@/lib/access";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+} from "@/components/ui/card";
 import { siteConfig } from "@/config/site";
+import { isClerkConfigured } from "@/lib/access";
 
 export const metadata: Metadata = {
   title: "Oftalmologista em Fortaleza | Consulta de Retina e Catarata",
@@ -43,7 +48,11 @@ const physicianSchema = {
   "@type": "Physician",
   name: "Dr. Leonardo Nunes",
   medicalSpecialty: ["Ophthalmology"],
-  areaServed: ["Fortaleza - CE", "São Domingos do Maranhão - MA", "Fortuna - MA"],
+  areaServed: [
+    "Fortaleza - CE",
+    "São Domingos do Maranhão - MA",
+    "Fortuna - MA",
+  ],
   knowsAbout: [
     "Consulta oftalmológica",
     "Retina clínica e cirúrgica",
@@ -57,7 +66,11 @@ const clinicSchema = {
   "@type": "MedicalClinic",
   name: "Minha Agenda - Oftalmologia",
   medicalSpecialty: ["Ophthalmology"],
-  areaServed: ["Fortaleza - CE", "São Domingos do Maranhão - MA", "Fortuna - MA"],
+  areaServed: [
+    "Fortaleza - CE",
+    "São Domingos do Maranhão - MA",
+    "Fortuna - MA",
+  ],
   availableService: [
     {
       "@context": "https://schema.org",
@@ -106,15 +119,22 @@ export default async function HomePage() {
             <p className="inline-flex w-fit rounded-full border border-border/70 bg-muted/30 px-3 py-1 text-xs text-muted-foreground">
               Atendimento oftalmológico especializado
             </p>
-            <h1 id="home-hero" className="max-w-3xl text-3xl font-semibold tracking-tight md:text-5xl">
+            <h1
+              id="home-hero"
+              className="max-w-3xl text-3xl font-semibold tracking-tight md:text-5xl"
+            >
               Minha Agenda
             </h1>
             <CardDescription className="max-w-2xl text-sm text-muted-foreground md:text-base">
-              Aqui, cada paciente é atendido com tempo, clareza e precisão clínica.
+              Aqui, cada paciente é atendido com tempo, clareza e precisão
+              clínica.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap items-center gap-3">
-            <ScrollToIdButton className="h-10 rounded-xl px-5 text-sm transition-transform duration-200 hover:-translate-y-0.5" targetId="agendamento">
+            <ScrollToIdButton
+              className="h-10 rounded-xl px-5 text-sm transition-transform duration-200 hover:-translate-y-0.5"
+              targetId="agendamento"
+            >
               Agendar
             </ScrollToIdButton>
             {clerkEnabled ? (
@@ -123,7 +143,9 @@ export default async function HomePage() {
                 asChild
                 className="h-10 rounded-xl px-5 text-sm transition-colors duration-200"
               >
-                <Link href={userId ? "/dashboard" : "/sign-in"}>{userId ? "Painel" : "Entrar"}</Link>
+                <Link href={userId ? "/dashboard" : "/sign-in"}>
+                  {userId ? "Painel" : "Entrar"}
+                </Link>
               </Button>
             ) : (
               <Button
@@ -135,7 +157,8 @@ export default async function HomePage() {
               </Button>
             )}
             <p className="w-full text-xs text-muted-foreground">
-              Protocolo clínico com foco em precisão diagnóstica e conduta segura.
+              Protocolo clínico com foco em precisão diagnóstica e conduta
+              segura.
             </p>
           </CardContent>
         </Card>
@@ -149,19 +172,27 @@ export default async function HomePage() {
           <Card className="rounded-2xl border-border/70 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-1 motion-safe:duration-500">
             <CardHeader className="space-y-2 pb-3">
               <h3 className="text-base font-medium">Atendimento individual</h3>
-              <CardDescription className="text-sm">Consulta personalizada para o seu caso.</CardDescription>
+              <CardDescription className="text-sm">
+                Consulta personalizada para o seu caso.
+              </CardDescription>
             </CardHeader>
           </Card>
           <Card className="rounded-2xl border-border/70 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-1 motion-safe:duration-500 motion-safe:delay-100">
             <CardHeader className="space-y-2 pb-3">
-              <h3 className="text-base font-medium">Tecnologia de alta precisão</h3>
-              <CardDescription className="text-sm">Diagnóstico claro e conduta objetiva.</CardDescription>
+              <h3 className="text-base font-medium">
+                Tecnologia de alta precisão
+              </h3>
+              <CardDescription className="text-sm">
+                Diagnóstico claro e conduta objetiva.
+              </CardDescription>
             </CardHeader>
           </Card>
           <Card className="rounded-2xl border-border/70 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-1 motion-safe:duration-500 motion-safe:delay-200">
             <CardHeader className="space-y-2 pb-3">
               <h3 className="text-base font-medium">Segurança em cada etapa</h3>
-              <CardDescription className="text-sm">Fluxo direto do agendamento ao resumo.</CardDescription>
+              <CardDescription className="text-sm">
+                Fluxo direto do agendamento ao resumo.
+              </CardDescription>
             </CardHeader>
           </Card>
         </div>
@@ -170,16 +201,24 @@ export default async function HomePage() {
       <section aria-labelledby="home-conteudos-relacionados">
         <Card className="rounded-2xl border-border/70">
           <CardHeader className="space-y-2">
-            <h2 id="home-conteudos-relacionados" className="text-xl font-semibold tracking-tight">
+            <h2
+              id="home-conteudos-relacionados"
+              className="text-xl font-semibold tracking-tight"
+            >
               Conteúdos de apoio para sua jornada
             </h2>
             <CardDescription>
-              Entenda exames, sintomas e orientações antes da consulta em nosso hub educativo.
+              Entenda exames, sintomas e orientações antes da consulta em nosso
+              hub educativo.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-3">
             <Button variant="outline" asChild>
-              <Link href={oftleonardoContentUrl} target="_blank" rel="noreferrer">
+              <Link
+                href={oftleonardoContentUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
                 Abrir hub de conteúdos
               </Link>
             </Button>
@@ -196,9 +235,16 @@ export default async function HomePage() {
         </Card>
       </section>
 
-      <section id="agendamento" aria-labelledby="home-agendamento" className="scroll-mt-24">
+      <section
+        id="agendamento"
+        aria-labelledby="home-agendamento"
+        className="scroll-mt-24"
+      >
         <div className="mx-auto w-full max-w-5xl space-y-3">
-          <h2 id="home-agendamento" className="text-xl font-semibold tracking-tight md:text-2xl">
+          <h2
+            id="home-agendamento"
+            className="text-xl font-semibold tracking-tight md:text-2xl"
+          >
             Agendamento
           </h2>
           <p className="max-w-3xl text-sm text-muted-foreground">
@@ -215,7 +261,8 @@ export default async function HomePage() {
         </div>
         {!clerkEnabled ? (
           <p className="mx-auto mt-3 w-full max-w-5xl text-xs text-muted-foreground">
-            Configure as chaves do Clerk no `.env.local` para habilitar a autenticação.
+            Configure as chaves do Clerk no `.env.local` para habilitar a
+            autenticação.
           </p>
         ) : null}
       </section>

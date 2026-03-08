@@ -62,7 +62,7 @@ export async function AppHeader({ clerkEnabled }: AppHeaderProps) {
   const mobileMenuContentId = "mobile-menu-sheet-content";
 
   return (
-    <header className="border-b border-border/70 bg-background/80 backdrop-blur">
+    <header data-app-header className="border-b border-border/70 bg-background/80 backdrop-blur">
       <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-4 md:px-6">
         <Link href="/" className="inline-flex items-center gap-2 text-base font-semibold tracking-tight">
           <span className="rounded-md border border-border/80 bg-muted/60 p-1">

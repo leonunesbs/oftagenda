@@ -11,7 +11,6 @@ type StartCheckoutButtonProps = {
   date: string;
   time: string;
   label?: string;
-  waUserId?: string;
 };
 
 type CheckoutErrorState = {
@@ -34,7 +33,6 @@ export function StartCheckoutButton({
   date,
   time,
   label = "Ir para pagamento",
-  waUserId,
 }: StartCheckoutButtonProps) {
   const [isLoading, startCheckoutTransition] = useTransition();
   const [error, setError] = useState<CheckoutErrorState | null>(null);
@@ -64,7 +62,7 @@ export function StartCheckoutButton({
         const response = await fetch("/api/stripe/checkout", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ location, date, time, waUserId }),
+          body: JSON.stringify({ location, date, time }),
         });
         const data = (await response
           .json()

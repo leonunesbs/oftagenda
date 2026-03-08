@@ -147,10 +147,7 @@ export function AdminAvailabilityEditor({
   const [isPending, startTransition] = useTransition();
   const [isOverridePending, startOverrideTransition] = useTransition();
   const [groupStates, setGroupStates] = useState<GroupState[]>(() => buildInitialGroups(groups));
-  const [feedbackByDay, setFeedbackByDay] = useState<
-    Record<string, { type: "success" | "error"; message: string }>
-  >({});
-  const [pendingDayKey, setPendingDayKey] = useState<string | null>(null);
+  const [saveFeedback, setSaveFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [overrideGroupIndex, setOverrideGroupIndex] = useState<number | null>(null);
   const [overrideDates, setOverrideDates] = useState<Date[]>([]);
   const [overrideSlots, setOverrideSlots] = useState<SlotInputState[]>([{ ...createDefaultSlot() }]);
@@ -292,7 +289,7 @@ export function AdminAvailabilityEditor({
       return;
     }
     if (overrideDates.length === 0) {
-      setOverrideFeedback({ type: "error", message: "Selecione ao menos uma data para substituir." });
+      setOverrideFeedback({ type: "error", message: "Selecione pelo menos uma data para substituir." });
       return;
     }
     if (!overrideAllDayUnavailable && overrideSlots.length === 0) {
@@ -350,59 +347,48 @@ export function AdminAvailabilityEditor({
     });
   }
 
-  function saveDay(groupIndex: number, weekday: number) {
-    const group = groupStates[groupIndex];
-    if (!group) {
+  function saveAllAvailabilities() {
+    if (groupStates.length === 0) {
       return;
     }
-
-    const day = group.days[weekday];
-    if (!day) {
-      return;
-    }
-
-    const dayKey = `${group.name}-${weekday}`;
-    setPendingDayKey(dayKey);
-    setFeedbackByDay((previous) => {
-      const next = { ...previous };
-      delete next[dayKey];
-      return next;
-    });
-
+    setSaveFeedback(null);
     startTransition(async () => {
       try {
-        const formData = new FormData();
-        formData.set("groupName", group.name);
-        formData.set("weekday", String(weekday));
-        formData.set("timezone", group.timezone || "America/Fortaleza");
-        formData.set(
-          "slots",
-          JSON.stringify(
-            (day.slots.length > 0 ? day.slots : [{ ...createDefaultSlot(), status: "inactive" as const }]).map(
-              (slot) => ({
-              availabilityId: slot.availabilityId,
-              startTime: slot.startTime,
-              endTime: slot.endTime,
-                status: day.enabled ? slot.status : "inactive",
-              }),
-            ),
-          ),
-        );
+        const saveRequests: Promise<unknown>[] = [];
+        let totalDays = 0;
+        for (const group of groupStates) {
+          group.days.forEach((day, weekday) => {
+            const formData = new FormData();
+            formData.set("groupName", group.name);
+            formData.set("weekday", String(weekday));
+            formData.set("timezone", group.timezone || "America/Fortaleza");
+            formData.set(
+              "slots",
+              JSON.stringify(
+                (day.slots.length > 0 ? day.slots : [{ ...createDefaultSlot(), status: "inactive" as const }]).map(
+                  (slot) => ({
+                    availabilityId: slot.availabilityId,
+                    startTime: slot.startTime,
+                    endTime: slot.endTime,
+                    status: day.enabled ? slot.status : "inactive",
+                  }),
+                ),
+              ),
+            );
+            saveRequests.push(upsertAvailabilityDaySlotsAction(formData));
+            totalDays += 1;
+          });
+        }
 
-        await upsertAvailabilityDaySlotsAction(formData);
-        setFeedbackByDay((previous) => ({
-          ...previous,
-          [dayKey]: { type: "success", message: "Dia salvo com sucesso." },
-        }));
+        await Promise.all(saveRequests);
+        setSaveFeedback({
+          type: "success",
+          message: `${totalDays} dia(s) salvo(s) com sucesso.`,
+        });
         router.refresh();
       } catch (error) {
-        const message = error instanceof Error ? error.message : "Falha ao salvar este dia.";
-        setFeedbackByDay((previous) => ({
-          ...previous,
-          [dayKey]: { type: "error", message },
-        }));
-      } finally {
-        setPendingDayKey(null);
+        const message = error instanceof Error ? error.message : "Falha ao salvar as disponibilidades.";
+        setSaveFeedback({ type: "error", message });
       }
     });
   }
@@ -411,14 +397,25 @@ export function AdminAvailabilityEditor({
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-2">
         <p className="text-xs text-muted-foreground">
-          Dias com faixas configuradas: {flattenedDayCount}. Use o botão + para adicionar novos horários no mesmo dia.
+          Dias com faixas configuradas: {flattenedDayCount}. Use o botão + Horário para adicionar novos horários no
+          mesmo dia.
         </p>
-        {showCreateButton ? (
-          <Button size="sm" asChild>
-            <Link href="/dashboard/admin/nova-disponibilidade">Nova disponibilidade</Link>
+        <div className="flex items-center gap-2">
+          {showCreateButton ? (
+            <Button size="sm" asChild>
+              <Link href="/dashboard/admin/nova-disponibilidade">Nova disponibilidade</Link>
+            </Button>
+          ) : null}
+          <Button size="sm" type="button" onClick={saveAllAvailabilities} disabled={isPending || !hasGroups}>
+            {isPending ? "Salvando tudo..." : "Salvar todas as disponibilidades"}
           </Button>
-        ) : null}
+        </div>
       </div>
+      {saveFeedback ? (
+        <p className={`text-xs ${saveFeedback.type === "error" ? "text-destructive" : "text-muted-foreground"}`}>
+          {saveFeedback.message}
+        </p>
+      ) : null}
 
       {!hasGroups ? <p className="text-xs text-muted-foreground">Crie uma disponibilidade para começar.</p> : null}
 
@@ -434,8 +431,8 @@ export function AdminAvailabilityEditor({
                 value={group.timezone}
                 onChange={(event) => updateGroupTimezone(groupIndex, event.target.value)}
                 className="h-8 w-52"
-                placeholder="Timezone única"
-                aria-label={`Timezone da disponibilidade ${group.name}`}
+                placeholder="Fuso horário"
+                aria-label={`Fuso horário da disponibilidade ${group.name}`}
               />
               <p className="text-[11px] text-muted-foreground">
                 Vinculado a {group.linkedEventsCount.toString()} evento(s)
@@ -473,8 +470,6 @@ export function AdminAvailabilityEditor({
           <div className="grid gap-3 lg:grid-cols-2">
             {group.days.map((day, weekday) => {
             const dayKey = `${group.name}-${weekday}`;
-            const isSavingThisDay = pendingDayKey === dayKey && isPending;
-            const feedback = feedbackByDay[dayKey];
 
             return (
               <div key={dayKey} className="space-y-3 rounded-lg border border-border/70 bg-muted/10 p-3">
@@ -507,15 +502,6 @@ export function AdminAvailabilityEditor({
                       disabled={!day.enabled || !day.allowMultiple}
                     >
                       + Horário
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      className="w-full sm:w-auto"
-                      onClick={() => saveDay(groupIndex, weekday)}
-                      disabled={isSavingThisDay}
-                    >
-                      {isSavingThisDay ? "Salvando..." : "Salvar"}
                     </Button>
                   </div>
                 </div>
@@ -567,8 +553,8 @@ export function AdminAvailabilityEditor({
                       }
                       aria-label={`Status ${weekdayLongLabels[weekday]} ${slotIndex + 1}`}
                     >
-                      <option value="active">active</option>
-                      <option value="inactive">inactive</option>
+                      <option value="active">Ativo</option>
+                      <option value="inactive">Inativo</option>
                     </select>
                     <Button
                       type="button"
@@ -583,11 +569,6 @@ export function AdminAvailabilityEditor({
                   </div>
                   ))}
 
-                {feedback ? (
-                  <p className={`text-xs ${feedback.type === "error" ? "text-destructive" : "text-muted-foreground"}`}>
-                    {feedback.message}
-                  </p>
-                ) : null}
               </div>
             );
             })}
@@ -668,8 +649,8 @@ export function AdminAvailabilityEditor({
                           })
                         }
                       >
-                        <option value="active">active</option>
-                        <option value="inactive">inactive</option>
+                        <option value="active">Ativo</option>
+                        <option value="inactive">Inativo</option>
                       </select>
                       <Button
                         type="button"

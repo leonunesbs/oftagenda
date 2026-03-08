@@ -19,7 +19,6 @@ type ResumoPageProps = {
         date?: string;
         time?: string;
         payment?: string;
-        waUserId?: string;
       }>
     | {
         locationId?: string;
@@ -27,7 +26,6 @@ type ResumoPageProps = {
         date?: string;
         time?: string;
         payment?: string;
-        waUserId?: string;
       };
 };
 
@@ -111,7 +109,6 @@ export default async function ResumoPreAgendamentoPage({
               date={summary.date}
               time={summary.time}
               label="Seguir para pagamento"
-              waUserId={params.waUserId}
             />
           </div>
           {summary.payment === "cancelled" ? (

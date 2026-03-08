@@ -69,7 +69,7 @@ export default async function AvailabilityDetailsPage({
           <p className="text-xs text-muted-foreground">{selectedGroup.name}</p>
         </div>
         <Button asChild variant="outline" size="sm">
-          <Link href="/dashboard/admin/disponibilidade">Voltar para disponibilidade</Link>
+          <Link href="/dashboard/admin/disponibilidade">Voltar para disponibilidades</Link>
         </Button>
       </div>
 

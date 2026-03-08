@@ -87,7 +87,7 @@ pnpm run dev:next   # apenas Next.js
 - `GET /api/integrations/n8n/docs`
   - resumo dos endpoints de integração para n8n/chatbot
   - sem exigência de autenticação por header nesta versão
-  - suporta link de encaminhamento com `waUserId` para vincular WhatsApp ao `publicMetadata` do Clerk
+  - suporta link de encaminhamento para resumo pré-agendamento com local/data/horário
   - documentação completa em `docs/n8n-api.md`
 
 ## Criptografia ponta a ponta da triagem

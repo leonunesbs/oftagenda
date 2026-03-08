@@ -93,7 +93,7 @@ export default function RootLayout({
 }>) {
   const clerkEnabled = isClerkConfigured();
   const legalFooter = (
-    <footer className="mx-auto w-full max-w-5xl px-4 pb-8 pt-2 text-xs text-muted-foreground md:px-6">
+    <footer data-app-legal-footer className="mx-auto w-full max-w-5xl px-4 pb-8 pt-2 text-xs text-muted-foreground md:px-6">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border/70 pt-4">
         <span className="text-[11px] tracking-wide text-muted-foreground/90">Plataforma oficial de Leonardo Nunes</span>
         <Link href="/termos-de-uso" className="underline underline-offset-2 hover:text-foreground">
@@ -130,7 +130,9 @@ export default function RootLayout({
                 <TooltipProvider>
                   <div className="flex min-h-screen flex-col bg-background">
                     <AppHeader clerkEnabled />
-                    <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10 md:px-6 md:py-14">{children}</main>
+                    <main data-app-main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10 md:px-6 md:py-14">
+                      {children}
+                    </main>
                     {legalFooter}
                     <AnalyticsPageview />
                     <AnalyticsConsent />
@@ -143,7 +145,9 @@ export default function RootLayout({
             <TooltipProvider>
               <div className="flex min-h-screen flex-col bg-background">
                 <AppHeader clerkEnabled={false} />
-                <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10 md:px-6 md:py-14">{children}</main>
+                <main data-app-main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10 md:px-6 md:py-14">
+                  {children}
+                </main>
                 {legalFooter}
                 <AnalyticsPageview />
                 <AnalyticsConsent />

@@ -249,6 +249,48 @@ export const getManagementSnapshot = query({
   },
 });
 
+export const getCalendarData = query({
+  args: {
+    startDate: v.number(),
+    endDate: v.number(),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+    if (!Number.isFinite(args.startDate) || !Number.isFinite(args.endDate) || args.startDate > args.endDate) {
+      throw new Error("Intervalo de datas invalido");
+    }
+
+    const [eventTypes, reservations] = await Promise.all([
+      ctx.db.query("event_types").collect(),
+      ctx.db.query("reservations").collect(),
+    ]);
+    const eventTypeById = new Map(eventTypes.map((eventType) => [String(eventType._id), eventType]));
+
+    const items = reservations
+      .filter((reservation) => reservation.startsAt >= args.startDate && reservation.startsAt <= args.endDate)
+      .sort((a, b) => a.startsAt - b.startsAt)
+      .map((reservation) => {
+        const eventType = eventTypeById.get(String(reservation.eventTypeId));
+        return {
+          _id: reservation._id,
+          reservationId: reservation._id,
+          appointmentId: reservation.appointmentId ?? null,
+          startsAt: reservation.startsAt,
+          endsAt: reservation.endsAt,
+          status: reservation.status,
+          notes: reservation.notes ?? "",
+          clerkUserId: reservation.clerkUserId,
+          eventTypeId: reservation.eventTypeId,
+          eventTypeTitle: eventType?.name ?? eventType?.title ?? "Evento removido",
+          kind: eventType?.kind ?? "consulta",
+          location: eventType?.location ?? "fortaleza",
+        };
+      });
+
+    return { items };
+  },
+});
+
 export const createEventType = mutation({
   args: {
     slug: v.string(),
@@ -884,6 +926,126 @@ export const createReservation = mutation({
   },
 });
 
+export const adminCreateAppointment = mutation({
+  args: {
+    clerkUserId: v.optional(v.string()),
+    name: v.string(),
+    phone: v.string(),
+    email: v.string(),
+    eventTypeId: v.id("event_types"),
+    availabilityId: v.id("availabilities"),
+    date: v.string(),
+    time: v.string(),
+    preferredPeriod: v.union(
+      v.literal("manha"),
+      v.literal("tarde"),
+      v.literal("noite"),
+      v.literal("qualquer"),
+    ),
+    reason: v.optional(v.string()),
+    notes: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await requireAdmin(ctx);
+    const now = Date.now();
+
+    const eventType = await ctx.db.get(args.eventTypeId);
+    if (!eventType) {
+      throw new Error("Evento nao encontrado");
+    }
+
+    const matchedAvailability = await resolveAvailabilityForReservation(
+      ctx,
+      eventType,
+      args.availabilityId,
+      args.date,
+      args.time,
+    );
+    const startsAt = parseIsoDateAndTimeToTimestamp(args.date, args.time, matchedAvailability.timezone);
+    const endsAt = startsAt + eventType.durationMinutes * 60_000;
+
+    const existingConflict = (
+      await ctx.db
+        .query("reservations")
+        .withIndex("by_event_type_id", (q) => q.eq("eventTypeId", args.eventTypeId))
+        .collect()
+    ).find(
+      (reservation) =>
+        reservation.startsAt === startsAt &&
+        (reservation.status === "confirmed" || reservation.status === "pending"),
+    );
+    if (existingConflict) {
+      throw new Error("Horario ja reservado para este evento");
+    }
+
+    const generatedClerkUserId =
+      args.clerkUserId?.trim() ||
+      buildSyntheticClerkUserId(args.email, args.phone, args.name, now);
+    const patient = await findOrCreatePatientForAdmin(
+      ctx,
+      generatedClerkUserId,
+      args.name.trim(),
+      args.phone.trim(),
+      args.email.trim(),
+      now,
+    );
+
+    const reservationId = await ctx.db.insert("reservations", {
+      clerkUserId: generatedClerkUserId,
+      eventTypeId: args.eventTypeId,
+      availabilityId: matchedAvailability._id,
+      startsAt,
+      endsAt,
+      status: "confirmed",
+      notes: args.notes?.trim(),
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    const appointmentId = await ctx.db.insert("appointments", {
+      clerkUserId: generatedClerkUserId,
+      patientId: patient._id,
+      name: args.name.trim(),
+      phone: args.phone.trim(),
+      email: args.email.trim(),
+      location: eventType.location,
+      eventTypeId: args.eventTypeId,
+      reservationId,
+      preferredPeriod: args.preferredPeriod,
+      reason: args.reason?.trim(),
+      status: "confirmed",
+      requestedAt: now,
+      scheduledFor: startsAt,
+      consultationType: eventType.name ?? eventType.title ?? "Consulta oftalmologica",
+      updatedAt: now,
+    });
+
+    await ctx.db.patch(reservationId, {
+      appointmentId,
+      updatedAt: now,
+    });
+
+    await ctx.db.insert("appointment_events", {
+      appointmentId,
+      clerkUserId: identity.subject,
+      eventType: "confirmed",
+      notes: "Agendamento criado manualmente pelo admin.",
+      payload: JSON.stringify({
+        reservationId,
+        eventTypeId: args.eventTypeId,
+      }),
+      createdAt: now,
+    });
+
+    return {
+      ok: true,
+      appointmentId,
+      reservationId,
+      scheduledFor: startsAt,
+    };
+  },
+});
+
 export const updateReservation = mutation({
   args: {
     reservationId: v.id("reservations"),
@@ -1382,4 +1544,48 @@ function normalizePriceCentsInput(value: number) {
     return value;
   }
   return value * 100;
+}
+
+function buildSyntheticClerkUserId(email: string, phone: string, name: string, now: number) {
+  const normalizedEmail = email.trim().toLowerCase();
+  const normalizedPhone = phone.replace(/\D+/g, "");
+  const normalizedName = name.trim().toLowerCase().replace(/\s+/g, "-");
+  const seed = normalizedPhone || normalizedEmail || normalizedName || String(now);
+  return `admin-${seed}`;
+}
+
+async function findOrCreatePatientForAdmin(
+  ctx: MutationCtx,
+  clerkUserId: string,
+  name: string,
+  phone: string,
+  email: string,
+  now: number,
+) {
+  const existing = await ctx.db
+    .query("patients")
+    .withIndex("by_clerk_user_id", (q) => q.eq("clerkUserId", clerkUserId))
+    .first();
+  if (existing) {
+    await ctx.db.patch(existing._id, {
+      name,
+      phone,
+      email,
+      updatedAt: now,
+    });
+    return existing;
+  }
+  const patientId = await ctx.db.insert("patients", {
+    clerkUserId,
+    name,
+    phone,
+    email,
+    createdAt: now,
+    updatedAt: now,
+  });
+  const created = await ctx.db.get(patientId);
+  if (!created) {
+    throw new Error("Nao foi possivel criar o paciente");
+  }
+  return created;
 }

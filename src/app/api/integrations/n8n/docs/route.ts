@@ -60,12 +60,11 @@ export async function GET(request: Request) {
           location: "fortaleza",
           date: "2026-03-20",
           time: "14:00",
-          waUserId: "5599999999999@c.us",
           payment: "cancelled (opcional)",
           source: "n8n (opcional)",
         },
         responseExample: {
-          summaryUrl: `${forwardOrigin}/agendar/resumo?location=fortaleza&date=2026-03-20&time=14%3A00&waUserId=5599999999999%40c.us&source=n8n`,
+          summaryUrl: `${forwardOrigin}/agendar/resumo?location=fortaleza&date=2026-03-20&time=14%3A00&source=n8n`,
           valid: true,
         },
       },

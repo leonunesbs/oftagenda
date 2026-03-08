@@ -357,3 +357,29 @@ export async function setPaymentStatusAction(formData: FormData) {
   });
   revalidatePath(ADMIN_PATH);
 }
+
+export async function adminCreateAppointmentAction(formData: FormData) {
+  await requireAdmin(ADMIN_PATH);
+  const { client } = await getAuthenticatedConvexHttpClient();
+
+  await client.mutation(api.admin.adminCreateAppointment, {
+    clerkUserId: toStringValue(formData.get("clerkUserId")) || undefined,
+    name: toStringValue(formData.get("name")),
+    phone: toStringValue(formData.get("phone")),
+    email: toStringValue(formData.get("email")),
+    eventTypeId: toStringValue(formData.get("eventTypeId")) as Id<"event_types">,
+    availabilityId: toStringValue(formData.get("availabilityId")) as Id<"availabilities">,
+    date: toStringValue(formData.get("date")),
+    time: toStringValue(formData.get("time")),
+    preferredPeriod: (toStringValue(formData.get("preferredPeriod")) || "qualquer") as
+      | "manha"
+      | "tarde"
+      | "noite"
+      | "qualquer",
+    reason: toStringValue(formData.get("reason")) || undefined,
+    notes: toStringValue(formData.get("notes")) || undefined,
+  });
+
+  revalidatePath(ADMIN_PATH);
+  revalidatePath("/dashboard/admin/agenda");
+}

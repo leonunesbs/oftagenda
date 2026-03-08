@@ -31,9 +31,6 @@ export async function POST(request: Request) {
   if (parsed.data.source) {
     params.set("source", parsed.data.source);
   }
-  if (parsed.data.waUserId) {
-    params.set("waUserId", parsed.data.waUserId);
-  }
 
   const summaryUrl = `${resolveForwardOrigin()}/agendar/resumo?${params.toString()}`;
 

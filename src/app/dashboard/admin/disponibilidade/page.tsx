@@ -12,7 +12,7 @@ export default async function AdminAvailabilityPage() {
     <Card className="border-border/70">
       <CardHeader>
         <CardTitle>Disponibilidade</CardTitle>
-        <CardDescription>Visualize disponibilidades cadastradas e abra a edição de horários.</CardDescription>
+        <CardDescription>Visualize as disponibilidades cadastradas e abra a edição de horários.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex justify-end">
@@ -26,7 +26,7 @@ export default async function AdminAvailabilityPage() {
               <TableRow>
                 <TableHead>Grupo</TableHead>
                 <TableHead>Faixas</TableHead>
-                <TableHead>Timezone</TableHead>
+                <TableHead>Fuso horário</TableHead>
                 <TableHead>Eventos vinculados</TableHead>
                 <TableHead className="w-[140px]">Ação</TableHead>
               </TableRow>
@@ -36,7 +36,7 @@ export default async function AdminAvailabilityPage() {
                 <TableRow key={`availability-row-${group.representativeId}`}>
                   <TableCell className="font-medium">{group.name}</TableCell>
                   <TableCell>{group.slots.length}</TableCell>
-                  <TableCell>{group.slots[0]?.timezone ?? "sem timezone"}</TableCell>
+                  <TableCell>{group.slots[0]?.timezone ?? "sem fuso horário"}</TableCell>
                   <TableCell>{group.linkedEventsCount.toString()}</TableCell>
                   <TableCell>
                     <Button size="sm" variant="outline" asChild>

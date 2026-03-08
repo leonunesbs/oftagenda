@@ -32,6 +32,12 @@ type BookingDraft = {
   selectedTime: string;
 };
 
+type BookingOptionsApiResponse = {
+  ok: boolean;
+  options?: LocationAvailabilityResponse;
+  error?: string;
+};
+
 type BookingFormProps = {
   isAuthenticated: boolean;
   clerkEnabled: boolean;
@@ -76,6 +82,11 @@ export function BookingForm({
   const [isStartingBooking, startStartingBookingTransition] = useTransition();
   const [isDraftHydrated, setIsDraftHydrated] = useState(false);
   const [currentTimestamp, setCurrentTimestamp] = useState(() => Date.now());
+  const [timesByDateKey, setTimesByDateKey] = useState<Record<string, string[]>>(
+    {},
+  );
+  const [isLoadingTimes, setIsLoadingTimes] = useState(false);
+  const [timeLoadError, setTimeLoadError] = useState<string | null>(null);
   const locationId = bookingParams.locationId ?? "";
   const selectedDate = bookingParams.date ?? "";
   const selectedTime = bookingParams.time ?? "";
@@ -94,8 +105,17 @@ export function BookingForm({
     () => availableDates.find((item) => item.isoDate === selectedDate) ?? null,
     [availableDates, selectedDate],
   );
-  const currentTimeSlots = selectedDateOption?.times ?? [];
+  const selectedDateCacheKey =
+    selectedLocation && selectedDate
+      ? `${selectedLocation.value}|${selectedDate}`
+      : "";
+  const currentTimeSlots = selectedDateCacheKey
+    ? (timesByDateKey[selectedDateCacheKey] ?? null)
+    : [];
   const filteredTimeSlots = useMemo(() => {
+    if (currentTimeSlots === null) {
+      return [];
+    }
     if (!selectedDate) {
       return currentTimeSlots;
     }
@@ -173,16 +193,93 @@ export function BookingForm({
   }, [locationId, locations, setBookingParams]);
 
   useEffect(() => {
+    if (!selectedLocation || !selectedDate) {
+      setIsLoadingTimes(false);
+      setTimeLoadError(null);
+      return;
+    }
+
+    const cacheKey = `${selectedLocation.value}|${selectedDate}`;
+    if (Object.prototype.hasOwnProperty.call(timesByDateKey, cacheKey)) {
+      setIsLoadingTimes(false);
+      setTimeLoadError(null);
+      return;
+    }
+
+    const abortController = new AbortController();
+    const params = new URLSearchParams({
+      location: selectedLocation.value,
+      targetDate: selectedDate,
+    });
+
+    setIsLoadingTimes(true);
+    setTimeLoadError(null);
+
+    void fetch(`/api/booking/options?${params.toString()}`, {
+      method: "GET",
+      cache: "no-store",
+      signal: abortController.signal,
+    })
+      .then(async (response) => {
+        const data = (await response.json()) as BookingOptionsApiResponse;
+        if (!response.ok || !data.ok) {
+          throw new Error(data.error ?? "Falha ao carregar horários.");
+        }
+
+        const dateOption = data.options?.dates.find(
+          (item) => item.isoDate === selectedDate,
+        );
+        setTimesByDateKey((previous) => ({
+          ...previous,
+          [cacheKey]: dateOption?.times ?? [],
+        }));
+      })
+      .catch((fetchError: unknown) => {
+        if (abortController.signal.aborted) {
+          return;
+        }
+        setTimeLoadError(
+          fetchError instanceof Error
+            ? fetchError.message
+            : "Falha ao carregar horários.",
+        );
+        setTimesByDateKey((previous) => ({
+          ...previous,
+          [cacheKey]: [],
+        }));
+      })
+      .finally(() => {
+        if (abortController.signal.aborted) {
+          return;
+        }
+        setIsLoadingTimes(false);
+      });
+
+    return () => {
+      abortController.abort();
+    };
+  }, [selectedDate, selectedLocation, timesByDateKey]);
+
+  useEffect(() => {
     if (!selectedDate) {
       if (selectedTime) {
         void setBookingParams({ time: null });
       }
       return;
     }
+    if (currentTimeSlots === null) {
+      return;
+    }
     if (selectedTime && !filteredTimeSlots.includes(selectedTime)) {
       void setBookingParams({ time: null });
     }
-  }, [selectedDate, selectedTime, filteredTimeSlots, setBookingParams]);
+  }, [
+    currentTimeSlots,
+    selectedDate,
+    selectedTime,
+    filteredTimeSlots,
+    setBookingParams,
+  ]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -589,7 +686,9 @@ export function BookingForm({
                 <Label>3. Escolha o horário</Label>
                 <p className="text-xs text-muted-foreground">
                   {canPickTime
-                    ? `Horários disponíveis para ${selectedLocation?.label}.`
+                    ? isLoadingTimes
+                      ? "Carregando horários..."
+                      : `Horários disponíveis para ${selectedLocation?.label}.`
                     : "Selecione evento e data para carregar os horários abaixo."}
                 </p>
               </div>
@@ -608,10 +707,16 @@ export function BookingForm({
                 ))}
               </div>
 
-              {canPickTime && filteredTimeSlots.length === 0 ? (
+              {canPickTime &&
+              !isLoadingTimes &&
+              !timeLoadError &&
+              filteredTimeSlots.length === 0 ? (
                 <p className="text-xs text-muted-foreground">
                   Não há horários livres para esta data.
                 </p>
+              ) : null}
+              {timeLoadError ? (
+                <p className="text-xs text-destructive">{timeLoadError}</p>
               ) : null}
 
               <div className="rounded-xl border border-dashed border-border/70 bg-muted/20 p-4 text-sm">

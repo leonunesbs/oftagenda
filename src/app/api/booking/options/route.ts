@@ -3,14 +3,13 @@ import { NextResponse } from "next/server";
 import { api } from "@convex/_generated/api";
 import { bookingLocationSchema } from "@/domain/booking/schema";
 import { getConvexHttpClient } from "@/lib/convex-server";
-import { requireMemberApiAccess } from "@/lib/access";
 
 export async function GET(request: Request) {
   try {
-    await requireMemberApiAccess();
     const url = new URL(request.url);
     const locationParam = url.searchParams.get("location");
-    const daysAheadParam = Number(url.searchParams.get("daysAhead") ?? "14");
+    const daysAheadParam = Number(url.searchParams.get("daysAhead") ?? "3650");
+    const targetDateParam = url.searchParams.get("targetDate") ?? undefined;
     const parsedLocation = bookingLocationSchema.safeParse(locationParam);
 
     if (!parsedLocation.success) {
@@ -26,7 +25,8 @@ export async function GET(request: Request) {
     const client = getConvexHttpClient();
     const options = await client.query(api.appointments.getBookingOptionsByLocation, {
       location: parsedLocation.data,
-      daysAhead: Number.isNaN(daysAheadParam) ? 14 : daysAheadParam,
+      daysAhead: Number.isNaN(daysAheadParam) ? 3650 : daysAheadParam,
+      targetDate: targetDateParam,
     });
 
     return NextResponse.json({ ok: true, options });

@@ -96,9 +96,10 @@ export const getBookingOptionsByLocation = query({
   args: {
     location: bookingLocationValidator,
     daysAhead: v.optional(v.number()),
+    targetDate: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const daysAhead = clampDaysAhead(args.daysAhead ?? 14);
+    const daysAhead = clampDaysAhead(args.daysAhead ?? 3650);
     const activeEventTypes = await ctx.db
       .query("event_types")
       .withIndex("by_active", (q) => q.eq("active", true))
@@ -194,12 +195,21 @@ export const getBookingOptionsByLocation = query({
       times: string[];
     }> = [];
 
-    for (let offset = 0; offset < daysAhead; offset += 1) {
-      const day = new Date(now);
-      day.setDate(day.getDate() + offset);
+    const targetDate = normalizeTargetDate(args.targetDate);
+    const candidateDates = targetDate
+      ? [targetDate]
+      : Array.from({ length: daysAhead }, (_, offset) => {
+          const day = new Date(now);
+          day.setDate(day.getDate() + offset);
+          return toIsoDate(day);
+        });
 
-      const isoDate = toIsoDate(day);
-      const weekday = day.getDay();
+    for (const isoDate of candidateDates) {
+      const parsedDate = parseIsoDateToLocalDate(isoDate);
+      if (!parsedDate) {
+        continue;
+      }
+      const weekday = parsedDate.getDay();
       const daySlots = new Set<string>();
 
       for (const groupName of activeGroupNames) {
@@ -257,11 +267,11 @@ export const getBookingOptionsByLocation = query({
 
       dates.push({
         isoDate,
-        label: day.toLocaleDateString("pt-BR", {
+        label: parsedDate.toLocaleDateString("pt-BR", {
           day: "2-digit",
           month: "2-digit",
         }),
-        weekdayLabel: day.toLocaleDateString("pt-BR", { weekday: "short" }),
+        weekdayLabel: parsedDate.toLocaleDateString("pt-BR", { weekday: "short" }),
         times,
       });
     }
@@ -560,8 +570,8 @@ function clampDaysAhead(value: number) {
   if (value < 1) {
     return 1;
   }
-  if (value > 30) {
-    return 30;
+  if (value > 3650) {
+    return 3650;
   }
   return Math.floor(value);
 }
@@ -626,6 +636,32 @@ function toIsoDate(date: Date) {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+function parseIsoDateToLocalDate(isoDate: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) {
+    return null;
+  }
+  const [yearRaw, monthRaw, dayRaw] = isoDate.split("-");
+  const year = Number(yearRaw);
+  const month = Number(monthRaw);
+  const day = Number(dayRaw);
+  if (
+    !Number.isInteger(year) ||
+    !Number.isInteger(month) ||
+    !Number.isInteger(day)
+  ) {
+    return null;
+  }
+  return new Date(year, month - 1, day, 12, 0, 0);
+}
+
+function normalizeTargetDate(value: string | undefined) {
+  const normalized = value?.trim();
+  if (!normalized || !/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
+    return undefined;
+  }
+  return normalized;
 }
 
 function parseTimeToMinutes(time: string) {

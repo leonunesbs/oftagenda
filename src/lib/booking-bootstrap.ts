@@ -35,7 +35,7 @@ export async function getBookingBootstrapData(options?: {
   const daysAhead =
     typeof options?.daysAhead === "number" && Number.isFinite(options.daysAhead)
       ? Math.max(1, Math.floor(options.daysAhead))
-      : 14;
+      : 3650;
   let locations: BookingLocationOption[] = [];
   let locationsError: string | null = null;
 
@@ -57,11 +57,19 @@ export async function getBookingBootstrapData(options?: {
           location: locationOption.value,
           daysAhead,
         });
-        availabilityByLocation[locationOption.value] =
+        const resolvedOptions =
           (options as LocationAvailabilityResponse) ?? {
             location: locationOption.value,
             dates: [],
           };
+        availabilityByLocation[locationOption.value] = {
+          location: resolvedOptions.location,
+          dates: resolvedOptions.dates.map((dateOption) => ({
+            ...dateOption,
+            // Times are fetched client-side after the user picks a date.
+            times: [],
+          })),
+        };
       } catch (error) {
         availabilityErrorsByLocation[locationOption.value] =
           error instanceof Error ? error.message : "Falha ao carregar disponibilidade.";

@@ -125,8 +125,12 @@ export function BookingForm({
     if (locationId || !legacyLocationId) {
       return;
     }
-    void setBookingParams({ locationId: legacyLocationId });
-  }, [locationId, searchParams, setBookingParams]);
+    const resolvedLocationId = resolveLegacyLocationId(legacyLocationId, locations);
+    if (!resolvedLocationId) {
+      return;
+    }
+    void setBookingParams({ locationId: resolvedLocationId });
+  }, [locationId, locations, searchParams, setBookingParams]);
 
   function handleLocationChange(nextLocationId: BookingPayload["location"]) {
     trackEvent("select_city", { location: nextLocationId });
@@ -693,6 +697,50 @@ function parseIsoDate(isoDate: string) {
     typeof month === "number" && Number.isFinite(month) ? month : 1;
   const safeDay = typeof day === "number" && Number.isFinite(day) ? day : 1;
   return new Date(safeYear, safeMonth - 1, safeDay, 12, 0, 0);
+}
+
+function resolveLegacyLocationId(
+  legacyLocationId: string,
+  locations: BookingLocationOption[],
+) {
+  const raw = legacyLocationId.trim();
+  if (!raw) {
+    return undefined;
+  }
+  const directMatch = locations.find((item) => item.value === raw);
+  if (directMatch) {
+    return directMatch.value;
+  }
+
+  const normalizedRaw = normalizeLocationToken(raw);
+  if (!normalizedRaw) {
+    return undefined;
+  }
+
+  for (const item of locations) {
+    const normalizedValue = normalizeLocationToken(item.value);
+    const normalizedLabel = normalizeLocationToken(item.label);
+    if (
+      normalizedRaw === normalizedValue ||
+      normalizedRaw === normalizedLabel ||
+      normalizedLabel.includes(normalizedRaw) ||
+      normalizedRaw.includes(normalizedValue)
+    ) {
+      return item.value;
+    }
+  }
+
+  return undefined;
+}
+
+function normalizeLocationToken(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/\s+/g, " ");
 }
 
 function scrollToSection(sectionRef: { current: HTMLElement | null }) {

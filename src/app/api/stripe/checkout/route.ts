@@ -8,6 +8,10 @@ import { api } from "@convex/_generated/api";
 
 export const runtime = "nodejs";
 const CHECKOUT_SESSION_DURATION_SECONDS = 30 * 60;
+const ACTIVE_APPOINTMENT_ERROR =
+  "Você já possui um agendamento ativo. Use o painel para remarcação, sem criar novo agendamento.";
+const PENDING_RESERVATION_ERROR =
+  "Você já possui um agendamento aguardando remarcação. Finalize ou cancele o pendente atual.";
 
 export async function POST(request: Request) {
   try {
@@ -145,9 +149,33 @@ export async function POST(request: Request) {
       error instanceof Error
         ? error.message
         : "Falha ao iniciar checkout Stripe.";
-    const status = message.toLowerCase().includes("not authenticated")
-      ? 401
-      : 500;
+    if (message === ACTIVE_APPOINTMENT_ERROR) {
+      return NextResponse.json(
+        {
+          ok: false,
+          errorCode: "ACTIVE_APPOINTMENT_EXISTS",
+          error: "Voce ja possui um agendamento ativo.",
+          errorDetails:
+            "Para alterar data ou horario, acesse o painel para remarcacao.",
+          redirectTo: "/dashboard#remarcacao-consulta",
+        },
+        { status: 409 },
+      );
+    }
+    if (message === PENDING_RESERVATION_ERROR) {
+      return NextResponse.json(
+        {
+          ok: false,
+          errorCode: "PENDING_RESERVATION_EXISTS",
+          error: "Voce ja possui um agendamento pendente.",
+          errorDetails:
+            "Finalize ou cancele o agendamento pendente antes de criar outro.",
+          redirectTo: "/dashboard#agendamentos-pendentes",
+        },
+        { status: 409 },
+      );
+    }
+    const status = message.toLowerCase().includes("not authenticated") ? 401 : 500;
     return NextResponse.json({ ok: false, error: message }, { status });
   }
 }

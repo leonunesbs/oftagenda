@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
+import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { trackEvent } from "@/lib/analytics";
@@ -12,6 +13,21 @@ type StartCheckoutButtonProps = {
   label?: string;
 };
 
+type CheckoutErrorState = {
+  title: string;
+  description?: string;
+  redirectTo?: string;
+};
+
+type CheckoutApiResponse = {
+  ok?: boolean;
+  url?: string;
+  error?: string;
+  errorDetails?: string;
+  errorCode?: string;
+  redirectTo?: string;
+};
+
 export function StartCheckoutButton({
   location,
   date,
@@ -19,7 +35,16 @@ export function StartCheckoutButton({
   label = "Ir para pagamento",
 }: StartCheckoutButtonProps) {
   const [isLoading, startCheckoutTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<CheckoutErrorState | null>(null);
+  const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (redirectTimerRef.current) {
+        clearTimeout(redirectTimerRef.current);
+      }
+    };
+  }, []);
 
   async function handleStartCheckout() {
     if (isLoading) {
@@ -34,17 +59,32 @@ export function StartCheckoutButton({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ location, date, time }),
         });
-        const data = await response.json();
+        const data = (await response.json().catch(() => null)) as CheckoutApiResponse | null;
         if (!response.ok || !data?.ok || typeof data.url !== "string") {
-          throw new Error(data?.error ?? "Não foi possível iniciar o checkout.");
+          const normalizedError = normalizeCheckoutError(data);
+          setError(normalizedError);
+          if (normalizedError.redirectTo) {
+            if (redirectTimerRef.current) {
+              clearTimeout(redirectTimerRef.current);
+            }
+            redirectTimerRef.current = setTimeout(() => {
+              const target = window.self !== window.top ? window.top! : window;
+              target.location.href = normalizedError.redirectTo!;
+            }, 1200);
+          }
+          return;
         }
         const target = window.self !== window.top ? window.top! : window;
         target.location.href = data.url;
       } catch (checkoutError) {
         setError(
           checkoutError instanceof Error
-            ? checkoutError.message
-            : "Falha ao redirecionar para o pagamento.",
+            ? {
+                title: checkoutError.message,
+              }
+            : {
+                title: "Falha ao redirecionar para o pagamento.",
+              },
         );
       }
     });
@@ -58,8 +98,51 @@ export function StartCheckoutButton({
       <p className="w-full rounded-md border border-border/60 bg-muted/30 px-3 py-1.5 text-center text-xs text-muted-foreground sm:w-auto sm:text-left">
         Link de pagamento e bloqueio do horário válidos por 30 minutos.
       </p>
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      {error ? (
+        <div className="w-full rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive sm:max-w-[24rem]">
+          <p className="font-medium">{error.title}</p>
+          {error.description ? (
+            <p className="mt-1 text-xs text-destructive/90">{error.description}</p>
+          ) : null}
+          {error.redirectTo ? (
+            <div className="mt-2 flex items-center gap-2">
+              <Button asChild size="sm" variant="outline">
+                <Link href={error.redirectTo}>Ir para meu agendamento</Link>
+              </Button>
+              <span className="text-xs text-destructive/80">Redirecionando automaticamente...</span>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
+}
+
+function normalizeCheckoutError(data: CheckoutApiResponse | null): CheckoutErrorState {
+  if (data?.errorCode === "ACTIVE_APPOINTMENT_EXISTS" && data.redirectTo) {
+    return {
+      title: data.error || "Voce ja possui um agendamento ativo.",
+      description:
+        data.errorDetails || "Leve ajuste de rota: voce sera enviado para gerenciar esse agendamento.",
+      redirectTo: data.redirectTo,
+    };
+  }
+  if (data?.errorCode === "PENDING_RESERVATION_EXISTS" && data.redirectTo) {
+    return {
+      title: data.error || "Voce ja possui um agendamento pendente.",
+      description: data.errorDetails || "Gerencie primeiro o agendamento pendente no painel.",
+      redirectTo: data.redirectTo,
+    };
+  }
+  if (typeof data?.error === "string" && data.error.trim().length > 0) {
+    return {
+      title: data.error,
+      description: data.errorDetails,
+      redirectTo: typeof data.redirectTo === "string" ? data.redirectTo : undefined,
+    };
+  }
+  return {
+    title: "Nao foi possivel iniciar o checkout.",
+  };
 }
 

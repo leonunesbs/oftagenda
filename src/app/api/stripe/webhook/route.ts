@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
-import Stripe from "stripe";
+import { getStripeClient, getStripeWebhookSecret } from "@/lib/stripe";
 
-import { api } from "@convex/_generated/api";
 import { getConvexHttpClient } from "@/lib/convex-server";
 import { sendAppointmentConfirmedNotification } from "@/lib/notifications";
-import { getStripeClient, getStripeWebhookSecret } from "@/lib/stripe";
+import { api } from "@convex/_generated/api";
+import { NextResponse } from "next/server";
+import Stripe from "stripe";
 
 type ReconcileStatus = "paid" | "failed" | "expired" | "refunded";
 export const runtime = "nodejs";
@@ -12,7 +12,10 @@ export const runtime = "nodejs";
 export async function POST(request: Request) {
   const signature = request.headers.get("stripe-signature");
   if (!signature) {
-    return NextResponse.json({ ok: false, error: "Assinatura Stripe ausente." }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: "Assinatura Stripe ausente." },
+      { status: 400 },
+    );
   }
 
   const payload = await request.text();
@@ -20,9 +23,14 @@ export async function POST(request: Request) {
   let event: Stripe.Event;
 
   try {
-    event = stripe.webhooks.constructEvent(payload, signature, getStripeWebhookSecret());
+    event = stripe.webhooks.constructEvent(
+      payload,
+      signature,
+      getStripeWebhookSecret(),
+    );
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Assinatura inválida.";
+    const message =
+      error instanceof Error ? error.message : "Assinatura inválida.";
     return NextResponse.json({ ok: false, error: message }, { status: 400 });
   }
 
@@ -33,9 +41,14 @@ export async function POST(request: Request) {
 
   try {
     const client = getConvexHttpClient();
-    const result = await client.mutation(api.stripe.reconcileStripeEvent, normalized);
+    const result = await client.mutation(
+      api.stripe.reconcileStripeEvent,
+      normalized,
+    );
     if (result.notification?.type === "appointment_confirmed") {
-      const delivery = await sendAppointmentConfirmedNotification(result.notification);
+      const delivery = await sendAppointmentConfirmedNotification(
+        result.notification,
+      );
       if (!delivery.ok) {
         console.error(
           "[stripe.webhook] falha ao enviar notificacao de confirmacao",
@@ -49,7 +62,8 @@ export async function POST(request: Request) {
     }
     return NextResponse.json({ ok: true });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Falha ao reconciliar webhook.";
+    const message =
+      error instanceof Error ? error.message : "Falha ao reconciliar webhook.";
     return NextResponse.json({ ok: false, error: message }, { status: 500 });
   }
 }
@@ -62,7 +76,10 @@ function normalizeStripeEvent(event: Stripe.Event) {
     event.type === "checkout.session.async_payment_failed"
   ) {
     const session = event.data.object as Stripe.Checkout.Session;
-    if (event.type === "checkout.session.completed" && session.payment_status !== "paid") {
+    if (
+      event.type === "checkout.session.completed" &&
+      session.payment_status !== "paid"
+    ) {
       // For async payment methods, wait for async_payment_succeeded/failed.
       return null;
     }
@@ -78,7 +95,9 @@ function normalizeStripeEvent(event: Stripe.Event) {
       status,
       checkoutSessionId: session.id,
       paymentIntentId:
-        typeof session.payment_intent === "string" ? session.payment_intent : undefined,
+        typeof session.payment_intent === "string"
+          ? session.payment_intent
+          : undefined,
       customerName: session.customer_details?.name ?? undefined,
       customerEmail: session.customer_details?.email ?? undefined,
       customerPhone: session.customer_details?.phone ?? undefined,
@@ -119,7 +138,10 @@ function normalizeStripeEvent(event: Stripe.Event) {
       eventType: event.type,
       status: "refunded" as const,
       checkoutSessionId: charge.metadata.checkoutSessionId,
-      paymentIntentId: typeof charge.payment_intent === "string" ? charge.payment_intent : undefined,
+      paymentIntentId:
+        typeof charge.payment_intent === "string"
+          ? charge.payment_intent
+          : undefined,
       metadata: {
         reservationId: charge.metadata.reservationId,
         paymentId: charge.metadata.paymentId,
@@ -133,4 +155,3 @@ function normalizeStripeEvent(event: Stripe.Event) {
 
   return null;
 }
-

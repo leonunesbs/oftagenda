@@ -190,7 +190,7 @@ export function AdminCalendar({ items, eventTypes, availabilityGroups }: AdminCa
   }
 
   return (
-    <div className="space-y-4">
+    <div className="min-w-0 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Button variant={viewMode === "week" ? "default" : "outline"} size="sm" onClick={() => setViewMode("week")}>
@@ -222,11 +222,11 @@ export function AdminCalendar({ items, eventTypes, availabilityGroups }: AdminCa
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border">
+      <div className="w-full max-w-full overflow-x-auto rounded-xl border">
         <div
-          className="grid min-w-[900px]"
+          className="grid w-max"
           style={{
-            gridTemplateColumns: `140px repeat(${calendarDays.length}, minmax(120px, 1fr))`,
+            gridTemplateColumns: `140px repeat(${calendarDays.length}, 160px)`,
           }}
         >
           <div className="border-b bg-muted/40 p-2 text-xs font-medium">Horario</div>

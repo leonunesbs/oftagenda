@@ -1,6 +1,5 @@
 import { api } from "@convex/_generated/api";
 
-import type { BookingLocationOption } from "@/lib/booking-bootstrap";
 import { getBookingBootstrapData } from "@/lib/booking-bootstrap";
 import { getConvexHttpClient } from "@/lib/convex-server";
 
@@ -54,26 +53,18 @@ export async function resolvePreBookingSummary(
     };
   }
 
-  const { locations, availabilityByLocation } = await getBookingBootstrapData();
-  const resolvedLocationId = resolveLocationId(rawLocationId, locations);
+  const { locations } = await getBookingBootstrapData();
   const selectedLocation =
-    locations.find((locationOption) => locationOption.value === resolvedLocationId) ??
+    locations.find((locationOption) => locationOption.value === rawLocationId) ??
     null;
-  const availabilityForLocation = resolvedLocationId
-    ? (availabilityByLocation[resolvedLocationId] ?? null)
-    : null;
-  const dateOption =
-    availabilityForLocation?.dates.find((dateOption) => dateOption.isoDate === date) ??
-    null;
-  const hasValidTime =
-    selectedLocation && dateOption
-      ? await validateTimeSelection({
+  const validation =
+    selectedLocation
+      ? await validateSelectionForLocation({
           locationId: selectedLocation.value,
           date,
           time,
-          fallbackTimes: dateOption.times,
         })
-      : false;
+      : { hasDateOption: false, hasValidTime: false };
 
   return {
     locationId: selectedLocation?.value ?? rawLocationId,
@@ -86,20 +77,16 @@ export async function resolvePreBookingSummary(
     payment,
     hasRedactedParams: false,
     hasMissingParams: false,
-    hasInvalidSelection: !selectedLocation || !dateOption || !hasValidTime,
+    hasInvalidSelection:
+      !selectedLocation || !validation.hasDateOption || !validation.hasValidTime,
   };
 }
 
-async function validateTimeSelection(input: {
+async function validateSelectionForLocation(input: {
   locationId: string;
   date: string;
   time: string;
-  fallbackTimes: string[];
 }) {
-  if (input.fallbackTimes.includes(input.time)) {
-    return true;
-  }
-
   try {
     const client = getConvexHttpClient();
     const options = await client.query(api.appointments.getBookingOptionsByLocation, {
@@ -111,50 +98,19 @@ async function validateTimeSelection(input: {
       (dateOption) => dateOption.isoDate === input.date,
     );
     if (!liveDateOption) {
-      return false;
+      return { hasDateOption: false, hasValidTime: false };
     }
-    return liveDateOption.times.includes(input.time);
+    return {
+      hasDateOption: true,
+      hasValidTime: liveDateOption.times.includes(input.time),
+    };
   } catch {
     // Do not block checkout on transient availability lookup failures.
-    return true;
+    return {
+      hasDateOption: true,
+      hasValidTime: true,
+    };
   }
-}
-
-function resolveLocationId(rawLocationId: string, locations: BookingLocationOption[]) {
-  const directMatch = locations.find((locationOption) => locationOption.value === rawLocationId);
-  if (directMatch) {
-    return directMatch.value;
-  }
-
-  const normalizedRaw = normalizeLocationToken(rawLocationId);
-  if (!normalizedRaw) {
-    return rawLocationId;
-  }
-
-  for (const locationOption of locations) {
-    const normalizedValue = normalizeLocationToken(locationOption.value);
-    const normalizedLabel = normalizeLocationToken(locationOption.label);
-    if (
-      normalizedRaw === normalizedValue ||
-      normalizedRaw === normalizedLabel ||
-      normalizedLabel.includes(normalizedRaw) ||
-      normalizedRaw.includes(normalizedValue)
-    ) {
-      return locationOption.value;
-    }
-  }
-
-  return rawLocationId;
-}
-
-function normalizeLocationToken(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, "")
-    .replace(/\s+/g, " ");
 }
 
 function formatDateLabel(isoDate: string) {

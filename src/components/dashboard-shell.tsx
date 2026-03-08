@@ -22,12 +22,12 @@ export function DashboardShell({ children }: DashboardShellProps) {
         }
       >
         <AppSidebar />
-        <SidebarInset>
+        <SidebarInset className="min-w-0 max-w-full overflow-x-hidden">
           <header className="sticky top-0 z-20 flex h-14 items-center border-b bg-background/95 px-4 backdrop-blur md:hidden">
             <SidebarTrigger aria-label="Abrir menu lateral" />
             <span className="ml-2 text-sm font-medium text-muted-foreground">Painel administrativo</span>
           </header>
-          <div className="flex flex-1 flex-col p-4 md:p-6">{children}</div>
+          <div className="flex min-w-0 max-w-full flex-1 flex-col overflow-x-hidden p-4 md:p-6">{children}</div>
         </SidebarInset>
       </SidebarProvider>
     </div>

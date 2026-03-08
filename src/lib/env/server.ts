@@ -1,9 +1,11 @@
-import { createEnv } from '@t3-oss/env-nextjs';
-import { z } from 'zod/v4';
+import { createEnv } from "@t3-oss/env-nextjs";
+import { z } from "zod/v4";
 
 export const serverEnv = createEnv({
   server: {
-    NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+    NODE_ENV: z
+      .enum(["development", "test", "production"])
+      .default("development"),
     STRIPE_SECRET_KEY: z.string().optional(),
     STRIPE_WEBHOOK_SECRET: z.string().optional(),
     N8N_OFTAGENDA_FORWARD_ORIGIN: z.string().url().optional(),

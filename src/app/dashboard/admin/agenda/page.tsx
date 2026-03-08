@@ -42,12 +42,12 @@ export default async function AdminAgendaPage() {
   }));
 
   return (
-    <Card className="border-border/70">
+    <Card className="min-w-0 border-border/70">
       <CardHeader>
         <CardTitle>Agenda visual</CardTitle>
         <CardDescription>Grade semanal/diaria para operacao de consultas, exames e procedimentos.</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="min-w-0">
         <AdminCalendar items={items} eventTypes={eventTypes} availabilityGroups={availabilityGroups} />
       </CardContent>
     </Card>

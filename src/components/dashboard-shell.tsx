@@ -2,6 +2,7 @@ import { AppSidebar } from "@/components/app-sidebar"
 import {
   SidebarInset,
   SidebarProvider,
+  SidebarTrigger,
 } from "@/components/ui/sidebar"
 import type { CSSProperties, ReactNode } from "react"
 
@@ -22,6 +23,10 @@ export function DashboardShell({ children }: DashboardShellProps) {
       >
         <AppSidebar />
         <SidebarInset>
+          <header className="sticky top-0 z-20 flex h-14 items-center border-b bg-background/95 px-4 backdrop-blur md:hidden">
+            <SidebarTrigger aria-label="Abrir menu lateral" />
+            <span className="ml-2 text-sm font-medium text-muted-foreground">Painel administrativo</span>
+          </header>
           <div className="flex flex-1 flex-col p-4 md:p-6">{children}</div>
         </SidebarInset>
       </SidebarProvider>

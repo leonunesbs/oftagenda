@@ -30,7 +30,7 @@ function renderUnderConstructionPage(appName: string, returnUrl: string) {
       }
       body {
         margin: 0;
-        min-height: 100vh;
+        height: 100vh;
         display: grid;
         place-items: center;
         background: radial-gradient(circle at top, #1f2937 0%, #0b0b0f 60%, #050506 100%);

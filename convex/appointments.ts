@@ -108,8 +108,7 @@ export const getBookingOptionsByLocation = query({
     const eventTypes = activeEventTypes.filter(
       (item) =>
         item.slug === args.location &&
-        Boolean(item.availabilityId) &&
-        hasCheckoutPricingConfigured(item),
+        Boolean(item.availabilityId),
     );
     if (eventTypes.length === 0) {
       return { location: args.location, dates: [] };
@@ -290,8 +289,7 @@ export const getActiveBookingLocations = query({
     return [...eventTypes]
       .filter(
         (eventType) =>
-          Boolean(eventType.availabilityId) &&
-          hasCheckoutPricingConfigured(eventType),
+          Boolean(eventType.availabilityId),
       )
       .sort((a, b) => (a.name ?? a.title).localeCompare(b.name ?? b.title, "pt-BR"))
       .map((eventType) => ({
@@ -764,27 +762,6 @@ function resolveAvailabilityGroupName(availability: { name?: string; _id?: unkno
   return `Disponibilidade-${String(availability._id ?? "sem-id")}`;
 }
 
-function hasCheckoutPricingConfigured(eventType: { stripePriceId?: string; priceCents?: number }) {
-  const stripePriceId = eventType.stripePriceId?.trim();
-  if (stripePriceId?.startsWith("price_")) {
-    return true;
-  }
-  const normalizedPriceCents = normalizeAmountCents(eventType.priceCents);
-  if (typeof normalizedPriceCents === "number" && normalizedPriceCents > 0) {
-    return true;
-  }
-  if (!stripePriceId) {
-    return false;
-  }
-
-  if (/^\d+$/.test(stripePriceId)) {
-    const parsedInteger = Number(stripePriceId);
-    return Number.isFinite(parsedInteger) && parsedInteger > 0;
-  }
-  const parsed = Number(stripePriceId.replace(/\./g, "").replace(",", "."));
-  return Number.isFinite(parsed) && parsed > 0;
-}
-
 async function resolveSingleActiveEventType(ctx: MutationCtx, location: string) {
   const normalizedInput = location.trim().toLowerCase();
   const activeEventTypes = await ctx.db
@@ -805,7 +782,7 @@ async function resolveSingleActiveEventType(ctx: MutationCtx, location: string) 
   }
 
   const eventType = candidates[0]!;
-  if (!eventType.availabilityId || !hasCheckoutPricingConfigured(eventType)) {
+  if (!eventType.availabilityId) {
     throw new Error("Evento selecionado não está pronto para novos agendamentos.");
   }
   return eventType;
@@ -1000,18 +977,3 @@ function inferPreferredPeriod(timestamp: number) {
   return "noite" as const;
 }
 
-function normalizeAmountCents(value: number | undefined) {
-  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
-    return undefined;
-  }
-  if (!Number.isInteger(value)) {
-    if (value >= 1000) {
-      return Math.round(value);
-    }
-    return Math.round(value * 100);
-  }
-  if (value >= 1000) {
-    return value;
-  }
-  return value * 100;
-}

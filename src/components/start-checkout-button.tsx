@@ -141,10 +141,10 @@ function normalizeCheckoutError(
 ): CheckoutErrorState {
   if (data?.errorCode === "ACTIVE_APPOINTMENT_EXISTS" && data.redirectTo) {
     return {
-      title: data.error || "Voce ja possui um agendamento ativo.",
+      title: data.error || "Você já possui um agendamento ativo.",
       description:
         data.errorDetails ||
-        "Leve ajuste de rota: voce sera enviado para gerenciar esse agendamento.",
+        "Você será redirecionado para o painel para gerenciar seu agendamento.",
       redirectTo: data.redirectTo,
     };
   }

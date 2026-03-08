@@ -757,7 +757,7 @@ async function assertCanCreateNewBookingDraft(
   );
   if (hasActiveAppointment) {
     throw new Error(
-      "Você já possui um agendamento ativo. Use o painel para remarcação, sem criar novo agendamento.",
+      "Você já possui um agendamento ativo. Para remarcar ou gerenciar sua consulta, acesse seu painel.",
     );
   }
 

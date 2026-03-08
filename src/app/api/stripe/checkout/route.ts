@@ -11,7 +11,7 @@ import { api } from "@convex/_generated/api";
 export const runtime = "nodejs";
 const CHECKOUT_SESSION_DURATION_SECONDS = 30 * 60;
 const ACTIVE_APPOINTMENT_ERROR =
-  "Você já possui um agendamento ativo. Use o painel para remarcação, sem criar novo agendamento.";
+  "Você já possui um agendamento ativo. Para remarcar ou gerenciar sua consulta, acesse seu painel.";
 const PENDING_RESERVATION_ERROR =
   "Você já possui um agendamento aguardando remarcação. Finalize ou cancele o pendente atual.";
 const checkoutPayloadSchema = bookingCheckoutSchema.extend({
@@ -164,10 +164,10 @@ export async function POST(request: Request) {
         {
           ok: false,
           errorCode: "ACTIVE_APPOINTMENT_EXISTS",
-          error: "Voce ja possui um agendamento ativo.",
+          error: "Você já possui um agendamento ativo.",
           errorDetails:
-            "Para alterar data ou horario, acesse o painel para remarcacao.",
-          redirectTo: "/dashboard#remarcacao-consulta",
+            "Abra seu painel para remarcar ou gerenciar sua consulta sem criar um novo agendamento.",
+          redirectTo: "/dashboard",
         },
         { status: 409 },
       );

@@ -2,9 +2,10 @@ import "./globals.css";
 
 import Link from "next/link";
 import { Noto_Sans } from "next/font/google";
-import dynamic from "next/dynamic";
 
 import { AppHeader } from "@/components/app-header";
+import { AnalyticsConsent } from "@/components/analytics-consent";
+import { AnalyticsPageview } from "@/components/analytics-pageview";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { isClerkConfigured } from "@/lib/access";
@@ -21,16 +22,6 @@ const notoSans = Noto_Sans({
   adjustFontFallback: true,
   variable: "--font-sans",
 });
-
-const AnalyticsPageview = dynamic(
-  () => import("@/components/analytics-pageview").then((mod) => mod.AnalyticsPageview),
-  { ssr: false },
-);
-
-const AnalyticsConsent = dynamic(
-  () => import("@/components/analytics-consent").then((mod) => mod.AnalyticsConsent),
-  { ssr: false },
-);
 
 const metadataBase = resolveSiteUrl();
 

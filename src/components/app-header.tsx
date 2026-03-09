@@ -19,13 +19,15 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { HeaderAuthButton } from "@/components/header-auth-button";
+import type { SessionState } from "@/components/header-auth-button";
 import { siteConfig } from "@/config/site";
 
 type AppHeaderProps = {
   clerkEnabled: boolean;
+  sessionState: SessionState;
 };
 
-export function AppHeader({ clerkEnabled }: AppHeaderProps) {
+export function AppHeader({ clerkEnabled, sessionState }: AppHeaderProps) {
   const panelHref = "/dashboard";
   const navItems = [
     { href: "/", label: "Home", icon: LayoutIcon },
@@ -62,7 +64,7 @@ export function AppHeader({ clerkEnabled }: AppHeaderProps) {
             </Link>
           </Button>
           <ColorModeToggle />
-          <HeaderAuthButton clerkEnabled={clerkEnabled} />
+          <HeaderAuthButton clerkEnabled={clerkEnabled} initialSessionState={sessionState} />
         </nav>
 
         <div className="flex items-center gap-2 md:hidden">
@@ -104,7 +106,7 @@ export function AppHeader({ clerkEnabled }: AppHeaderProps) {
                   </Button>
                 </SheetClose>
                 <div className="mt-2">
-                  <HeaderAuthButton clerkEnabled={clerkEnabled} />
+                  <HeaderAuthButton clerkEnabled={clerkEnabled} initialSessionState={sessionState} />
                 </div>
               </nav>
             </SheetContent>

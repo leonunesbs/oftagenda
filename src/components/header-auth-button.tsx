@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { usePathname } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
@@ -16,77 +16,21 @@ import {
 
 type HeaderAuthButtonProps = {
   clerkEnabled: boolean;
+  initialSessionState: SessionState;
 };
 
-type SessionState = {
+export type SessionState = {
   isAuthenticated: boolean;
   userId: string | null;
   avatarUrl: string | null;
   firstName: string | null;
 };
 
-export function HeaderAuthButton({ clerkEnabled }: HeaderAuthButtonProps) {
+export function HeaderAuthButton({ clerkEnabled, initialSessionState }: HeaderAuthButtonProps) {
   const pathname = usePathname();
   const [isSigningOut, setIsSigningOut] = useState(false);
-  const [{ isAuthenticated, userId, avatarUrl, firstName }, setSessionState] = useState<SessionState>({
-    isAuthenticated: false,
-    userId: null,
-    avatarUrl: null,
-    firstName: null,
-  });
-
-  useEffect(() => {
-    if (!clerkEnabled) {
-      setSessionState({
-        isAuthenticated: false,
-        userId: null,
-        avatarUrl: null,
-        firstName: null,
-      });
-      return;
-    }
-
-    const controller = new AbortController();
-
-    async function checkSession() {
-      try {
-        const response = await fetch("/api/auth/session", {
-          cache: "no-store",
-          signal: controller.signal,
-        });
-
-        if (!response.ok) {
-          throw new Error("Falha ao consultar sessao");
-        }
-
-        const data = (await response.json()) as {
-          isAuthenticated?: boolean;
-          userId?: string | null;
-          avatarUrl?: string | null;
-          firstName?: string | null;
-        };
-        setSessionState({
-          isAuthenticated: Boolean(data.isAuthenticated),
-          userId: data.userId ?? null,
-          avatarUrl: data.avatarUrl ?? null,
-          firstName: data.firstName ?? null,
-        });
-      } catch {
-        setSessionState({
-          isAuthenticated: false,
-          userId: null,
-          avatarUrl: null,
-          firstName: null,
-        });
-      }
-    }
-
-    void checkSession();
-
-    return () => {
-      controller.abort();
-    };
-  }, [clerkEnabled, pathname]);
+  const [{ isAuthenticated, userId, avatarUrl, firstName }, setSessionState] =
+    useState<SessionState>(initialSessionState);
 
   if (!clerkEnabled) {
     return (

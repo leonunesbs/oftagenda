@@ -23,6 +23,8 @@ function isPublicApiBypass(pathname: string) {
   return (
     pathname === "/api/stripe/webhook" ||
     pathname === "/api/stripe/webhook/" ||
+    pathname === "/api/booking/options" ||
+    pathname === "/api/booking/options/" ||
     pathname.startsWith("/api/integrations/n8n/")
   );
 }

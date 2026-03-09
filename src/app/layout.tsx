@@ -2,10 +2,12 @@ import "./globals.css";
 
 import Link from "next/link";
 import { Noto_Sans } from "next/font/google";
+import { auth } from "@clerk/nextjs/server";
 
 import { AppHeader } from "@/components/app-header";
 import { AnalyticsConsent } from "@/components/analytics-consent";
 import { AnalyticsPageview } from "@/components/analytics-pageview";
+import type { SessionState } from "@/components/header-auth-button";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { isClerkConfigured } from "@/lib/access";
@@ -42,6 +44,56 @@ const medicalClinicSchema = {
   medicalSpecialty: ["Ophthalmology"],
   sameAs: [siteConfig.social.instagram, siteConfig.social.oftleonardoSite],
 };
+
+const loggedOutHeaderState: SessionState = {
+  isAuthenticated: false,
+  userId: null,
+  avatarUrl: null,
+  firstName: null,
+};
+
+async function getHeaderSessionState(clerkEnabled: boolean): Promise<SessionState> {
+  if (!clerkEnabled) {
+    return loggedOutHeaderState;
+  }
+
+  try {
+    const { getToken, sessionClaims } = await auth();
+    const token = await getToken();
+
+    if (!token) {
+      return loggedOutHeaderState;
+    }
+
+    const claims =
+      sessionClaims && typeof sessionClaims === "object"
+        ? (sessionClaims as Record<string, unknown>)
+        : {};
+
+    const userId = typeof claims.sub === "string" ? claims.sub : null;
+    const firstName =
+      typeof claims.given_name === "string"
+        ? claims.given_name
+        : typeof claims.first_name === "string"
+          ? claims.first_name
+          : null;
+    const avatarUrl =
+      typeof claims.picture === "string"
+        ? claims.picture
+        : typeof claims.image_url === "string"
+          ? claims.image_url
+          : null;
+
+    return {
+      isAuthenticated: true,
+      userId,
+      avatarUrl,
+      firstName,
+    };
+  } catch {
+    return loggedOutHeaderState;
+  }
+}
 
 export const metadata: Metadata = {
   metadataBase,
@@ -86,12 +138,13 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   const clerkEnabled = isClerkConfigured();
+  const sessionState = await getHeaderSessionState(clerkEnabled);
   const legalFooter = (
     <footer data-app-legal-footer className="mx-auto w-full max-w-5xl px-4 pb-8 pt-2 text-xs text-muted-foreground md:px-6">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border/70 pt-4">
@@ -126,7 +179,7 @@ export default function RootLayout({
           />
           <TooltipProvider>
             <div className="flex min-h-screen flex-col bg-background">
-              <AppHeader clerkEnabled={clerkEnabled} />
+              <AppHeader clerkEnabled={clerkEnabled} sessionState={sessionState} />
               <main data-app-main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10 md:px-6 md:py-14">
                 {children}
               </main>

@@ -533,9 +533,16 @@ export function BookingForm({
                         <RadioGroupItem
                           value={item.value}
                         />
-                        <span className="min-w-0 wrap-break-word">
-                          {item.label}
-                        </span>
+                        <div className="min-w-0">
+                          <span className="block min-w-0 wrap-break-word">
+                            {item.label}
+                          </span>
+                          {item.address ? (
+                            <span className="block min-w-0 wrap-break-word text-xs text-muted-foreground">
+                              {item.address}
+                            </span>
+                          ) : null}
+                        </div>
                       </div>
                       <span className="w-full pl-8 text-left text-xs text-muted-foreground sm:w-auto sm:pl-0 sm:text-right">
                         {item.eventTypesCount

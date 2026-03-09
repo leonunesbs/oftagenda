@@ -87,6 +87,30 @@ export async function getUserRoleFromClerkAuth(authData: {
   return readRoleFromMetadata(user.publicMetadata);
 }
 
+export function getUserRoleFromSessionClaims(authData: {
+  sessionClaims?: Record<string, unknown> | null;
+}) {
+  const claims = authData.sessionClaims;
+  if (!claims || typeof claims !== "object") {
+    return null;
+  }
+
+  const claimMetadataCandidates = [
+    claims.public_metadata,
+    claims.publicMetadata,
+    claims.metadata,
+  ];
+
+  for (const metadata of claimMetadataCandidates) {
+    const role = readRoleFromMetadata(metadata);
+    if (role) {
+      return role;
+    }
+  }
+
+  return null;
+}
+
 function canAccessRole(role: UserRole | null, requiredRole: UserRole) {
   if (!role) {
     return false;

@@ -22,7 +22,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { getUserRoleFromClerkAuth, isAdminFromClerkAuth } from "@/lib/access";
+import { getUserRoleFromSessionClaims } from "@/lib/access";
 import { siteConfig } from "@/config/site";
 
 type AppHeaderProps = {
@@ -33,8 +33,8 @@ export async function AppHeader({ clerkEnabled }: AppHeaderProps) {
   const authData = clerkEnabled ? await auth() : null;
   const userId = authData?.userId ?? null;
   const panelHref = userId ? "/dashboard" : "/sign-in";
-  const isAdmin = authData ? await isAdminFromClerkAuth(authData) : false;
-  const role = authData ? await getUserRoleFromClerkAuth(authData) : null;
+  const role = authData ? getUserRoleFromSessionClaims(authData) : null;
+  const isAdmin = role === "admin";
   const navItems = [
     { href: "/", label: "Home", icon: LayoutIcon },
     { href: panelHref, label: "Painel", icon: LayoutBottomIcon },

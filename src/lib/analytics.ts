@@ -1,3 +1,5 @@
+import { sendGTMEvent } from "@next/third-parties/google";
+
 export type AnalyticsEventName =
   | "view_content"
   | "select_city"
@@ -12,6 +14,7 @@ declare global {
     fbq?: (...args: unknown[]) => void;
     dataLayer?: Array<Record<string, unknown> | IArguments>;
     __oftConsent?: "granted" | "denied";
+    google_tag_manager?: Record<string, unknown>;
   }
 }
 
@@ -61,6 +64,11 @@ export function trackEvent(event: AnalyticsEventName, payload: Record<string, un
   }
 
   const safePayload = sanitizePayload(payload);
+  if (window.google_tag_manager) {
+    sendGTMEvent({ event, ...safePayload });
+    return;
+  }
+
   window.dataLayer = window.dataLayer || [];
   window.dataLayer.push({ event, ...safePayload });
   window.gtag?.("event", event, safePayload);

@@ -122,6 +122,7 @@ export function AnalyticsConsent() {
   const metaPixelId = clientEnv.NEXT_PUBLIC_META_PIXEL_ID;
   const googleAdsId = clientEnv.NEXT_PUBLIC_GOOGLE_ADS_ID;
   const shouldLoadScripts = consent === "granted";
+  const shouldLoadGa4Directly = shouldLoadScripts && Boolean(ga4Id) && !gtmId;
 
   const hasAnyTrackingId = useMemo(
     () => Boolean(ga4Id || gtmId || metaPixelId || googleAdsId),
@@ -154,13 +155,13 @@ export function AnalyticsConsent() {
         <GoogleTagManager gtmId={gtmId} />
       ) : null}
 
-      {shouldLoadScripts && ga4Id ? (
+      {shouldLoadGa4Directly ? (
         <>
           <Script
             src={`https://www.googletagmanager.com/gtag/js?id=${ga4Id}`}
-            strategy="afterInteractive"
+            strategy="lazyOnload"
           />
-          <Script id="ga4-config" strategy="afterInteractive">
+          <Script id="ga4-config" strategy="lazyOnload">
             {`window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 window.gtag = gtag;
@@ -171,7 +172,7 @@ gtag('config', '${ga4Id}', { anonymize_ip: true });`}
       ) : null}
 
       {shouldLoadScripts && metaPixelId ? (
-        <Script id="meta-pixel" strategy="afterInteractive">
+        <Script id="meta-pixel" strategy="lazyOnload">
           {`!function(f,b,e,v,n,t,s)
 {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
 n.callMethod.apply(n,arguments):n.queue.push(arguments)};
@@ -186,7 +187,7 @@ fbq('track', 'PageView');`}
       ) : null}
 
       {shouldLoadScripts && googleAdsId ? (
-        <Script id="google-ads-config" strategy="afterInteractive">
+        <Script id="google-ads-config" strategy="lazyOnload">
           {`window.dataLayer = window.dataLayer || [];
 window.gtag = window.gtag || function(){window.dataLayer.push(arguments);};
 window.gtag('config', '${googleAdsId}');`}

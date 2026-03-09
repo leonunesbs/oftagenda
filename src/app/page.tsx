@@ -213,6 +213,7 @@ export default async function HomePage() {
             <Button variant="outline" asChild>
               <Link
                 href={oftleonardoContentUrl}
+                prefetch={false}
                 target="_blank"
                 rel="noreferrer"
               >
@@ -222,6 +223,7 @@ export default async function HomePage() {
             <Button variant="outline" asChild>
               <Link
                 href={`${siteConfig.social.oftleonardoSite}/acuidade-visual?utm_source=oftagenda&utm_medium=referral&utm_campaign=crossdomain_seo`}
+                prefetch={false}
                 target="_blank"
                 rel="noreferrer"
               >

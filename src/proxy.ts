@@ -1,7 +1,6 @@
 import {
   clerkMiddleware,
   createRouteMatcher,
-  type ClerkMiddlewareAuth,
 } from "@clerk/nextjs/server";
 import { NextFetchEvent, NextRequest, NextResponse } from "next/server";
 
@@ -34,7 +33,7 @@ function shouldRunClerk(pathname: string) {
 }
 
 const clerkProxy = clerkMiddleware(
-  async (auth: ClerkMiddlewareAuth, req: NextRequest) => {
+  async (auth, req: NextRequest) => {
     if (isProtectedRoute(req)) {
       await auth.protect();
     }

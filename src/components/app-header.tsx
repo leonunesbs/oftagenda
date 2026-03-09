@@ -53,7 +53,7 @@ export async function AppHeader({ clerkEnabled }: AppHeaderProps) {
           </span>
           <span className="flex flex-col leading-tight">
             <span>Minha Agenda</span>
-            <span className="text-[11px] font-normal text-foreground/80">Leonardo Nunes</span>
+            <span className="text-[11px] font-normal text-foreground/90">Leonardo Nunes</span>
           </span>
         </Link>
 

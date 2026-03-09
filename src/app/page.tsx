@@ -116,7 +116,7 @@ export default async function HomePage() {
       <section aria-labelledby="home-hero">
         <Card className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-2 motion-safe:duration-500 rounded-3xl border-white/10 bg-linear-to-br from-card/95 via-card/90 to-card/65 backdrop-blur-2xl">
           <CardHeader className="space-y-4">
-            <p className="inline-flex w-fit rounded-full border border-border/70 bg-muted/30 px-3 py-1 text-xs text-muted-foreground">
+            <p className="inline-flex w-fit rounded-full border border-border/70 bg-muted/30 px-3 py-1 text-xs text-foreground/90">
               Atendimento oftalmológico especializado
             </p>
             <h1
@@ -125,7 +125,7 @@ export default async function HomePage() {
             >
               Minha Agenda
             </h1>
-            <CardDescription className="max-w-2xl text-sm text-muted-foreground md:text-base">
+            <CardDescription className="max-w-2xl text-sm text-foreground/90 md:text-base">
               Aqui, cada paciente é atendido com tempo, clareza e precisão
               clínica.
             </CardDescription>
@@ -156,7 +156,7 @@ export default async function HomePage() {
                 Clerk não configurado
               </Button>
             )}
-            <p className="w-full text-xs text-muted-foreground">
+            <p className="w-full text-xs text-foreground/90">
               Protocolo clínico com foco em precisão diagnóstica e conduta
               segura.
             </p>

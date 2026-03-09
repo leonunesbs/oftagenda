@@ -1,7 +1,6 @@
 import "./globals.css";
 
 import Link from "next/link";
-import { Noto_Sans } from "next/font/google";
 
 import { AnalyticsConsent } from "@/components/analytics-consent";
 import { AnalyticsPageview } from "@/components/analytics-pageview";
@@ -13,8 +12,6 @@ import { resolveSiteUrl, siteConfig } from "@/config/site";
 import type { Metadata } from "next";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { cn } from "@/lib/utils";
-
-const notoSans = Noto_Sans({ variable: "--font-sans" });
 
 const metadataBase = resolveSiteUrl();
 
@@ -100,7 +97,7 @@ export default function RootLayout({
   );
 
   return (
-    <html lang="pt-BR" className={cn("dark", "font-sans", notoSans.variable)}>
+    <html lang="pt-BR" className={cn("dark", "font-sans")}>
       <body>
         <NuqsAdapter>
           <script

@@ -492,7 +492,7 @@ export function BookingForm({
           <section className="min-w-0 h-fit self-start space-y-4 rounded-xl border border-border/70 p-4 sm:col-span-3">
             <div className="space-y-1">
               <Label>1. Escolha o local de atendimento</Label>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-foreground/80">
                 Escolha o local onde você deseja ser atendido para visualizar as
                 datas e horários disponíveis. Estamos aqui para tornar seu
                 agendamento simples, rápido e tranquilo.
@@ -525,7 +525,7 @@ export function BookingForm({
                           {item.label}
                         </span>
                       </div>
-                      <span className="w-full pl-8 text-left text-xs text-muted-foreground sm:w-auto sm:pl-0 sm:text-right">
+                      <span className="w-full pl-8 text-left text-xs text-foreground/80 sm:w-auto sm:pl-0 sm:text-right">
                         {item.eventTypesCount
                           ? `${item.eventTypesCount} tipos`
                           : "Evento ativo"}
@@ -535,12 +535,12 @@ export function BookingForm({
                 </RadioGroup>
               </div>
             ) : (
-              <p className="rounded-xl border border-dashed border-border/70 p-3 text-xs text-muted-foreground">
+              <p className="rounded-xl border border-dashed border-border/70 p-3 text-xs text-foreground/80">
                 Nenhum evento ativo disponível para agendamento.
               </p>
             )}
             {locationsError ? (
-              <p className="text-xs text-muted-foreground">{locationsError}</p>
+              <p className="text-xs text-foreground/80">{locationsError}</p>
             ) : null}
           </section>
 
@@ -553,7 +553,7 @@ export function BookingForm({
           >
             <div className="space-y-1">
               <Label>2. Escolha a data</Label>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-foreground/80">
                 {hasLocation
                   ? "Selecione no calendário um dia disponível para este local."
                   : "Primeiro selecione o evento."}
@@ -630,7 +630,7 @@ export function BookingForm({
             {hasLocation &&
             !availabilityError &&
             availableDates.length === 0 ? (
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-foreground/80">
                 Não há datas disponíveis para este local.
               </p>
             ) : null}
@@ -657,7 +657,7 @@ export function BookingForm({
             >
               <div className="space-y-1">
                 <Label>3. Escolha o horário</Label>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-foreground/80">
                   {canPickTime
                     ? isLoadingTimes
                       ? "Carregando horários..."
@@ -684,7 +684,7 @@ export function BookingForm({
               !isLoadingTimes &&
               !timeLoadError &&
               filteredTimeSlots.length === 0 ? (
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-foreground/80">
                   Não há horários livres para esta data.
                 </p>
               ) : null}
@@ -694,7 +694,7 @@ export function BookingForm({
 
               <div className="rounded-xl border border-dashed border-border/70 bg-muted/20 p-4 text-sm">
                 <p className="font-medium">Resumo rápido</p>
-                <p className="text-muted-foreground">
+                <p className="text-foreground/80">
                   {selectedLocation?.label ?? "Selecione um evento"}
                   {selectedDateOption
                     ? ` - ${selectedDateOption.weekdayLabel}, ${selectedDateOption.label}`

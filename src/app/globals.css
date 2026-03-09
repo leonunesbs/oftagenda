@@ -70,10 +70,10 @@
 
 @theme inline {
   --font-sans:
+    var(--font-noto-sans),
     "Segoe UI",
     "Helvetica Neue",
     Arial,
-    "Noto Sans",
     "Liberation Sans",
     sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);

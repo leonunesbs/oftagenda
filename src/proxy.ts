@@ -3,11 +3,6 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { isClerkConfigured } from "@/lib/access";
 
-const isProtectedRoute = createRouteMatcher([
-  "/dashboard(.*)",
-  "/api/(.*)",
-]);
-
 const clerkConfigured = isClerkConfigured();
 const siteUnderConstruction =
   process.env.NEXT_PUBLIC_SITE_UNDER_CONSTRUCTION === "true";
@@ -20,10 +15,7 @@ function getUnderConstructionRedirect(req: Request) {
   return NextResponse.redirect(redirectUrl);
 }
 
-const shouldRunClerk = createRouteMatcher([
-  "/dashboard(.*)",
-  "/api/(.*)",
-]);
+const isProtectedRoute = createRouteMatcher(["/dashboard(.*)", "/api/(.*)"]);
 
 function isPublicApiBypass(pathname: string) {
   return (
@@ -31,6 +23,10 @@ function isPublicApiBypass(pathname: string) {
     pathname === "/api/auth/session" ||
     pathname.startsWith("/api/integrations/n8n/")
   );
+}
+
+function shouldRunClerk(pathname: string) {
+  return pathname.startsWith("/dashboard") || pathname.startsWith("/api/");
 }
 
 const clerkProxy = clerkMiddleware(
@@ -63,7 +59,7 @@ const proxy = (req: NextRequest) => {
     return NextResponse.next();
   }
 
-  if (isPublicApiBypass(pathname) || !shouldRunClerk(req)) {
+  if (isPublicApiBypass(pathname) || !shouldRunClerk(pathname)) {
     return NextResponse.next();
   }
 

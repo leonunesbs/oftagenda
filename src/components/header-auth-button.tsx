@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 
@@ -15,6 +16,7 @@ type SessionState = {
 };
 
 export function HeaderAuthButton({ clerkEnabled }: HeaderAuthButtonProps) {
+  const pathname = usePathname();
   const [{ isLoading, isAuthenticated }, setSessionState] = useState<SessionState>({
     isLoading: clerkEnabled,
     isAuthenticated: false,
@@ -22,6 +24,12 @@ export function HeaderAuthButton({ clerkEnabled }: HeaderAuthButtonProps) {
 
   useEffect(() => {
     if (!clerkEnabled) {
+      setSessionState({ isLoading: false, isAuthenticated: false });
+      return;
+    }
+
+    // Keep the landing page free of auth handshakes/redirect chains that hurt FCP/LCP.
+    if (pathname === "/") {
       setSessionState({ isLoading: false, isAuthenticated: false });
       return;
     }
@@ -56,7 +64,7 @@ export function HeaderAuthButton({ clerkEnabled }: HeaderAuthButtonProps) {
     return () => {
       controller.abort();
     };
-  }, [clerkEnabled]);
+  }, [clerkEnabled, pathname]);
 
   if (!clerkEnabled) {
     return (

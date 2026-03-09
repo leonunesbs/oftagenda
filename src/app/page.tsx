@@ -140,7 +140,9 @@ export default async function HomePage() {
                 asChild
                 className="h-10 rounded-xl px-5 text-sm transition-colors duration-200"
               >
-                <Link href="/dashboard">Painel</Link>
+                <Link href="/dashboard" prefetch={false}>
+                  Painel
+                </Link>
               </Button>
             ) : (
               <Button

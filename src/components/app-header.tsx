@@ -51,7 +51,9 @@ export function AppHeader({ clerkEnabled }: AppHeaderProps) {
         <nav className="hidden items-center gap-2 md:flex md:gap-3">
           {navItems.map((item) => (
             <Button key={item.href} variant="ghost" asChild>
-              <Link href={item.href}>{item.label}</Link>
+              <Link href={item.href} prefetch={item.href === panelHref ? false : undefined}>
+                {item.label}
+              </Link>
             </Button>
           ))}
           <Button variant="ghost" asChild>
@@ -80,8 +82,15 @@ export function AppHeader({ clerkEnabled }: AppHeaderProps) {
                 {navItems.map((item) => (
                   <SheetClose key={item.href} asChild>
                     <Button variant="ghost" asChild className="justify-start">
-                      <Link href={item.href}>
-                        <HugeiconsIcon icon={item.icon} strokeWidth={2} data-icon="inline-start" />
+                      <Link
+                        href={item.href}
+                        prefetch={item.href === panelHref ? false : undefined}
+                      >
+                        <HugeiconsIcon
+                          icon={item.icon}
+                          strokeWidth={2}
+                          data-icon="inline-start"
+                        />
                         {item.label}
                       </Link>
                     </Button>

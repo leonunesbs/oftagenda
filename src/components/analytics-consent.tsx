@@ -65,8 +65,9 @@ export function AnalyticsConsent() {
     };
 
     const scheduleReveal = () => {
-      if ("requestIdleCallback" in window) {
-        idleId = window.requestIdleCallback(revealBanner, { timeout: 1500 });
+      const requestIdleCallbackFn = window.requestIdleCallback;
+      if (typeof requestIdleCallbackFn === "function") {
+        idleId = requestIdleCallbackFn(revealBanner, { timeout: 1500 });
       } else {
         timeoutId = window.setTimeout(revealBanner, 250);
       }

@@ -3,7 +3,7 @@ import "./globals.css";
 import Link from "next/link";
 import { ptBR } from "@clerk/localizations";
 import { ClerkProvider } from "@clerk/nextjs";
-import { Geist, Inter } from "next/font/google";
+import { Geist, Inter, Noto_Sans } from "next/font/google";
 
 import { AnalyticsConsent } from "@/components/analytics-consent";
 import { AnalyticsPageview } from "@/components/analytics-pageview";
@@ -15,8 +15,9 @@ import { isClerkConfigured } from "@/lib/access";
 import { resolveSiteUrl, siteConfig } from "@/config/site";
 import type { Metadata } from "next";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
+import { cn } from "@/lib/utils";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
+const notoSans = Noto_Sans({variable:'--font-sans'});
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -107,7 +108,7 @@ export default function RootLayout({
   );
 
   return (
-    <html lang="pt-BR" className={`${inter.variable} dark`}>
+    <html lang="pt-BR" className={cn("dark", "font-sans", notoSans.variable)}>
       <body className={geistSans.variable}>
         <NuqsAdapter>
           <script

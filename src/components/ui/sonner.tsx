@@ -1,56 +1,49 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useTheme } from "next-themes"
+import { Toaster as Sonner, type ToasterProps } from "sonner"
+import { CircleCheckIcon, InfoIcon, TriangleAlertIcon, OctagonXIcon, Loader2Icon } from "lucide-react"
 
-import { cn } from "@/lib/utils"
-
-type ToastItem = {
-  id: number
-  message: string
-}
-
-type ToastListener = (toast: ToastItem) => void
-
-const listeners = new Set<ToastListener>()
-let toastId = 0
-
-export function toast(message: string) {
-  const nextToast = { id: toastId++, message }
-  for (const listener of listeners) {
-    listener(nextToast)
-  }
-}
-
-export function Toaster() {
-  const [items, setItems] = useState<ToastItem[]>([])
-
-  useEffect(() => {
-    const listener: ToastListener = (nextToast) => {
-      setItems((prev) => [...prev, nextToast])
-
-      setTimeout(() => {
-        setItems((prev) => prev.filter((item) => item.id !== nextToast.id))
-      }, 2800)
-    }
-
-    listeners.add(listener)
-    return () => {
-      listeners.delete(listener)
-    }
-  }, [])
+const Toaster = ({ ...props }: ToasterProps) => {
+  const { theme = "system" } = useTheme()
 
   return (
-    <div className="pointer-events-none fixed right-4 bottom-4 z-50 flex w-full max-w-xs flex-col gap-2">
-      {items.map((item) => (
-        <div
-          key={item.id}
-          className={cn(
-            "rounded-md border border-border bg-card px-3 py-2 text-sm text-card-foreground shadow-lg",
-          )}
-        >
-          {item.message}
-        </div>
-      ))}
-    </div>
+    <Sonner
+      theme={theme as ToasterProps["theme"]}
+      className="toaster group"
+      icons={{
+        success: (
+          <CircleCheckIcon className="size-4" />
+        ),
+        info: (
+          <InfoIcon className="size-4" />
+        ),
+        warning: (
+          <TriangleAlertIcon className="size-4" />
+        ),
+        error: (
+          <OctagonXIcon className="size-4" />
+        ),
+        loading: (
+          <Loader2Icon className="size-4 animate-spin" />
+        ),
+      }}
+      style={
+        {
+          "--normal-bg": "var(--popover)",
+          "--normal-text": "var(--popover-foreground)",
+          "--normal-border": "var(--border)",
+          "--border-radius": "var(--radius)",
+        } as React.CSSProperties
+      }
+      toastOptions={{
+        classNames: {
+          toast: "cn-toast",
+        },
+      }}
+      {...props}
+    />
   )
 }
+
+export { Toaster }

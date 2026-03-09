@@ -70,7 +70,7 @@
 
 @theme inline {
   --font-sans:
-    var(--font-noto-sans),
+    var(--font-sans),
     "Segoe UI",
     "Helvetica Neue",
     Arial,

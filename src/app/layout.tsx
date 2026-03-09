@@ -15,8 +15,11 @@ import { cn } from "@/lib/utils";
 
 const notoSans = Noto_Sans({
   subsets: ["latin"],
-  display: "swap",
-  variable: "--font-noto-sans",
+  display: "optional",
+  preload: true,
+  fallback: ["system-ui", "Segoe UI", "Helvetica Neue", "Arial", "sans-serif"],
+  adjustFontFallback: true,
+  variable: "--font-sans",
 });
 
 const AnalyticsPageview = dynamic(

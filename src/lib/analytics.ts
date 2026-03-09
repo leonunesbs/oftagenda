@@ -12,7 +12,7 @@ declare global {
   interface Window {
     gtag?: (...args: unknown[]) => void;
     fbq?: (...args: unknown[]) => void;
-    dataLayer?: Array<Record<string, unknown> | IArguments>;
+    dataLayer?: Object[];
     __oftConsent?: "granted" | "denied";
     google_tag_manager?: Record<string, unknown>;
   }

@@ -64,6 +64,8 @@ const nextConfig: NextConfig = {
   experimental: {
     // Enable caching for next build. FileSystem caching is enabled by default for development
     turbopackFileSystemCacheForBuild: true,
+    // Inline CSS to reduce render-blocking stylesheet requests on first paint.
+    inlineCss: true,
   },
   reactStrictMode: true,
   reactCompiler: true,

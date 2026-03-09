@@ -47,13 +47,57 @@ function hasPii(value: string) {
 
 export function AnalyticsConsent() {
   const [consent, setConsent] = useState<ConsentValue | null>(null);
+  const [showBanner, setShowBanner] = useState(false);
 
   useEffect(() => {
     const savedConsent = readConsent();
     setConsent(savedConsent);
     if (savedConsent) {
       window.__oftConsent = savedConsent;
+      return;
     }
+
+    let timeoutId: number | null = null;
+    let idleId: number | null = null;
+
+    const revealBanner = () => {
+      setShowBanner(true);
+    };
+
+    const scheduleReveal = () => {
+      if ("requestIdleCallback" in window) {
+        idleId = window.requestIdleCallback(revealBanner, { timeout: 1500 });
+      } else {
+        timeoutId = window.setTimeout(revealBanner, 250);
+      }
+    };
+
+    if (document.readyState === "complete") {
+      scheduleReveal();
+    } else {
+      const onLoad = () => {
+        scheduleReveal();
+      };
+      window.addEventListener("load", onLoad, { once: true });
+      return () => {
+        window.removeEventListener("load", onLoad);
+        if (timeoutId !== null) {
+          window.clearTimeout(timeoutId);
+        }
+        if (idleId !== null && "cancelIdleCallback" in window) {
+          window.cancelIdleCallback(idleId);
+        }
+      };
+    }
+
+    return () => {
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
+      }
+      if (idleId !== null && "cancelIdleCallback" in window) {
+        window.cancelIdleCallback(idleId);
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -149,7 +193,7 @@ window.gtag('config', '${googleAdsId}');`}
         </Script>
       ) : null}
 
-      {consent === null ? (
+      {showBanner && consent === null ? (
         <div className="fixed inset-x-0 bottom-4 z-50 mx-auto w-[min(760px,95vw)] rounded-2xl border border-border/70 bg-background/95 p-4 shadow-xl backdrop-blur md:p-5">
           <p className="text-sm font-semibold text-foreground">Sua privacidade em primeiro lugar</p>
           <p className="mt-1 text-sm text-muted-foreground">

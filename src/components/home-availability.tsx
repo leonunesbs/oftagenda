@@ -318,7 +318,11 @@ export function HomeAvailability() {
                     As datas e os horários são exibidos somente após a seleção do local.
                   </p>
                 </div>
-                <RadioGroup>
+                <RadioGroup
+                  name="home-location"
+                  value={location ?? undefined}
+                  onValueChange={(value) => handleLocationChange(value)}
+                >
                   {locations.map((item) => (
                     <label
                       key={item.value}
@@ -330,10 +334,7 @@ export function HomeAvailability() {
                       )}
                     >
                       <RadioGroupItem
-                        name="home-location"
                         value={item.value}
-                        checked={location === item.value}
-                        onChange={() => handleLocationChange(item.value)}
                       />
                       <span>{item.label}</span>
                     </label>

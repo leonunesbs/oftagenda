@@ -503,7 +503,12 @@ export function BookingForm({
                 ref={locationListRef}
                 className="max-h-88 overflow-y-auto pr-1 md:max-h-96"
               >
-                <RadioGroup className="space-y-2">
+                <RadioGroup
+                  name="location"
+                  value={locationId ?? undefined}
+                  onValueChange={(value) => handleLocationChange(value)}
+                  className="space-y-2"
+                >
                   {locations.map((item) => (
                     <label
                       key={item.value}
@@ -516,10 +521,7 @@ export function BookingForm({
                     >
                       <div className="flex min-w-0 items-center gap-3">
                         <RadioGroupItem
-                          name="location"
                           value={item.value}
-                          checked={locationId === item.value}
-                          onChange={() => handleLocationChange(item.value)}
                         />
                         <span className="min-w-0 wrap-break-word">
                           {item.label}

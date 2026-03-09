@@ -499,7 +499,7 @@ export function PatientPanelForm({
                 <Checkbox
                   id="hasExams"
                   checked={hasExams}
-                  onChange={(event) => setHasExams(event.currentTarget.checked)}
+                  onCheckedChange={(checked) => setHasExams(checked === true)}
                 />
                 <Label htmlFor="hasExams">Exames para levar</Label>
               </div>
@@ -560,12 +560,12 @@ export function PatientPanelForm({
                     >
                       <Checkbox
                         checked={checked}
-                        onChange={(event) =>
+                        onCheckedChange={(nextChecked) =>
                           setConditions(
                             toggleArrayItem(
                               conditions,
                               option.value,
-                              event.currentTarget.checked,
+                              nextChecked === true,
                             ),
                           )
                         }
@@ -592,12 +592,12 @@ export function PatientPanelForm({
                     >
                       <Checkbox
                         checked={checked}
-                        onChange={(event) =>
+                        onCheckedChange={(nextChecked) =>
                           setSymptoms(
                             toggleArrayItem(
                               symptoms,
                               option.value,
-                              event.currentTarget.checked,
+                              nextChecked === true,
                             ),
                           )
                         }
@@ -743,8 +743,8 @@ export function PatientPanelForm({
               <label className="flex items-center gap-2">
                 <Checkbox
                   checked={continuousDrops}
-                  onChange={(event) =>
-                    setContinuousDrops(event.currentTarget.checked)
+                  onCheckedChange={(checked) =>
+                    setContinuousDrops(checked === true)
                   }
                 />
                 Uso de colírios contínuos
@@ -752,8 +752,8 @@ export function PatientPanelForm({
               <label className="flex items-center gap-2">
                 <Checkbox
                   checked={isFirstConsultation}
-                  onChange={(event) =>
-                    setIsFirstConsultation(event.currentTarget.checked)
+                  onCheckedChange={(checked) =>
+                    setIsFirstConsultation(checked === true)
                   }
                 />
                 Primeira consulta com o médico

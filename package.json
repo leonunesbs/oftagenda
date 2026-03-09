@@ -27,20 +27,6 @@
     "format:check": "oxfmt --check",
     "format:ci": "oxfmt --list-different ."
   },
-  "browserslist": {
-    "production": [
-      "chrome >= 111",
-      "edge >= 111",
-      "firefox >= 111",
-      "safari >= 16.4",
-      "ios_saf >= 16.4"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
-  },
   "dependencies": {
     "@base-ui/react": "1.2.0",
     "@clerk/localizations": "3.37.2",

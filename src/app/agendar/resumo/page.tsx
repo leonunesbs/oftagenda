@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/card";
 
 import { StartCheckoutButton } from "@/components/start-checkout-button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { resolvePreBookingSummary } from "@/lib/pre-booking-summary";
 import Link from "next/link";
@@ -35,8 +36,11 @@ export default async function ResumoPreAgendamentoPage({
   const params = (await searchParams) ?? {};
   const summary = await resolvePreBookingSummary(params);
   const checkoutNotCompleted = summary.payment === "cancelled";
+  const hasErrorState =
+    summary.hasRedactedParams ||
+    (summary.hasInvalidSelection && !checkoutNotCompleted);
 
-  if (summary.hasRedactedParams || summary.hasInvalidSelection) {
+  if (hasErrorState) {
     return (
       <section className="mx-auto w-full max-w-3xl">
         <Card className="border-destructive/40 bg-card/95 shadow-sm">
@@ -45,9 +49,7 @@ export default async function ResumoPreAgendamentoPage({
             <CardDescription>
               {summary.hasRedactedParams
                 ? "Detectamos dados inválidos na URL deste pré-agendamento. Por segurança, inicie um novo agendamento."
-                : checkoutNotCompleted
-                  ? "Você não concluiu o checkout. Esse horário foi liberado e pode já ter sido reservado. Escolha um novo horário para continuar."
-                  : "Esse horário não está mais disponível para o local selecionado. Escolha um novo horário para continuar."}
+                : "Esse horário não está mais disponível para o local selecionado. Escolha um novo horário para continuar."}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -74,6 +76,15 @@ export default async function ResumoPreAgendamentoPage({
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
+          {checkoutNotCompleted ? (
+            <Alert variant="destructive">
+              <AlertTitle>Pagamento não concluído</AlertTitle>
+              <AlertDescription>
+                Seu pagamento não foi concluído. Se desejar confirmar a consulta,
+                você pode tentar novamente abaixo.
+              </AlertDescription>
+            </Alert>
+          ) : null}
           <div className="rounded-xl border border-border/70 bg-muted/20 p-4 text-sm">
             <div className="grid gap-3 md:grid-cols-2">
               <p>
@@ -114,12 +125,6 @@ export default async function ResumoPreAgendamentoPage({
               label="Seguir para pagamento"
             />
           </div>
-          {checkoutNotCompleted ? (
-            <p className="text-sm text-destructive">
-              Você saiu do checkout sem concluir o pagamento. Para confirmar a
-              consulta, inicie uma nova tentativa.
-            </p>
-          ) : null}
         </CardContent>
       </Card>
     </section>

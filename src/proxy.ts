@@ -29,10 +29,10 @@ function isPublicApiBypass(pathname: string) {
   );
 }
 
-function shouldRunClerk(pathname: string) {
-  // Run Clerk on all pages except the home route to keep auth() available
-  // wherever server components/helpers may call it.
-  return pathname !== "/";
+function shouldRunClerk(_pathname: string) {
+  // Keep Clerk middleware active on all matched routes so server-side `auth()`
+  // can resolve the current session even on public pages like `/`.
+  return true;
 }
 
 const clerkProxy = clerkMiddleware(
@@ -61,11 +61,6 @@ const clerkProxy = clerkMiddleware(
 
 const proxy = (req: NextRequest, event: NextFetchEvent) => {
   const pathname = req.nextUrl.pathname;
-
-  // Keep home fully public to avoid any auth handshake/redirect noise.
-  if (pathname === "/") {
-    return NextResponse.next();
-  }
 
   const isUnderConstructionPage = pathname === underConstructionPath;
 

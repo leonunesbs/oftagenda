@@ -67,7 +67,7 @@ export function StartCheckoutButton({
         const data = (await response
           .json()
           .catch(() => null)) as CheckoutApiResponse | null;
-        if (requiresAuthentication(response.status, data)) {
+        if (requiresAuthentication(response, data)) {
           redirectToSignIn();
           return;
         }
@@ -151,10 +151,14 @@ export function StartCheckoutButton({
 }
 
 function requiresAuthentication(
-  status: number,
+  response: Response,
   data: CheckoutApiResponse | null,
 ): boolean {
-  if (status === 401 || status === 403) {
+  if (response.status === 401 || response.status === 403) {
+    return true;
+  }
+
+  if (response.redirected && isSignInUrl(response.url)) {
     return true;
   }
 
@@ -164,8 +168,23 @@ function requiresAuthentication(
     normalizedError === "not authenticated" ||
     normalizedError === "not authorized" ||
     normalizedError.includes("not authenticated") ||
-    normalizedError.includes("not authorized")
+    normalizedError.includes("not authorized") ||
+    normalizedError.includes("não autenticado") ||
+    normalizedError.includes("nao autenticado")
   );
+}
+
+function isSignInUrl(url: string): boolean {
+  if (url.trim().length === 0) {
+    return false;
+  }
+
+  try {
+    const parsedUrl = new URL(url, window.location.origin);
+    return parsedUrl.pathname === "/sign-in";
+  } catch {
+    return false;
+  }
 }
 
 function normalizeCheckoutError(
@@ -182,7 +201,7 @@ function normalizeCheckoutError(
   }
   if (data?.errorCode === "PENDING_RESERVATION_EXISTS" && data.redirectTo) {
     return {
-      title: data.error || "Voce ja possui um agendamento pendente.",
+      title: data.error || "Você já possui um agendamento pendente.",
       description:
         data.errorDetails ||
         "Gerencie primeiro o agendamento pendente no painel.",
@@ -198,6 +217,6 @@ function normalizeCheckoutError(
     };
   }
   return {
-    title: "Nao foi possivel iniciar o checkout.",
+    title: "Não foi possível iniciar o checkout.",
   };
 }

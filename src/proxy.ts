@@ -1,5 +1,5 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 import { isClerkConfigured } from "@/lib/access";
 
@@ -20,40 +20,55 @@ function getUnderConstructionRedirect(req: Request) {
   return NextResponse.redirect(redirectUrl);
 }
 
-const proxy = clerkConfigured
-  ? clerkMiddleware(async (auth, req) => {
-      const pathname = req.nextUrl.pathname;
-      const isUnderConstructionPage = pathname === underConstructionPath;
-      if (
-        siteUnderConstruction &&
-        !pathname.startsWith("/api/") &&
-        !isUnderConstructionPage
-      ) {
-        return getUnderConstructionRedirect(req);
-      }
-      if (
-        pathname === "/api/stripe/webhook" ||
-        pathname === "/api/auth/session" ||
-        pathname.startsWith("/api/integrations/n8n/")
-      ) {
-        return;
-      }
-      if (isProtectedRoute(req)) {
-        await auth.protect();
-      }
-    })
-  : (req: Request) => {
-      const pathname = new URL(req.url).pathname;
-      const isUnderConstructionPage = pathname === underConstructionPath;
-      if (
-        siteUnderConstruction &&
-        !pathname.startsWith("/api/") &&
-        !isUnderConstructionPage
-      ) {
-        return getUnderConstructionRedirect(req);
-      }
-      return NextResponse.next();
-    };
+const shouldRunClerk = createRouteMatcher([
+  "/dashboard(.*)",
+  "/api/(.*)",
+]);
+
+function isPublicApiBypass(pathname: string) {
+  return (
+    pathname === "/api/stripe/webhook" ||
+    pathname === "/api/auth/session" ||
+    pathname.startsWith("/api/integrations/n8n/")
+  );
+}
+
+const clerkProxy = clerkMiddleware(
+  async (auth: { protect: () => Promise<void> }, req: NextRequest) => {
+    if (isProtectedRoute(req)) {
+      await auth.protect();
+    }
+  },
+);
+
+const proxy = (req: NextRequest) => {
+  const pathname = req.nextUrl.pathname;
+
+  // Keep home fully public to avoid any auth handshake/redirect noise.
+  if (pathname === "/") {
+    return NextResponse.next();
+  }
+
+  const isUnderConstructionPage = pathname === underConstructionPath;
+
+  if (
+    siteUnderConstruction &&
+    !pathname.startsWith("/api/") &&
+    !isUnderConstructionPage
+  ) {
+    return getUnderConstructionRedirect(req);
+  }
+
+  if (!clerkConfigured) {
+    return NextResponse.next();
+  }
+
+  if (isPublicApiBypass(pathname) || !shouldRunClerk(req)) {
+    return NextResponse.next();
+  }
+
+  return clerkProxy(req);
+};
 
 export default proxy;
 

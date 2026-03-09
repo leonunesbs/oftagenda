@@ -28,9 +28,9 @@ export type PreBookingSummaryData = {
 export async function resolvePreBookingSummary(
   params: PreBookingSummaryQueryParams,
 ): Promise<PreBookingSummaryData> {
-  const rawLocationId = (params.locationId ?? params.location ?? "").trim();
-  const date = (params.date ?? "").trim();
-  const time = (params.time ?? "").trim();
+  const rawLocationId = normalizeLocationInput(params.locationId ?? params.location ?? "");
+  const date = normalizeDateInput(params.date ?? "");
+  const time = normalizeTimeInput(params.time ?? "");
   const payment = (params.payment ?? "").trim();
   const hasRedactedParams = [rawLocationId, date, time, payment].some(
     isRedactedValue,
@@ -54,8 +54,13 @@ export async function resolvePreBookingSummary(
   }
 
   const { locations } = await getBookingBootstrapData();
+  const normalizedLocationId = normalizeLocationInput(rawLocationId);
   const selectedLocation =
-    locations.find((locationOption) => locationOption.value === rawLocationId) ??
+    locations.find(
+      (locationOption) =>
+        normalizeLocationInput(locationOption.value) === normalizedLocationId ||
+        normalizeLocationInput(locationOption.label) === normalizedLocationId,
+    ) ??
     null;
   const validation =
     selectedLocation
@@ -123,4 +128,51 @@ function formatDateLabel(isoDate: string) {
 
 function isRedactedValue(value: string) {
   return /(?:\[)?redacted(?:\])?/i.test(value.trim());
+}
+
+function normalizeLocationInput(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return "";
+  }
+  return trimmed
+    .normalize("NFD")
+    .replaceAll(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replaceAll(/[^a-z0-9]+/g, "-")
+    .replaceAll(/^-+|-+$/g, "");
+}
+
+function normalizeDateInput(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return "";
+  }
+
+  const isoMatch = trimmed.match(/^(\d{4})[-/](\d{2})[-/](\d{2})$/);
+  if (isoMatch) {
+    const [, year, month, day] = isoMatch;
+    return `${year}-${month}-${day}`;
+  }
+
+  const brMatch = trimmed.match(/^(\d{2})[/-](\d{2})(?:[/-](\d{4}))?$/);
+  if (!brMatch) {
+    return trimmed;
+  }
+  const [, day, month, year] = brMatch;
+  const resolvedYear = year ?? String(new Date().getFullYear());
+  return `${resolvedYear}-${month}-${day}`;
+}
+
+function normalizeTimeInput(value: string) {
+  const trimmed = value.trim().replaceAll("h", ":");
+  if (!trimmed) {
+    return "";
+  }
+  const match = trimmed.match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) {
+    return trimmed;
+  }
+  const [, hours, minutes] = match;
+  return `${hours.padStart(2, "0")}:${minutes}`;
 }

@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 
 import { n8nResumoLinkSchema } from "@/lib/integrations/n8n-schemas";
-import { resolvePreBookingSummary } from "@/lib/pre-booking-summary";
 
 export const runtime = "nodejs";
 const DEFAULT_FORWARD_ORIGIN = "https://agenda.oftleonardo.com.br";
@@ -63,34 +62,10 @@ export async function POST(request: Request) {
   }
 
   const summaryUrl = `${resolveForwardOrigin()}/agendar/resumo?${params.toString()}`;
-
-  try {
-    const summary = await resolvePreBookingSummary({
-      location: parsed.data.location,
-      date: parsed.data.date,
-      time: parsed.data.time,
-      payment: parsed.data.payment,
-    });
-
-    return NextResponse.json({
-      ok: true,
-      summaryUrl,
-      valid: !summary.hasInvalidSelection && !summary.hasRedactedParams && !summary.hasMissingParams,
-      summary,
-    });
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Falha ao validar seleção para link de resumo.";
-    return NextResponse.json(
-      {
-        ok: true,
-        summaryUrl,
-        valid: false,
-        warning: message,
-      },
-      { status: 200 },
-    );
-  }
+  return NextResponse.json({
+    ok: true,
+    summaryUrl,
+  });
 }
 
 function resolveForwardOrigin() {

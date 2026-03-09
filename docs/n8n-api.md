@@ -153,8 +153,7 @@ Resposta:
 ```json
 {
   "ok": true,
-  "summaryUrl": "https://agenda.oftleonardo.com.br/agendar/resumo?location=fortaleza&date=2026-03-20&time=14%3A00&source=n8n&utm_source=whatsapp&utm_medium=chatbot&utm_campaign=agendamento_n8n&utm_content=fire_assistente",
-  "valid": true
+  "summaryUrl": "https://agenda.oftleonardo.com.br/agendar/resumo?location=fortaleza&date=2026-03-20&time=14%3A00&source=n8n&utm_source=whatsapp&utm_medium=chatbot&utm_campaign=agendamento_n8n&utm_content=fire_assistente"
 }
 ```
 

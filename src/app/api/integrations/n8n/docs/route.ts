@@ -64,8 +64,8 @@ export async function GET(request: Request) {
           source: "n8n (opcional)",
         },
         responseExample: {
+          ok: true,
           summaryUrl: `${forwardOrigin}/agendar/resumo?location=fortaleza&date=2026-03-20&time=14%3A00&source=n8n`,
-          valid: true,
         },
       },
     ],

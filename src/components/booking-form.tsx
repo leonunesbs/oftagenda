@@ -459,41 +459,14 @@ export function BookingForm({
       selectedDate,
       selectedTime,
     });
-
-    if (!isAuthenticated) {
-      if (!clerkEnabled) {
-        setError(
-          "Não foi possível iniciar o login agora. Tente novamente em instantes.",
-        );
-        return;
-      }
-      window.localStorage.setItem(
-        DRAFT_STORAGE_KEY,
-        JSON.stringify({
-          location: selectedLocation.value,
-          selectedDate,
-          selectedTime,
-        } satisfies BookingDraft),
-      );
-      startStartingBookingTransition(() => {
-        trackEvent("start_booking", {
-          location: selectedLocation.value,
-          date: selectedDate,
-          time: selectedTime,
-          authenticated: false,
-        });
-        router.push(`/sign-in?redirect_url=${encodeURIComponent(summaryUrl)}`);
-      });
-      return;
-    }
-
     window.localStorage.removeItem(DRAFT_STORAGE_KEY);
     startStartingBookingTransition(() => {
       trackEvent("start_booking", {
         location: selectedLocation.value,
         date: selectedDate,
         time: selectedTime,
-        authenticated: true,
+        authenticated: isAuthenticated,
+        clerkEnabled,
       });
       router.push(summaryUrl);
     });

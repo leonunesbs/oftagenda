@@ -67,6 +67,10 @@ export function StartCheckoutButton({
         const data = (await response
           .json()
           .catch(() => null)) as CheckoutApiResponse | null;
+        if (response.status === 401 || data?.error === "Not authenticated") {
+          redirectToSignIn();
+          return;
+        }
         if (!response.ok || !data?.ok || typeof data.url !== "string") {
           const normalizedError = normalizeCheckoutError(data);
           setError(normalizedError);
@@ -132,6 +136,13 @@ export function StartCheckoutButton({
       ) : null}
     </div>
   );
+
+  function redirectToSignIn() {
+    const topWindow = window.self !== window.top ? window.top! : window;
+    const { pathname, search } = topWindow.location;
+    const returnBackUrl = `${pathname}${search}`;
+    topWindow.location.href = `/sign-in?redirect_url=${encodeURIComponent(returnBackUrl)}`;
+  }
 }
 
 function normalizeCheckoutError(

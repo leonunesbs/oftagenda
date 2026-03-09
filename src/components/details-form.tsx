@@ -335,7 +335,7 @@ export function DetailsForm() {
 
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
           {hasHydratedExistingDetails ? (
-            <p className="text-xs text-foreground/80">
+            <p className="text-xs text-muted-foreground">
               Carregamos sua última triagem salva com segurança.
             </p>
           ) : null}
@@ -353,13 +353,13 @@ export function DetailsForm() {
             <CardDescription>Score calculado: {result.score}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            <ul className="list-inside list-disc space-y-1 text-sm text-foreground/80">
+            <ul className="list-inside list-disc space-y-1 text-sm text-muted-foreground">
               {result.checklist.map((item) => (
                 <li key={item}>{item}</li>
               ))}
             </ul>
-            <p className="text-xs text-foreground/80">{result.advisory}</p>
-            <p className="text-xs text-foreground/80">
+            <p className="text-xs text-muted-foreground">{result.advisory}</p>
+            <p className="text-xs text-muted-foreground">
               Isso não substitui avaliação médica.
             </p>
           </CardContent>

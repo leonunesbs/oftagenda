@@ -32,11 +32,12 @@ type AppHeaderProps = {
 export async function AppHeader({ clerkEnabled }: AppHeaderProps) {
   const authData = clerkEnabled ? await auth() : null;
   const userId = authData?.userId ?? null;
+  const panelHref = userId ? "/dashboard" : "/sign-in";
   const isAdmin = authData ? await isAdminFromClerkAuth(authData) : false;
   const role = authData ? await getUserRoleFromClerkAuth(authData) : null;
   const navItems = [
     { href: "/", label: "Home", icon: LayoutIcon },
-    { href: "/dashboard", label: "Painel", icon: LayoutBottomIcon },
+    { href: panelHref, label: "Painel", icon: LayoutBottomIcon },
     ...(isAdmin ? [{ href: "/dashboard/admin", label: "Admin", icon: ShieldIcon }] : []),
     { href: "/agendar", label: "Agendar", icon: SearchIcon },
     ...(isAdmin ? [{ href: "/status", label: "Status", icon: File01Icon }] : []),
@@ -72,7 +73,7 @@ export async function AppHeader({ clerkEnabled }: AppHeaderProps) {
           {role ? <span className="hidden text-xs text-muted-foreground md:inline">Role: {role}</span> : null}
           {clerkEnabled ? (
             <Button asChild>
-              <Link href={userId ? "/dashboard" : "/sign-in"}>
+              <Link href={panelHref}>
                 {userId ? "Painel" : "Entrar"}
               </Link>
             </Button>

@@ -409,7 +409,7 @@ export const rescheduleOwnAppointment = mutation({
 
     const slotTimestamp = parseIsoDateAndTimeToTimestamp(args.date, args.time, availability.timezone);
     assertRescheduleWindow(slotTimestamp, now);
-    await assertSlotIsAvailable(ctx, eventType, args.date, args.time);
+    await assertSlotIsAvailable(ctx, eventType, args.date, args.time, identity.subject);
 
     const previousScheduledFor = appointment.scheduledFor ?? null;
     const previousReservationId = appointment.reservationId ?? null;
@@ -806,6 +806,7 @@ async function assertSlotIsAvailable(
   eventType: Doc<"event_types">,
   isoDate: string,
   time: string,
+  excludedClerkUserId?: string,
 ) {
   if (!eventType.availabilityId) {
     throw new Error("Evento sem disponibilidade configurada.");
@@ -872,7 +873,10 @@ async function assertSlotIsAvailable(
   }
 
   const activeReservations = allReservations.filter(
-    (reservation) => reservation.eventTypeId === eventType._id && isReservationBlocking(reservation, now),
+    (reservation) =>
+      reservation.eventTypeId === eventType._id &&
+      isReservationBlocking(reservation, now) &&
+      reservation.clerkUserId !== excludedClerkUserId,
   );
   const reservedKeys = new Set<string>();
   for (const reservation of activeReservations) {

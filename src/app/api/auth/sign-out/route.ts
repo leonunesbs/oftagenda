@@ -9,8 +9,9 @@ export async function POST() {
   }
 
   try {
-    const { sessionId } = await auth();
-    if (!sessionId) {
+    const { getToken, sessionId } = await auth();
+    const token = await getToken();
+    if (!token || !sessionId) {
       return NextResponse.json({ ok: true });
     }
 

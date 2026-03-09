@@ -20,6 +20,7 @@ type HeaderAuthButtonProps = {
 
 type SessionState = {
   isAuthenticated: boolean;
+  userId: string | null;
   avatarUrl: string | null;
   firstName: string | null;
 };
@@ -27,8 +28,9 @@ type SessionState = {
 export function HeaderAuthButton({ clerkEnabled }: HeaderAuthButtonProps) {
   const pathname = usePathname();
   const [isSigningOut, setIsSigningOut] = useState(false);
-  const [{ isAuthenticated, avatarUrl, firstName }, setSessionState] = useState<SessionState>({
+  const [{ isAuthenticated, userId, avatarUrl, firstName }, setSessionState] = useState<SessionState>({
     isAuthenticated: false,
+    userId: null,
     avatarUrl: null,
     firstName: null,
   });
@@ -37,6 +39,7 @@ export function HeaderAuthButton({ clerkEnabled }: HeaderAuthButtonProps) {
     if (!clerkEnabled) {
       setSessionState({
         isAuthenticated: false,
+        userId: null,
         avatarUrl: null,
         firstName: null,
       });
@@ -58,17 +61,20 @@ export function HeaderAuthButton({ clerkEnabled }: HeaderAuthButtonProps) {
 
         const data = (await response.json()) as {
           isAuthenticated?: boolean;
+          userId?: string | null;
           avatarUrl?: string | null;
           firstName?: string | null;
         };
         setSessionState({
           isAuthenticated: Boolean(data.isAuthenticated),
+          userId: data.userId ?? null,
           avatarUrl: data.avatarUrl ?? null,
           firstName: data.firstName ?? null,
         });
       } catch {
         setSessionState({
           isAuthenticated: false,
+          userId: null,
           avatarUrl: null,
           firstName: null,
         });
@@ -91,9 +97,10 @@ export function HeaderAuthButton({ clerkEnabled }: HeaderAuthButtonProps) {
   }
 
   if (!isAuthenticated) {
+    const signInHref = `/sign-in?redirect_url=${encodeURIComponent(pathname || "/")}`;
     return (
       <Button asChild>
-        <Link href="/sign-in">Entrar</Link>
+        <Link href={signInHref}>Entrar</Link>
       </Button>
     );
   }
@@ -112,6 +119,7 @@ export function HeaderAuthButton({ clerkEnabled }: HeaderAuthButtonProps) {
     } finally {
       setSessionState({
         isAuthenticated: false,
+        userId: null,
         avatarUrl: null,
         firstName: null,
       });
@@ -137,7 +145,7 @@ export function HeaderAuthButton({ clerkEnabled }: HeaderAuthButtonProps) {
               aria-hidden
               className="inline-flex size-5 items-center justify-center rounded-full bg-muted text-[10px] font-semibold"
             >
-              {(firstName?.trim().charAt(0) || "U").toUpperCase()}
+              {(firstName?.trim().charAt(0) || userId?.trim().charAt(0) || "U").toUpperCase()}
             </span>
           )}
           <span>{firstName ? `Olá, ${firstName}` : "Minha conta"}</span>

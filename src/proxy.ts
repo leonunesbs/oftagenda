@@ -1,6 +1,5 @@
 import {
   clerkMiddleware,
-  createRouteMatcher,
 } from "@clerk/nextjs/server";
 import { NextFetchEvent, NextRequest, NextResponse } from "next/server";
 
@@ -18,24 +17,42 @@ function getUnderConstructionRedirect(req: Request) {
   return NextResponse.redirect(redirectUrl);
 }
 
-const isProtectedRoute = createRouteMatcher(["/dashboard(.*)", "/api/(.*)"]);
+const signInUrl = process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL?.trim() || "/sign-in";
 
 function isPublicApiBypass(pathname: string) {
   return (
     pathname === "/api/stripe/webhook" ||
-    pathname === "/api/auth/session" ||
+    pathname === "/api/stripe/webhook/" ||
     pathname.startsWith("/api/integrations/n8n/")
   );
 }
 
 function shouldRunClerk(pathname: string) {
-  return pathname.startsWith("/dashboard") || pathname.startsWith("/api/");
+  // Run Clerk on all pages except the home route to keep auth() available
+  // wherever server components/helpers may call it.
+  return pathname !== "/";
 }
 
 const clerkProxy = clerkMiddleware(
   async (auth, req: NextRequest) => {
-    if (isProtectedRoute(req)) {
-      await auth.protect();
+    const pathname = req.nextUrl.pathname;
+    const requiresAuth =
+      pathname.startsWith("/dashboard") ||
+      (pathname.startsWith("/api/") && !isPublicApiBypass(pathname));
+
+    if (requiresAuth) {
+      const authData = await auth();
+      if (authData.userId) {
+        return NextResponse.next();
+      }
+
+      if (req.nextUrl.pathname.startsWith("/api/")) {
+        return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+      }
+
+      const redirectUrl = new URL(signInUrl, req.url);
+      redirectUrl.searchParams.set("redirect_url", req.url);
+      return NextResponse.redirect(redirectUrl);
     }
   },
 );

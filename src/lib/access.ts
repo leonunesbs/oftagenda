@@ -118,6 +118,12 @@ function canAccessRole(role: UserRole | null, requiredRole: UserRole) {
   return ROLE_LEVEL[role] >= ROLE_LEVEL[requiredRole];
 }
 
+function buildSignInRedirectUrl(returnBackUrl: string) {
+  const signInUrl = process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL?.trim() || "/sign-in";
+  const separator = signInUrl.includes("?") ? "&" : "?";
+  return `${signInUrl}${separator}redirect_url=${encodeURIComponent(returnBackUrl)}`;
+}
+
 export async function isAdminFromClerkAuth(authData: {
   userId: string | null;
 }) {
@@ -130,9 +136,9 @@ export async function requireAuthenticated(returnBackUrl: string) {
     redirect("/sign-in");
   }
 
-  const { userId, redirectToSignIn } = await auth();
+  const { userId } = await auth();
   if (!userId) {
-    return redirectToSignIn({ returnBackUrl });
+    redirect(buildSignInRedirectUrl(returnBackUrl));
   }
 
   await ensureDefaultRoleMetadata(userId);
@@ -144,7 +150,7 @@ export async function requireAdmin(returnBackUrl: string) {
   const userId = authData.userId;
 
   if (!userId) {
-    return authData.redirectToSignIn({ returnBackUrl });
+    redirect(buildSignInRedirectUrl(returnBackUrl));
   }
 
   await ensureDefaultRoleMetadata(userId);
@@ -161,7 +167,7 @@ export async function requireMember(returnBackUrl: string) {
   const userId = authData.userId;
 
   if (!userId) {
-    return authData.redirectToSignIn({ returnBackUrl });
+    redirect(buildSignInRedirectUrl(returnBackUrl));
   }
 
   await ensureDefaultRoleMetadata(userId);

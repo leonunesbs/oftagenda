@@ -11,26 +11,26 @@ type HeaderAuthButtonProps = {
 };
 
 type SessionState = {
-  isLoading: boolean;
   isAuthenticated: boolean;
+  avatarUrl: string | null;
+  firstName: string | null;
 };
 
 export function HeaderAuthButton({ clerkEnabled }: HeaderAuthButtonProps) {
   const pathname = usePathname();
-  const [{ isLoading, isAuthenticated }, setSessionState] = useState<SessionState>({
-    isLoading: clerkEnabled,
+  const [{ isAuthenticated, avatarUrl, firstName }, setSessionState] = useState<SessionState>({
     isAuthenticated: false,
+    avatarUrl: null,
+    firstName: null,
   });
 
   useEffect(() => {
     if (!clerkEnabled) {
-      setSessionState({ isLoading: false, isAuthenticated: false });
-      return;
-    }
-
-    // Keep the landing page free of auth handshakes/redirect chains that hurt FCP/LCP.
-    if (pathname === "/") {
-      setSessionState({ isLoading: false, isAuthenticated: false });
+      setSessionState({
+        isAuthenticated: false,
+        avatarUrl: null,
+        firstName: null,
+      });
       return;
     }
 
@@ -49,13 +49,20 @@ export function HeaderAuthButton({ clerkEnabled }: HeaderAuthButtonProps) {
 
         const data = (await response.json()) as {
           isAuthenticated?: boolean;
+          avatarUrl?: string | null;
+          firstName?: string | null;
         };
         setSessionState({
-          isLoading: false,
           isAuthenticated: Boolean(data.isAuthenticated),
+          avatarUrl: data.avatarUrl ?? null,
+          firstName: data.firstName ?? null,
         });
       } catch {
-        setSessionState({ isLoading: false, isAuthenticated: false });
+        setSessionState({
+          isAuthenticated: false,
+          avatarUrl: null,
+          firstName: null,
+        });
       }
     }
 
@@ -74,18 +81,35 @@ export function HeaderAuthButton({ clerkEnabled }: HeaderAuthButtonProps) {
     );
   }
 
-  if (isLoading) {
+  if (!isAuthenticated) {
     return (
-      <Button aria-busy disabled>
-        Carregando...
+      <Button asChild>
+        <Link href="/sign-in">Entrar</Link>
       </Button>
     );
   }
 
   return (
-    <Button asChild>
-      <Link href={isAuthenticated ? "/dashboard" : "/sign-in"}>
-        {isAuthenticated ? "Painel" : "Entrar"}
+    <Button variant="outline" asChild>
+      <Link href="/dashboard" className="inline-flex items-center gap-2">
+        {avatarUrl ? (
+          <img
+            src={avatarUrl}
+            alt={firstName ? `Avatar de ${firstName}` : "Avatar"}
+            width={20}
+            height={20}
+            className="size-5 rounded-full object-cover"
+            referrerPolicy="no-referrer"
+          />
+        ) : (
+          <span
+            aria-hidden
+            className="inline-flex size-5 items-center justify-center rounded-full bg-muted text-[10px] font-semibold"
+          >
+            {(firstName?.trim().charAt(0) || "U").toUpperCase()}
+          </span>
+        )}
+        <span>Painel</span>
       </Link>
     </Button>
   );

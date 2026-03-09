@@ -1,14 +1,10 @@
 import "./globals.css";
 
 import Link from "next/link";
-import { ptBR } from "@clerk/localizations";
-import { ClerkProvider } from "@clerk/nextjs";
-import { Geist, Inter, Noto_Sans } from "next/font/google";
+import dynamic from "next/dynamic";
+import { Noto_Sans } from "next/font/google";
 
-import { AnalyticsConsent } from "@/components/analytics-consent";
-import { AnalyticsPageview } from "@/components/analytics-pageview";
 import { AppHeader } from "@/components/app-header";
-import { ConvexClientProvider } from "@/components/convex-client-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { isClerkConfigured } from "@/lib/access";
@@ -17,12 +13,15 @@ import type { Metadata } from "next";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { cn } from "@/lib/utils";
 
-const notoSans = Noto_Sans({variable:'--font-sans'});
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+const notoSans = Noto_Sans({ variable: "--font-sans" });
+const AnalyticsPageview = dynamic(
+  () => import("@/components/analytics-pageview").then((mod) => mod.AnalyticsPageview),
+  { ssr: false },
+);
+const AnalyticsConsent = dynamic(
+  () => import("@/components/analytics-consent").then((mod) => mod.AnalyticsConsent),
+  { ssr: false },
+);
 
 const metadataBase = resolveSiteUrl();
 
@@ -94,9 +93,9 @@ export default function RootLayout({
 }>) {
   const clerkEnabled = isClerkConfigured();
   const legalFooter = (
-    <footer data-app-legal-footer className="mx-auto w-full max-w-5xl px-4 pb-8 pt-2 text-xs text-muted-foreground md:px-6">
+    <footer data-app-legal-footer className="mx-auto w-full max-w-5xl px-4 pb-8 pt-2 text-xs text-foreground/80 md:px-6">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border/70 pt-4">
-        <span className="text-[11px] tracking-wide text-muted-foreground/90">Plataforma oficial de Leonardo Nunes</span>
+        <span className="text-[11px] tracking-wide text-foreground/80">Plataforma oficial de Leonardo Nunes</span>
         <Link href="/termos-de-uso" className="underline underline-offset-2 hover:text-foreground">
           Termos de Uso
         </Link>
@@ -109,7 +108,7 @@ export default function RootLayout({
 
   return (
     <html lang="pt-BR" className={cn("dark", "font-sans", notoSans.variable)}>
-      <body className={geistSans.variable}>
+      <body>
         <NuqsAdapter>
           <script
             id="website-schema"
@@ -125,37 +124,18 @@ export default function RootLayout({
               __html: JSON.stringify(medicalClinicSchema),
             }}
           />
-          {clerkEnabled ? (
-            <ClerkProvider localization={ptBR}>
-              <ConvexClientProvider>
-                <TooltipProvider>
-                  <div className="flex min-h-screen flex-col bg-background">
-                    <AppHeader clerkEnabled />
-                    <main data-app-main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10 md:px-6 md:py-14">
-                      {children}
-                    </main>
-                    {legalFooter}
-                    <AnalyticsPageview />
-                    <AnalyticsConsent />
-                    <Toaster />
-                  </div>
-                </TooltipProvider>
-              </ConvexClientProvider>
-            </ClerkProvider>
-          ) : (
-            <TooltipProvider>
-              <div className="flex min-h-screen flex-col bg-background">
-                <AppHeader clerkEnabled={false} />
-                <main data-app-main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10 md:px-6 md:py-14">
-                  {children}
-                </main>
-                {legalFooter}
-                <AnalyticsPageview />
-                <AnalyticsConsent />
-                <Toaster />
-              </div>
-            </TooltipProvider>
-          )}
+          <TooltipProvider>
+            <div className="flex min-h-screen flex-col bg-background">
+              <AppHeader clerkEnabled={clerkEnabled} />
+              <main data-app-main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10 md:px-6 md:py-14">
+                {children}
+              </main>
+              {legalFooter}
+              <AnalyticsPageview />
+              <AnalyticsConsent />
+              <Toaster />
+            </div>
+          </TooltipProvider>
         </NuqsAdapter>
       </body>
     </html>

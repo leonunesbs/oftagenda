@@ -4,7 +4,6 @@ import { useEffect, useRef, useState, useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
 import { trackEvent } from "@/lib/analytics";
-import { useAuth, useClerk } from "@clerk/nextjs";
 import Link from "next/link";
 
 type StartCheckoutButtonProps = {
@@ -35,12 +34,9 @@ export function StartCheckoutButton({
   time,
   label = "Ir para pagamento",
 }: StartCheckoutButtonProps) {
-  const { isLoaded, isSignedIn } = useAuth();
-  const clerk = useClerk();
   const [isLoading, startCheckoutTransition] = useTransition();
   const [error, setError] = useState<CheckoutErrorState | null>(null);
   const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const shouldPromptLogin = isLoaded && !isSignedIn;
 
   useEffect(() => {
     return () => {
@@ -52,13 +48,6 @@ export function StartCheckoutButton({
 
   async function handleStartCheckout() {
     if (isLoading) {
-      return;
-    }
-    if (!isLoaded) {
-      return;
-    }
-    if (!isSignedIn) {
-      redirectToSignIn();
       return;
     }
     setError(null);
@@ -116,21 +105,15 @@ export function StartCheckoutButton({
     <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
       <Button
         type="button"
-        onClick={shouldPromptLogin ? redirectToSignIn : handleStartCheckout}
-        disabled={isLoading || !isLoaded}
+        onClick={handleStartCheckout}
+        disabled={isLoading}
         className="w-full sm:w-auto"
       >
-        {isLoading
-          ? "Redirecionando..."
-          : shouldPromptLogin
-            ? "Entrar para continuar"
-            : label}
+        {isLoading ? "Redirecionando..." : label}
       </Button>
-      {!shouldPromptLogin ? (
-        <p className="w-full rounded-md border border-border/60 bg-muted/30 px-3 py-1.5 text-center text-xs text-muted-foreground sm:w-auto sm:text-left">
-          Link de pagamento e bloqueio do horário válidos por 30 minutos.
-        </p>
-      ) : null}
+      <p className="w-full rounded-md border border-border/60 bg-muted/30 px-3 py-1.5 text-center text-xs text-muted-foreground sm:w-auto sm:text-left">
+        Link de pagamento e bloqueio do horário válidos por 30 minutos.
+      </p>
       {error ? (
         <div className="w-full rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive sm:max-w-[24rem]">
           <p className="font-medium">{error.title}</p>
@@ -156,7 +139,8 @@ export function StartCheckoutButton({
 
   function redirectToSignIn() {
     const returnBackUrl = getReturnBackUrl();
-    clerk.redirectToSignIn({ redirectUrl: returnBackUrl });
+    const target = window.self !== window.top ? window.top! : window;
+    target.location.href = `/sign-in?redirect_url=${encodeURIComponent(returnBackUrl)}`;
   }
 
   function getReturnBackUrl() {

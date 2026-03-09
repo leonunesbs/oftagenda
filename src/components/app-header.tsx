@@ -1,6 +1,5 @@
 import Link from "next/link";
 
-import { ClerkLoaded, ClerkLoading, UserButton } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
 import {
   File01Icon,
@@ -30,22 +29,6 @@ type AppHeaderProps = {
   clerkEnabled: boolean;
 };
 
-function ClerkUserButtonWithLoading() {
-  return (
-    <>
-      <ClerkLoading>
-        <span
-          aria-hidden="true"
-          className="size-8 animate-pulse rounded-full border border-border/70 bg-muted"
-        />
-      </ClerkLoading>
-      <ClerkLoaded>
-        <UserButton />
-      </ClerkLoaded>
-    </>
-  );
-}
-
 export async function AppHeader({ clerkEnabled }: AppHeaderProps) {
   const authData = clerkEnabled ? await auth() : null;
   const userId = authData?.userId ?? null;
@@ -70,7 +53,7 @@ export async function AppHeader({ clerkEnabled }: AppHeaderProps) {
           </span>
           <span className="flex flex-col leading-tight">
             <span>Minha Agenda</span>
-            <span className="text-[11px] font-normal text-muted-foreground">Leonardo Nunes</span>
+            <span className="text-[11px] font-normal text-foreground/80">Leonardo Nunes</span>
           </span>
         </Link>
 
@@ -88,13 +71,11 @@ export async function AppHeader({ clerkEnabled }: AppHeaderProps) {
           <ColorModeToggle />
           {role ? <span className="hidden text-xs text-muted-foreground md:inline">Role: {role}</span> : null}
           {clerkEnabled ? (
-            userId ? (
-              <ClerkUserButtonWithLoading />
-            ) : (
-              <Button asChild>
-                <Link href="/sign-in">Entrar</Link>
-              </Button>
-            )
+            <Button asChild>
+              <Link href={userId ? "/dashboard" : "/sign-in"}>
+                {userId ? "Painel" : "Entrar"}
+              </Link>
+            </Button>
           ) : (
             <Button variant="outline" disabled>
               Clerk não configurado
@@ -152,7 +133,6 @@ export async function AppHeader({ clerkEnabled }: AppHeaderProps) {
               </nav>
             </SheetContent>
           </Sheet>
-          {clerkEnabled && userId ? <ClerkUserButtonWithLoading /> : null}
         </div>
       </div>
     </header>

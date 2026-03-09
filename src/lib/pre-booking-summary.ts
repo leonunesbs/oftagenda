@@ -173,6 +173,10 @@ function normalizeTimeInput(value: string) {
   if (!match) {
     return trimmed;
   }
-  const [, hours, minutes] = match;
+  const hours = match[1];
+  const minutes = match[2];
+  if (!hours || !minutes) {
+    return trimmed;
+  }
   return `${hours.padStart(2, "0")}:${minutes}`;
 }

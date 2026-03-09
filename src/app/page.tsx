@@ -2,8 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 
-import { auth } from "@clerk/nextjs/server";
-
 import { BookingFormContainer } from "@/components/booking-form-container";
 import { BookingFormFallback } from "@/components/booking-form-fallback";
 import { ScrollToIdButton } from "@/components/scroll-to-id-button";
@@ -92,7 +90,6 @@ const clinicSchema = {
 
 export default async function HomePage() {
   const clerkEnabled = isClerkConfigured();
-  const userId = clerkEnabled ? (await auth()).userId : null;
   const oftleonardoContentUrl = `${siteConfig.social.oftleonardoSite}/conteudos?utm_source=oftagenda&utm_medium=referral&utm_campaign=crossdomain_seo`;
 
   return (
@@ -143,9 +140,7 @@ export default async function HomePage() {
                 asChild
                 className="h-10 rounded-xl px-5 text-sm transition-colors duration-200"
               >
-                <Link href={userId ? "/dashboard" : "/sign-in"}>
-                  {userId ? "Painel" : "Entrar"}
-                </Link>
+                <Link href="/dashboard">Painel</Link>
               </Button>
             ) : (
               <Button
@@ -254,7 +249,7 @@ export default async function HomePage() {
         <div className="mx-auto mt-4 w-full max-w-5xl">
           <Suspense fallback={<BookingFormFallback />}>
             <BookingFormContainer
-              isAuthenticated={Boolean(userId)}
+              isAuthenticated={false}
               clerkEnabled={clerkEnabled}
             />
           </Suspense>

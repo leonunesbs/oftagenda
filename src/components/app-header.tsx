@@ -1,13 +1,9 @@
 import Link from "next/link";
-
-import { auth } from "@clerk/nextjs/server";
 import {
-  File01Icon,
   LayoutBottomIcon,
   LayoutIcon,
   MoreVerticalCircle01Icon,
   SearchIcon,
-  ShieldIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
@@ -22,25 +18,19 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { getUserRoleFromSessionClaims } from "@/lib/access";
+import { HeaderAuthButton } from "@/components/header-auth-button";
 import { siteConfig } from "@/config/site";
 
 type AppHeaderProps = {
   clerkEnabled: boolean;
 };
 
-export async function AppHeader({ clerkEnabled }: AppHeaderProps) {
-  const authData = clerkEnabled ? await auth() : null;
-  const userId = authData?.userId ?? null;
-  const panelHref = userId ? "/dashboard" : "/sign-in";
-  const role = authData ? getUserRoleFromSessionClaims(authData) : null;
-  const isAdmin = role === "admin";
+export function AppHeader({ clerkEnabled }: AppHeaderProps) {
+  const panelHref = "/dashboard";
   const navItems = [
     { href: "/", label: "Home", icon: LayoutIcon },
     { href: panelHref, label: "Painel", icon: LayoutBottomIcon },
-    ...(isAdmin ? [{ href: "/dashboard/admin", label: "Admin", icon: ShieldIcon }] : []),
     { href: "/agendar", label: "Agendar", icon: SearchIcon },
-    ...(isAdmin ? [{ href: "/status", label: "Status", icon: File01Icon }] : []),
   ];
   const oftleonardoContentUrl = `${siteConfig.social.oftleonardoSite}/conteudos?utm_source=oftagenda&utm_medium=referral&utm_campaign=crossdomain_seo`;
   const mobileMenuContentId = "mobile-menu-sheet-content";
@@ -70,18 +60,7 @@ export async function AppHeader({ clerkEnabled }: AppHeaderProps) {
             </Link>
           </Button>
           <ColorModeToggle />
-          {role ? <span className="hidden text-xs text-muted-foreground md:inline">Role: {role}</span> : null}
-          {clerkEnabled ? (
-            <Button asChild>
-              <Link href={panelHref}>
-                {userId ? "Painel" : "Entrar"}
-              </Link>
-            </Button>
-          ) : (
-            <Button variant="outline" disabled>
-              Clerk não configurado
-            </Button>
-          )}
+          <HeaderAuthButton clerkEnabled={clerkEnabled} />
         </nav>
 
         <div className="flex items-center gap-2 md:hidden">
@@ -115,22 +94,9 @@ export async function AppHeader({ clerkEnabled }: AppHeaderProps) {
                     </Link>
                   </Button>
                 </SheetClose>
-
-                {role ? <span className="px-2 pt-2 text-xs text-muted-foreground">Role: {role}</span> : null}
-
-                {clerkEnabled ? (
-                  userId ? null : (
-                    <SheetClose asChild>
-                      <Button asChild className="mt-2">
-                        <Link href="/sign-in">Entrar</Link>
-                      </Button>
-                    </SheetClose>
-                  )
-                ) : (
-                  <Button variant="outline" disabled className="mt-2">
-                    Clerk não configurado
-                  </Button>
-                )}
+                <div className="mt-2">
+                  <HeaderAuthButton clerkEnabled={clerkEnabled} />
+                </div>
               </nav>
             </SheetContent>
           </Sheet>

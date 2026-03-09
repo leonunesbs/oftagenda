@@ -33,6 +33,7 @@ const proxy = clerkConfigured
       }
       if (
         pathname === "/api/stripe/webhook" ||
+        pathname === "/api/auth/session" ||
         pathname.startsWith("/api/integrations/n8n/")
       ) {
         return;

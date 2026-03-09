@@ -1,18 +1,24 @@
-"use client"
+"use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react"
+import { useEffect, useMemo, useState, useTransition } from "react";
 
-import { calculateDilatationGuidance } from "@/domain/triage/dilatation"
-import type { TriagePayload } from "@/domain/triage/schema"
-import { triageSchema } from "@/domain/triage/schema"
-import { encryptTriagePayload } from "@/lib/triage-e2e"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Textarea } from "@/components/ui/textarea"
-import { toast } from "@/components/ui/sonner"
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { toast } from "sonner";
+import { Textarea } from "@/components/ui/textarea";
+import { calculateDilatationGuidance } from "@/domain/triage/dilatation";
+import type { TriagePayload } from "@/domain/triage/schema";
+import { triageSchema } from "@/domain/triage/schema";
+import { encryptTriagePayload } from "@/lib/triage-e2e";
 
 const reasons: Array<{ value: TriagePayload["reason"]; label: string }> = [
   { value: "routine", label: "Revisão de rotina" },
@@ -23,107 +29,133 @@ const reasons: Array<{ value: TriagePayload["reason"]; label: string }> = [
   { value: "glaucoma_follow", label: "Acompanhamento de glaucoma" },
   { value: "postop", label: "Pós-operatório" },
   { value: "other", label: "Outro motivo" },
-]
+];
 
-const conditions: Array<{ value: TriagePayload["conditions"][number]; label: string }> = [
+const conditions: Array<{
+  value: TriagePayload["conditions"][number];
+  label: string;
+}> = [
   { value: "diabetes", label: "Diabetes" },
   { value: "hypertension", label: "Hipertensão" },
   { value: "glaucoma", label: "Glaucoma" },
   { value: "prior_surgery", label: "Cirurgia ocular prévia" },
-]
+];
 
-const symptoms: Array<{ value: TriagePayload["symptoms"][number]; label: string }> = [
+const symptoms: Array<{
+  value: TriagePayload["symptoms"][number];
+  label: string;
+}> = [
   { value: "floaters", label: "Moscas volantes" },
   { value: "flashes", label: "Flashes de luz" },
   { value: "sudden_loss", label: "Perda súbita de visão" },
-]
+];
 
-const dilationMoments: Array<{ value: TriagePayload["lastDilation"]; label: string }> = [
+const dilationMoments: Array<{
+  value: TriagePayload["lastDilation"];
+  label: string;
+}> = [
   { value: "lt6m", label: "Há menos de 6 meses" },
   { value: "6to12m", label: "Entre 6 e 12 meses" },
   { value: "gt1y", label: "Há mais de 1 ano" },
   { value: "unknown", label: "Não sei informar" },
-]
+];
 
-function toggleItem<T extends string>(values: T[], target: T, checked: boolean) {
+function toggleItem<T extends string>(
+  values: T[],
+  target: T,
+  checked: boolean,
+) {
   if (checked) {
-    return values.includes(target) ? values : [...values, target]
+    return values.includes(target) ? values : [...values, target];
   }
-  return values.filter((item) => item !== target)
+  return values.filter((item) => item !== target);
 }
 
 export function DetailsForm() {
-  const [reason, setReason] = useState<TriagePayload["reason"]>("routine")
-  const [selectedConditions, setSelectedConditions] = useState<TriagePayload["conditions"]>([])
-  const [selectedSymptoms, setSelectedSymptoms] = useState<TriagePayload["symptoms"]>([])
-  const [lastDilation, setLastDilation] = useState<TriagePayload["lastDilation"]>("unknown")
-  const [oneSentenceSummary, setOneSentenceSummary] = useState("")
-  const [isSubmitting, startSubmittingTransition] = useTransition()
-  const [error, setError] = useState<string | null>(null)
-  const [submittedPayload, setSubmittedPayload] = useState<TriagePayload | null>(null)
+  const [reason, setReason] = useState<TriagePayload["reason"]>("routine");
+  const [selectedConditions, setSelectedConditions] = useState<
+    TriagePayload["conditions"]
+  >([]);
+  const [selectedSymptoms, setSelectedSymptoms] = useState<
+    TriagePayload["symptoms"]
+  >([]);
+  const [lastDilation, setLastDilation] =
+    useState<TriagePayload["lastDilation"]>("unknown");
+  const [oneSentenceSummary, setOneSentenceSummary] = useState("");
+  const [isSubmitting, startSubmittingTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const [submittedPayload, setSubmittedPayload] =
+    useState<TriagePayload | null>(null);
   const [serverResult, setServerResult] = useState<{
-    score: number
-    level: "ALTA" | "POSSIVEL" | "BAIXA"
-    advisory: string
-  } | null>(null)
-  const [hasHydratedExistingDetails, setHasHydratedExistingDetails] = useState(false)
+    score: number;
+    level: "ALTA" | "POSSIVEL" | "BAIXA";
+    advisory: string;
+  } | null>(null);
+  const [hasHydratedExistingDetails, setHasHydratedExistingDetails] =
+    useState(false);
 
   const localResult = useMemo(
-    () => (submittedPayload ? calculateDilatationGuidance(submittedPayload) : null),
+    () =>
+      submittedPayload ? calculateDilatationGuidance(submittedPayload) : null,
     [submittedPayload],
-  )
+  );
   const result = serverResult
-    ? { ...localResult, ...serverResult, checklist: localResult?.checklist ?? [] }
-    : localResult
+    ? {
+        ...localResult,
+        ...serverResult,
+        checklist: localResult?.checklist ?? [],
+      }
+    : localResult;
 
   useEffect(() => {
-    let isCancelled = false
+    let isCancelled = false;
 
     async function hydrateExistingDetails() {
       try {
-        const response = await fetch("/api/details/latest", { method: "GET" })
+        const response = await fetch("/api/details/latest", { method: "GET" });
         if (!response.ok) {
-          return
+          return;
         }
 
         const data = (await response.json()) as {
-          ok: boolean
+          ok: boolean;
           details: null | {
-            payload: TriagePayload
-            score: number
-            level: "ALTA" | "POSSIVEL" | "BAIXA"
-          }
-        }
+            payload: TriagePayload;
+            score: number;
+            level: "ALTA" | "POSSIVEL" | "BAIXA";
+          };
+        };
 
         if (!data.ok || !data.details || isCancelled) {
-          return
+          return;
         }
 
-        setReason(data.details.payload.reason)
-        setSelectedConditions(data.details.payload.conditions)
-        setSelectedSymptoms(data.details.payload.symptoms)
-        setLastDilation(data.details.payload.lastDilation)
-        setOneSentenceSummary(data.details.payload.oneSentenceSummary ?? "")
-        setSubmittedPayload(data.details.payload)
+        setReason(data.details.payload.reason);
+        setSelectedConditions(data.details.payload.conditions);
+        setSelectedSymptoms(data.details.payload.symptoms);
+        setLastDilation(data.details.payload.lastDilation);
+        setOneSentenceSummary(data.details.payload.oneSentenceSummary ?? "");
+        setSubmittedPayload(data.details.payload);
         setServerResult({
           score: data.details.score,
           level: data.details.level,
-          advisory: "A decisao final sobre dilatacao e sempre feita no consultorio.",
-        })
-        setHasHydratedExistingDetails(true)
+          advisory:
+            "A decisao final sobre dilatacao e sempre feita no consultorio.",
+        });
+        setHasHydratedExistingDetails(true);
       } catch {
         // Keep current form behavior if there is no previous details payload.
       }
     }
 
-    hydrateExistingDetails()
+    hydrateExistingDetails();
     return () => {
-      isCancelled = true
-    }
-  }, [])
+      isCancelled = true;
+    };
+  }, []);
 
   async function handleSubmit() {
-    setError(null)
+    setError(null);
 
     const payload: TriagePayload = {
       reason,
@@ -131,18 +163,18 @@ export function DetailsForm() {
       symptoms: selectedSymptoms,
       lastDilation,
       oneSentenceSummary: oneSentenceSummary.trim() || undefined,
-    }
+    };
 
-    const parsed = triageSchema.safeParse(payload)
+    const parsed = triageSchema.safeParse(payload);
     if (!parsed.success) {
-      setError("Revise os campos antes de enviar.")
-      return
+      setError("Revise os campos antes de enviar.");
+      return;
     }
 
     startSubmittingTransition(async () => {
       try {
-        const encryptedPayload = await encryptTriagePayload(parsed.data)
-        const guidance = calculateDilatationGuidance(parsed.data)
+        const encryptedPayload = await encryptTriagePayload(parsed.data);
+        const guidance = calculateDilatationGuidance(parsed.data);
         const response = await fetch("/api/details/submit", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -151,23 +183,30 @@ export function DetailsForm() {
             score: guidance.score,
             level: guidance.level,
           }),
-        })
+        });
 
         if (!response.ok) {
-          throw new Error("Não foi possível salvar os detalhes.")
+          throw new Error("Não foi possível salvar os detalhes.");
         }
         const data = (await response.json()) as {
-          result?: { score: number; level: "ALTA" | "POSSIVEL" | "BAIXA"; advisory: string }
-        }
+          result?: {
+            score: number;
+            level: "ALTA" | "POSSIVEL" | "BAIXA";
+            advisory: string;
+          };
+        };
 
-        setSubmittedPayload(parsed.data)
-        setServerResult(data.result ?? null)
-        toast("Detalhes enviados com sucesso.")
+        setSubmittedPayload(parsed.data);
+        setServerResult(data.result ?? null);
+        toast("Detalhes enviados com sucesso.");
       } catch (submitError) {
-        const message = submitError instanceof Error ? submitError.message : "Falha ao enviar."
-        setError(message)
+        const message =
+          submitError instanceof Error
+            ? submitError.message
+            : "Falha ao enviar.";
+        setError(message);
       }
-    })
+    });
   }
 
   return (
@@ -175,22 +214,26 @@ export function DetailsForm() {
       <Card className="border-border/70">
         <CardHeader>
           <CardTitle>Detalhes da sua consulta</CardTitle>
-          <CardDescription>Opcional - isso ajuda a preparar sua consulta.</CardDescription>
+          <CardDescription>
+            Opcional - isso ajuda a preparar sua consulta.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <fieldset className="space-y-2">
             <Label>A) Motivo principal</Label>
-            <RadioGroup>
+            <RadioGroup
+              name="reason"
+              value={reason}
+              onValueChange={(value) =>
+                setReason(value as TriagePayload["reason"])
+              }
+            >
               {reasons.map((item) => (
                 <label
                   key={item.value}
                   className="flex cursor-pointer items-center gap-3 rounded-xl border border-border px-4 py-3"
                 >
-                  <RadioGroupItem
-                    name="reason"
-                    checked={reason === item.value}
-                    onChange={() => setReason(item.value)}
-                  />
+                  <RadioGroupItem value={item.value} />
                   <span>{item.label}</span>
                 </label>
               ))}
@@ -201,20 +244,27 @@ export function DetailsForm() {
             <Label>B) Condições</Label>
             <div className="grid gap-2 md:grid-cols-2">
               {conditions.map((item) => {
-                const checked = selectedConditions.includes(item.value)
+                const checked = selectedConditions.includes(item.value);
                 return (
-                  <label key={item.value} className="flex items-center gap-2 rounded-md border border-border px-3 py-2">
+                  <label
+                    key={item.value}
+                    className="flex items-center gap-2 rounded-md border border-border px-3 py-2"
+                  >
                     <Checkbox
                       checked={checked}
-                      onChange={(event) =>
-                        setSelectedConditions(
-                          toggleItem(selectedConditions, item.value, event.currentTarget.checked),
+                      onCheckedChange={(nextChecked) =>
+                        setSelectedConditions((previous) =>
+                          toggleItem(
+                            previous,
+                            item.value,
+                            nextChecked === true,
+                          ),
                         )
                       }
                     />
                     <span>{item.label}</span>
                   </label>
-                )
+                );
               })}
             </div>
           </fieldset>
@@ -223,37 +273,47 @@ export function DetailsForm() {
             <Label>C) Sintomas recentes</Label>
             <div className="grid gap-2 md:grid-cols-2">
               {symptoms.map((item) => {
-                const checked = selectedSymptoms.includes(item.value)
+                const checked = selectedSymptoms.includes(item.value);
                 return (
-                  <label key={item.value} className="flex items-center gap-2 rounded-md border border-border px-3 py-2">
+                  <label
+                    key={item.value}
+                    className="flex items-center gap-2 rounded-md border border-border px-3 py-2"
+                  >
                     <Checkbox
                       checked={checked}
-                      onChange={(event) =>
-                        setSelectedSymptoms(
-                          toggleItem(selectedSymptoms, item.value, event.currentTarget.checked),
+                      onCheckedChange={(nextChecked) =>
+                        setSelectedSymptoms((previous) =>
+                          toggleItem(
+                            previous,
+                            item.value,
+                            nextChecked === true,
+                          ),
                         )
                       }
                     />
                     <span>{item.label}</span>
                   </label>
-                )
+                );
               })}
             </div>
           </fieldset>
 
           <fieldset className="space-y-2">
             <Label>D) Última dilatação</Label>
-            <RadioGroup className="grid gap-2 md:grid-cols-2">
+            <RadioGroup
+              name="lastDilation"
+              value={lastDilation}
+              onValueChange={(value) =>
+                setLastDilation(value as TriagePayload["lastDilation"])
+              }
+              className="grid gap-2 md:grid-cols-2"
+            >
               {dilationMoments.map((item) => (
                 <label
                   key={item.value}
                   className="flex cursor-pointer items-center gap-3 rounded-md border border-border px-3 py-2"
                 >
-                  <RadioGroupItem
-                    name="lastDilation"
-                    checked={lastDilation === item.value}
-                    onChange={() => setLastDilation(item.value)}
-                  />
+                  <RadioGroupItem value={item.value} />
                   <span>{item.label}</span>
                 </label>
               ))}
@@ -299,10 +359,12 @@ export function DetailsForm() {
               ))}
             </ul>
             <p className="text-xs text-muted-foreground">{result.advisory}</p>
-            <p className="text-xs text-muted-foreground">Isso não substitui avaliação médica.</p>
+            <p className="text-xs text-muted-foreground">
+              Isso não substitui avaliação médica.
+            </p>
           </CardContent>
         </Card>
       ) : null}
     </div>
-  )
+  );
 }

@@ -5,8 +5,6 @@ import { isClerkConfigured } from "@/lib/access";
 
 const isProtectedRoute = createRouteMatcher([
   "/dashboard(.*)",
-  "/agendar(.*)",
-  "/detalhes(.*)",
   "/api/(.*)",
 ]);
 

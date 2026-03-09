@@ -28,4 +28,14 @@ export const n8nUpdateAppointmentStatusSchema = z.object({
 export const n8nResumoLinkSchema = bookingCheckoutSchema.extend({
   payment: z.enum(["cancelled"]).optional(),
   source: z.string().trim().max(80).optional(),
+  utmSource: z.string().trim().max(120).optional(),
+  utmMedium: z.string().trim().max(120).optional(),
+  utmCampaign: z.string().trim().max(160).optional(),
+  utmContent: z.string().trim().max(160).optional(),
+  utmTerm: z.string().trim().max(160).optional(),
+  gclid: z.string().trim().max(240).optional(),
+  gbraid: z.string().trim().max(240).optional(),
+  wbraid: z.string().trim().max(240).optional(),
+  fbclid: z.string().trim().max(240).optional(),
+  msclkid: z.string().trim().max(240).optional(),
 });

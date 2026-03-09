@@ -31,6 +31,36 @@ export async function POST(request: Request) {
   if (parsed.data.source) {
     params.set("source", parsed.data.source);
   }
+  if (parsed.data.utmSource) {
+    params.set("utm_source", parsed.data.utmSource);
+  }
+  if (parsed.data.utmMedium) {
+    params.set("utm_medium", parsed.data.utmMedium);
+  }
+  if (parsed.data.utmCampaign) {
+    params.set("utm_campaign", parsed.data.utmCampaign);
+  }
+  if (parsed.data.utmContent) {
+    params.set("utm_content", parsed.data.utmContent);
+  }
+  if (parsed.data.utmTerm) {
+    params.set("utm_term", parsed.data.utmTerm);
+  }
+  if (parsed.data.gclid) {
+    params.set("gclid", parsed.data.gclid);
+  }
+  if (parsed.data.gbraid) {
+    params.set("gbraid", parsed.data.gbraid);
+  }
+  if (parsed.data.wbraid) {
+    params.set("wbraid", parsed.data.wbraid);
+  }
+  if (parsed.data.fbclid) {
+    params.set("fbclid", parsed.data.fbclid);
+  }
+  if (parsed.data.msclkid) {
+    params.set("msclkid", parsed.data.msclkid);
+  }
 
   const summaryUrl = `${resolveForwardOrigin()}/agendar/resumo?${params.toString()}`;
 

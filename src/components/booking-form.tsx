@@ -399,17 +399,22 @@ export function BookingForm({
       return;
     }
 
+    let rafId = 0;
     const observer = new ResizeObserver(() => {
-      const height = cardRef.current?.offsetHeight ?? 0;
-      window.parent.postMessage(
-        { type: "oftagenda:booking:resize", height },
-        "*",
-      );
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        const height = cardRef.current?.offsetHeight ?? 0;
+        window.parent.postMessage(
+          { type: "oftagenda:booking:resize", height },
+          "*",
+        );
+      });
     });
     observer.observe(cardRef.current);
     window.parent.postMessage({ type: "oftagenda:booking:ready" }, "*");
 
     return () => {
+      cancelAnimationFrame(rafId);
       observer.disconnect();
     };
   }, [isEmbedded]);
@@ -421,15 +426,19 @@ export function BookingForm({
       return;
     }
 
+    let rafId = 0;
     const updateOverflowState = () => {
-      const isDesktop = window.matchMedia("(min-width: 1024px)").matches;
-      if (!isDesktop) {
-        setIsLocationOverflowing(false);
-        return;
-      }
-      setIsLocationOverflowing(
-        listElement.scrollHeight > listElement.clientHeight + 1,
-      );
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        const isDesktop = window.matchMedia("(min-width: 1024px)").matches;
+        if (!isDesktop) {
+          setIsLocationOverflowing(false);
+          return;
+        }
+        setIsLocationOverflowing(
+          listElement.scrollHeight > listElement.clientHeight + 1,
+        );
+      });
     };
 
     updateOverflowState();
@@ -438,6 +447,7 @@ export function BookingForm({
     window.addEventListener("resize", updateOverflowState);
 
     return () => {
+      cancelAnimationFrame(rafId);
       observer.disconnect();
       window.removeEventListener("resize", updateOverflowState);
     };

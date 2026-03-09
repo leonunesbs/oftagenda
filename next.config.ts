@@ -1,3 +1,5 @@
+import path from 'path';
+
 import type { NextConfig } from 'next';
 
 import './src/lib/env/client';
@@ -66,6 +68,21 @@ const nextConfig: NextConfig = {
     turbopackFileSystemCacheForBuild: true,
     // Inline CSS to reduce render-blocking stylesheet requests on first paint.
     inlineCss: true,
+  },
+  webpack(config, { isServer }) {
+    if (!isServer) {
+      // next/dist/build/polyfills/polyfill-module.js ships polyfills for
+      // Array.prototype.at, Object.hasOwn, String.prototype.trimStart/End, etc.
+      // All are natively supported by our browserslist targets (Chrome 111+,
+      // Safari 16.4+), so replace it with an empty module.
+      const alias = config.resolve.alias as Record<string, string | false>;
+      alias[
+        path.resolve(
+          'node_modules/next/dist/build/polyfills/polyfill-module.js',
+        )
+      ] = false;
+    }
+    return config;
   },
   reactStrictMode: true,
   reactCompiler: true,

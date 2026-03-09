@@ -1,9 +1,10 @@
 import "./globals.css";
 
 import Link from "next/link";
-import dynamic from "next/dynamic";
 import { Noto_Sans } from "next/font/google";
 
+import { AnalyticsConsent } from "@/components/analytics-consent";
+import { AnalyticsPageview } from "@/components/analytics-pageview";
 import { AppHeader } from "@/components/app-header";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -14,14 +15,6 @@ import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { cn } from "@/lib/utils";
 
 const notoSans = Noto_Sans({ variable: "--font-sans" });
-const AnalyticsPageview = dynamic(
-  () => import("@/components/analytics-pageview").then((mod) => mod.AnalyticsPageview),
-  { ssr: false },
-);
-const AnalyticsConsent = dynamic(
-  () => import("@/components/analytics-consent").then((mod) => mod.AnalyticsConsent),
-  { ssr: false },
-);
 
 const metadataBase = resolveSiteUrl();
 

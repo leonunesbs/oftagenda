@@ -212,7 +212,7 @@ export default async function StatusPage() {
         name: "Convex admin snapshot",
         status: isNotAuthorized ? "warning" : "error",
         detail: isNotAuthorized
-          ? "Sessão autenticada, mas sem claim admin no JWT do Convex. Verifique template `convex` no Clerk (public_metadata.role)."
+          ? "Sessão autenticada, mas sem papel admin em `user_roles` no Convex."
           : message,
       });
     }

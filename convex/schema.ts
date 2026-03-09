@@ -92,6 +92,8 @@ const paymentMethodValidator = v.union(
   v.literal("transfer"),
 );
 
+const userRoleValidator = v.union(v.literal("member"), v.literal("admin"));
+
 const adminEventKindValidator = v.union(
   v.literal("consulta"),
   v.literal("procedimento"),
@@ -206,6 +208,15 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_clerk_user_id", ["clerkUserId"]),
+
+  user_roles: defineTable({
+    clerkUserId: v.string(),
+    role: userRoleValidator,
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_clerk_user_id", ["clerkUserId"])
+    .index("by_role", ["role"]),
 
   appointments: defineTable({
     clerkUserId: v.string(),

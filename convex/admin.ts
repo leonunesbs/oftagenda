@@ -37,57 +37,17 @@ const paymentMethodValidator = v.union(
 );
 const eventKindValidator = v.union(v.literal("consulta"), v.literal("procedimento"), v.literal("exame"));
 
-const ADMIN_ROLES = new Set(["admin"]);
-
-function readClaim(claims: Record<string, unknown>, path: string[]) {
-  let current: unknown = claims;
-  for (const key of path) {
-    if (!current || typeof current !== "object") {
-      return undefined;
-    }
-    current = (current as Record<string, unknown>)[key];
-  }
-  return current;
-}
-
-function normalizeRole(value: unknown) {
-  if (typeof value !== "string") {
-    return null;
-  }
-  const normalized = value.trim().toLowerCase();
-  if (ADMIN_ROLES.has(normalized)) {
-    return "admin";
-  }
-  if (normalized === "member") {
-    return "member";
-  }
-  return null;
-}
-
-function isAdminFromIdentityClaims(identity: Record<string, unknown>) {
-  const roleCandidates = [
-    readClaim(identity, ["publicMetadata", "role"]),
-    readClaim(identity, ["public_metadata", "role"]),
-  ];
-
-  const normalizedRoles = roleCandidates
-    .map((value) => normalizeRole(value))
-    .filter((value): value is "admin" | "member" => value !== null);
-  return normalizedRoles.includes("admin");
-}
-
-async function isAdminFromIdentity(identity: Record<string, unknown>) {
-  return isAdminFromIdentityClaims(identity);
-}
-
 async function requireAdmin(ctx: QueryCtx | MutationCtx) {
   const identity = await ctx.auth.getUserIdentity();
   if (identity === null) {
     throw new Error("Not authenticated");
   }
 
-  const isAdmin = await isAdminFromIdentity(identity as unknown as Record<string, unknown>);
-  if (!isAdmin) {
+  const userRole = await ctx.db
+    .query("user_roles")
+    .withIndex("by_clerk_user_id", (q) => q.eq("clerkUserId", identity.subject))
+    .first();
+  if (userRole?.role !== "admin") {
     throw new Error("Not authorized");
   }
 

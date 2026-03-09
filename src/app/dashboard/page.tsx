@@ -228,7 +228,7 @@ export default async function DashboardPage({
             <div className="space-y-3 rounded-xl border border-border p-4">
               <h3 className="font-medium">Acesso administrativo</h3>
               <p className="text-sm text-muted-foreground">
-                Sua conta possui <code>publicMetadata.role = "admin"</code>.
+                Sua conta possui papel <code>admin</code> em <code>user_roles</code> no Convex.
               </p>
               <Button variant="secondary" asChild>
                 <Link href="/dashboard/admin">Abrir painel admin</Link>

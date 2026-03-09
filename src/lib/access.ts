@@ -2,7 +2,8 @@ import {
   BOOKING_CONFIRMED_COOKIE,
   isBookingConfirmedValue,
 } from "@/domain/booking/state";
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { getAuthenticatedConvexHttpClient } from "@/lib/convex-server";
+import { auth } from "@clerk/nextjs/server";
 
 import { ConvexHttpClient } from "convex/browser";
 import { cookies } from "next/headers";
@@ -49,66 +50,20 @@ function normalizeUserRole(value: unknown): UserRole | null {
   return null;
 }
 
-function readRoleFromMetadata(metadata: unknown): UserRole | null {
-  if (!metadata || typeof metadata !== "object") {
-    return null;
-  }
-  return normalizeUserRole((metadata as Record<string, unknown>).role);
-}
-
-async function ensureDefaultRoleMetadata(userId: string) {
-  const clerk = await clerkClient();
-  const user = await clerk.users.getUser(userId);
-
-  if (readRoleFromMetadata(user.publicMetadata)) {
-    return;
-  }
-
-  const publicMetadata =
-    user.publicMetadata && typeof user.publicMetadata === "object"
-      ? (user.publicMetadata as Record<string, unknown>)
-      : {};
-  await clerk.users.updateUserMetadata(userId, {
-    publicMetadata: {
-      ...publicMetadata,
-      role: "member",
-    },
-  });
-}
-
 export async function getUserRoleFromClerkAuth(authData: {
   userId: string | null;
 }) {
   if (!authData.userId) {
     return null;
   }
-  const clerk = await clerkClient();
-  const user = await clerk.users.getUser(authData.userId);
-  return readRoleFromMetadata(user.publicMetadata);
-}
 
-export function getUserRoleFromSessionClaims(authData: {
-  sessionClaims?: Record<string, unknown> | null;
-}) {
-  const claims = authData.sessionClaims;
-  if (!claims || typeof claims !== "object") {
+  try {
+    const { client } = await getAuthenticatedConvexHttpClient();
+    const ensured = await client.mutation(api.user_roles.ensureCurrentUserRole, {});
+    return normalizeUserRole(ensured.role);
+  } catch {
     return null;
   }
-
-  const claimMetadataCandidates = [
-    claims.public_metadata,
-    claims.publicMetadata,
-    claims.metadata,
-  ];
-
-  for (const metadata of claimMetadataCandidates) {
-    const role = readRoleFromMetadata(metadata);
-    if (role) {
-      return role;
-    }
-  }
-
-  return null;
 }
 
 function canAccessRole(role: UserRole | null, requiredRole: UserRole) {
@@ -141,7 +96,7 @@ export async function requireAuthenticated(returnBackUrl: string) {
     redirect(buildSignInRedirectUrl(returnBackUrl));
   }
 
-  await ensureDefaultRoleMetadata(userId);
+  await getUserRoleFromClerkAuth({ userId });
   return userId;
 }
 
@@ -153,7 +108,6 @@ export async function requireAdmin(returnBackUrl: string) {
     redirect(buildSignInRedirectUrl(returnBackUrl));
   }
 
-  await ensureDefaultRoleMetadata(userId);
   const role = await getUserRoleFromClerkAuth(authData);
   if (!canAccessRole(role, "admin")) {
     redirect("/dashboard");
@@ -170,7 +124,6 @@ export async function requireMember(returnBackUrl: string) {
     redirect(buildSignInRedirectUrl(returnBackUrl));
   }
 
-  await ensureDefaultRoleMetadata(userId);
   const role = await getUserRoleFromClerkAuth(authData);
   if (!canAccessRole(role, "member")) {
     redirect("/");
@@ -186,7 +139,6 @@ export async function requireMemberApiAccess() {
     throw new Error("Not authenticated");
   }
 
-  await ensureDefaultRoleMetadata(userId);
   const role = await getUserRoleFromClerkAuth(authData);
   if (!canAccessRole(role, "member")) {
     throw new Error("Not authorized");

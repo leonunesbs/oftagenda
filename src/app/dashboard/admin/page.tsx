@@ -173,7 +173,7 @@ export default async function AdminDashboardPage() {
         <CardContent className="space-y-2 text-sm text-muted-foreground">
           <p>{message}</p>
           <p>
-            Verifique apenas se o usuário possui <code>public_metadata.role = &quot;admin&quot;</code>.
+            Verifique se o usuário possui papel <code>admin</code> na tabela <code>user_roles</code> do Convex.
           </p>
         </CardContent>
       </Card>

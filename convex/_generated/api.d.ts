@@ -15,6 +15,7 @@ import type * as n8n from "../n8n.js";
 import type * as patients from "../patients.js";
 import type * as stripe from "../stripe.js";
 import type * as triage from "../triage.js";
+import type * as user_roles from "../user_roles.js";
 
 import type {
   ApiFromModules,
@@ -30,6 +31,7 @@ declare const fullApi: ApiFromModules<{
   patients: typeof patients;
   stripe: typeof stripe;
   triage: typeof triage;
+  user_roles: typeof user_roles;
 }>;
 
 /**

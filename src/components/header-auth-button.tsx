@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
@@ -31,6 +31,52 @@ export function HeaderAuthButton({ clerkEnabled, initialSessionState }: HeaderAu
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [{ isAuthenticated, userId, avatarUrl, firstName }, setSessionState] =
     useState<SessionState>(initialSessionState);
+
+  useEffect(() => {
+    if (!clerkEnabled || isSigningOut) {
+      return;
+    }
+
+    let isMounted = true;
+
+    async function syncSessionState() {
+      try {
+        const response = await fetch("/api/auth/session", {
+          method: "GET",
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          return;
+        }
+
+        const payload = (await response.json()) as Partial<SessionState> & {
+          clerkEnabled?: boolean;
+        };
+
+        if (!isMounted || payload.clerkEnabled === false) {
+          return;
+        }
+
+        setSessionState({
+          isAuthenticated: Boolean(payload.isAuthenticated),
+          userId: typeof payload.userId === "string" ? payload.userId : null,
+          avatarUrl:
+            typeof payload.avatarUrl === "string" ? payload.avatarUrl : null,
+          firstName:
+            typeof payload.firstName === "string" ? payload.firstName : null,
+        });
+      } catch {
+        // Keep optimistic SSR state when session probe fails.
+      }
+    }
+
+    void syncSessionState();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [clerkEnabled, isSigningOut]);
 
   if (!clerkEnabled) {
     return (

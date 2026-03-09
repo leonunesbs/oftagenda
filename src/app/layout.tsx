@@ -160,8 +160,14 @@ export default async function RootLayout({
   );
 
   return (
-    <html lang="pt-BR" className={cn("dark", "font-sans", notoSans.variable)}>
+    <html lang="pt-BR" className={cn("font-sans", notoSans.variable)}>
       <body>
+        <script
+          id="theme-bootstrap"
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem("oftagenda-theme");var dark=t==="dark"||((t===null||t==="system")&&window.matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.classList.toggle("dark",dark);}catch{}})();`,
+          }}
+        />
         <NuqsAdapter>
           <script
             id="website-schema"

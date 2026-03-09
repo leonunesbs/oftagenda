@@ -15,7 +15,7 @@ function applyTheme(mode: ThemeMode) {
 
 function getPreferredTheme(): ThemeMode {
   if (typeof window === "undefined") {
-    return "dark";
+    return "light";
   }
 
   const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
@@ -27,7 +27,7 @@ function getPreferredTheme(): ThemeMode {
 }
 
 export function ColorModeToggle() {
-  const [theme, setTheme] = React.useState<ThemeMode>("dark");
+  const [theme, setTheme] = React.useState<ThemeMode>(getPreferredTheme);
 
   React.useEffect(() => {
     const preferredTheme = getPreferredTheme();

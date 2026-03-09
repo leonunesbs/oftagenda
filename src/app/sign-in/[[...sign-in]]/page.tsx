@@ -1,7 +1,13 @@
 import { SignIn } from "@clerk/nextjs";
 import type { Metadata } from "next";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { isClerkConfigured } from "@/lib/access";
 
 export const metadata: Metadata = {
@@ -19,7 +25,8 @@ export default function SignInPage() {
           <CardHeader>
             <CardTitle>Autenticação indisponível</CardTitle>
             <CardDescription>
-              Configure as variáveis do Clerk para acessar a área exclusiva do paciente.
+              Configure as variáveis do Clerk para acessar a área exclusiva do
+              paciente.
             </CardDescription>
           </CardHeader>
         </Card>
@@ -33,8 +40,12 @@ export default function SignInPage() {
 
       <Card className="w-full max-w-4xl rounded-3xl border-white/10 bg-linear-to-br from-card/95 via-card/90 to-card/65 backdrop-blur-2xl">
         <CardHeader className="space-y-3">
-          <p className="text-sm text-muted-foreground">Área exclusiva do paciente</p>
-          <CardTitle className="text-3xl tracking-tight md:text-4xl">Entrar</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Área exclusiva do paciente
+          </p>
+          <CardTitle className="text-3xl tracking-tight md:text-4xl">
+            Entrar
+          </CardTitle>
           <CardDescription className="max-w-2xl text-sm text-muted-foreground md:text-base">
             Acesse sua conta para acompanhar e organizar seus agendamentos.
           </CardDescription>

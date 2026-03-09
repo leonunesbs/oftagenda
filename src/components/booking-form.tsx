@@ -533,22 +533,22 @@ export function BookingForm({
                         <RadioGroupItem
                           value={item.value}
                         />
-                        <div className="min-w-0">
+                        <div className="flex min-w-0 flex-1 flex-col gap-1 md:flex-row md:items-center md:justify-between md:gap-3">
                           <span className="block min-w-0 wrap-break-word">
                             {item.label}
                           </span>
                           {item.address ? (
-                            <span className="block min-w-0 wrap-break-word text-xs text-muted-foreground">
+                            <span className="block min-w-0 wrap-break-word text-xs text-muted-foreground md:text-right">
                               {item.address}
                             </span>
                           ) : null}
                         </div>
                       </div>
-                      <span className="w-full pl-8 text-left text-xs text-muted-foreground sm:w-auto sm:pl-0 sm:text-right">
-                        {item.eventTypesCount
-                          ? `${item.eventTypesCount} tipos`
-                          : "Evento ativo"}
-                      </span>
+                      {item.eventTypesCount ? (
+                        <span className="w-full pl-8 text-left text-xs text-muted-foreground sm:w-auto sm:pl-0 sm:text-right">
+                          {item.eventTypesCount} tipos
+                        </span>
+                      ) : null}
                     </label>
                   ))}
                 </RadioGroup>

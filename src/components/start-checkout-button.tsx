@@ -67,7 +67,7 @@ export function StartCheckoutButton({
         const data = (await response
           .json()
           .catch(() => null)) as CheckoutApiResponse | null;
-        if (response.status === 401 || data?.error === "Not authenticated") {
+        if (requiresAuthentication(response.status, data)) {
           redirectToSignIn();
           return;
         }
@@ -139,10 +139,33 @@ export function StartCheckoutButton({
 
   function redirectToSignIn() {
     const topWindow = window.self !== window.top ? window.top! : window;
-    const { pathname, search } = topWindow.location;
-    const returnBackUrl = `${pathname}${search}`;
+    let returnBackUrl = window.location.href;
+    try {
+      returnBackUrl = topWindow.location.href;
+    } catch {
+      // Cross-origin iframe: fallback to current frame URL.
+      returnBackUrl = window.location.href;
+    }
     topWindow.location.href = `/sign-in?redirect_url=${encodeURIComponent(returnBackUrl)}`;
   }
+}
+
+function requiresAuthentication(
+  status: number,
+  data: CheckoutApiResponse | null,
+): boolean {
+  if (status === 401 || status === 403) {
+    return true;
+  }
+
+  const rawError = typeof data?.error === "string" ? data.error : "";
+  const normalizedError = rawError.trim().toLowerCase();
+  return (
+    normalizedError === "not authenticated" ||
+    normalizedError === "not authorized" ||
+    normalizedError.includes("not authenticated") ||
+    normalizedError.includes("not authorized")
+  );
 }
 
 function normalizeCheckoutError(

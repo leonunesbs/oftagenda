@@ -1,19 +1,19 @@
-import type { Metadata } from "next";
-import Link from "next/link";
-import { Suspense } from "react";
-
-import { BookingFormContainer } from "@/components/booking-form-container";
-import { BookingFormFallback } from "@/components/booking-form-fallback";
-import { ScrollToIdButton } from "@/components/scroll-to-id-button";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
 } from "@/components/ui/card";
+
+import { BookingFormContainer } from "@/components/booking-form-container";
+import { BookingFormFallback } from "@/components/booking-form-fallback";
+import { ScrollToIdButton } from "@/components/scroll-to-id-button";
+import { Button } from "@/components/ui/button";
 import { siteConfig } from "@/config/site";
 import { isClerkConfigured } from "@/lib/access";
+import type { Metadata } from "next";
+import Link from "next/link";
+import { Suspense } from "react";
 
 export const metadata: Metadata = {
   title: "Oftalmologista em Fortaleza | Consulta de Retina e Catarata",
@@ -129,7 +129,7 @@ export default async function HomePage() {
           </CardHeader>
           <CardContent className="flex flex-wrap items-center gap-3">
             <ScrollToIdButton
-              className="h-10 rounded-xl px-5 text-sm transition-transform duration-200 hover:-translate-y-0.5"
+              className="h-10 px-5 text-sm transition-transform duration-200 hover:-translate-y-0.5"
               targetId="agendamento"
             >
               Agendar
@@ -138,7 +138,7 @@ export default async function HomePage() {
               <Button
                 variant="secondary"
                 asChild
-                className="h-10 rounded-xl px-5 text-sm transition-colors duration-200"
+                className="h-10 px-5 text-sm transition-colors duration-200"
               >
                 <Link href="/dashboard" prefetch={false}>
                   Painel
@@ -148,7 +148,7 @@ export default async function HomePage() {
               <Button
                 variant="secondary"
                 disabled
-                className="h-10 rounded-xl px-5 text-sm transition-colors duration-200"
+                className="h-10 px-5 text-sm transition-colors duration-200"
               >
                 Clerk não configurado
               </Button>

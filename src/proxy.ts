@@ -1,5 +1,9 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-import { NextRequest, NextResponse } from "next/server";
+import {
+  clerkMiddleware,
+  createRouteMatcher,
+  type ClerkMiddlewareAuth,
+} from "@clerk/nextjs/server";
+import { NextFetchEvent, NextRequest, NextResponse } from "next/server";
 
 import { isClerkConfigured } from "@/lib/access";
 
@@ -30,14 +34,14 @@ function shouldRunClerk(pathname: string) {
 }
 
 const clerkProxy = clerkMiddleware(
-  async (auth: { protect: () => Promise<void> }, req: NextRequest) => {
+  async (auth: ClerkMiddlewareAuth, req: NextRequest) => {
     if (isProtectedRoute(req)) {
       await auth.protect();
     }
   },
 );
 
-const proxy = (req: NextRequest) => {
+const proxy = (req: NextRequest, event: NextFetchEvent) => {
   const pathname = req.nextUrl.pathname;
 
   // Keep home fully public to avoid any auth handshake/redirect noise.
@@ -63,7 +67,7 @@ const proxy = (req: NextRequest) => {
     return NextResponse.next();
   }
 
-  return clerkProxy(req);
+  return clerkProxy(req, event);
 };
 
 export default proxy;

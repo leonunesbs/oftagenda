@@ -34,6 +34,7 @@ export default async function ResumoPreAgendamentoPage({
 }: ResumoPageProps) {
   const params = (await searchParams) ?? {};
   const summary = await resolvePreBookingSummary(params);
+  const checkoutNotCompleted = summary.payment === "cancelled";
 
   if (summary.hasRedactedParams || summary.hasInvalidSelection) {
     return (
@@ -44,7 +45,9 @@ export default async function ResumoPreAgendamentoPage({
             <CardDescription>
               {summary.hasRedactedParams
                 ? "Detectamos dados inválidos na URL deste pré-agendamento. Por segurança, inicie um novo agendamento."
-                : "Esse horário não está mais disponível para o local selecionado. Escolha um novo horário para continuar."}
+                : checkoutNotCompleted
+                  ? "Você não concluiu o checkout. Esse horário foi liberado e pode já ter sido reservado. Escolha um novo horário para continuar."
+                  : "Esse horário não está mais disponível para o local selecionado. Escolha um novo horário para continuar."}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -111,10 +114,10 @@ export default async function ResumoPreAgendamentoPage({
               label="Seguir para pagamento"
             />
           </div>
-          {summary.payment === "cancelled" ? (
+          {checkoutNotCompleted ? (
             <p className="text-sm text-destructive">
-              O checkout foi cancelado. Você pode tentar novamente quando
-              quiser.
+              Você saiu do checkout sem concluir o pagamento. Para confirmar a
+              consulta, inicie uma nova tentativa.
             </p>
           ) : null}
         </CardContent>

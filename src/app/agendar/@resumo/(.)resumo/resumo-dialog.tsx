@@ -39,6 +39,7 @@ export function ResumoDialog({
   hasInvalidSelection,
 }: ResumoDialogProps) {
   const router = useRouter();
+  const checkoutNotCompleted = payment === "cancelled";
   const hasError = hasRedactedParams || hasInvalidSelection;
   const addressHref = locationAddress ? buildAddressHref(locationAddress) : "";
 
@@ -59,6 +60,8 @@ export function ResumoDialog({
           <DialogDescription>
             {hasRedactedParams
               ? "Detectamos dados inválidos na URL. Por segurança, inicie um novo agendamento."
+              : checkoutNotCompleted
+                ? "Você não concluiu o checkout. Esse horário foi liberado e pode já ter sido reservado. Escolha um novo horário."
               : hasInvalidSelection
                 ? "Esse horário não está mais disponível para o local selecionado. Escolha um novo horário."
                 : "Confira os dados selecionados antes de confirmar."}
@@ -67,7 +70,11 @@ export function ResumoDialog({
 
         {hasError ? (
           <p className="text-sm text-destructive">
-            Não foi possível validar os dados deste resumo.
+            {hasRedactedParams
+              ? "Não foi possível validar os dados deste resumo."
+              : checkoutNotCompleted
+                ? "Você saiu do checkout sem concluir o pagamento. Inicie um novo agendamento para escolher outro horário."
+                : "Não foi possível validar os dados deste resumo."}
           </p>
         ) : (
           <div className="rounded-xl border border-border/70 bg-muted/20 p-4 text-sm">
@@ -95,10 +102,10 @@ export function ResumoDialog({
               <span className="font-medium text-foreground">Horário:</span>{" "}
               {timeLabel}
             </p>
-            {payment === "cancelled" ? (
+            {checkoutNotCompleted ? (
               <p className="mt-2 text-destructive">
-                O checkout foi cancelado. Você pode tentar novamente quando
-                quiser.
+                Você saiu do checkout sem concluir o pagamento. Para confirmar a
+                consulta, inicie uma nova tentativa.
               </p>
             ) : null}
           </div>

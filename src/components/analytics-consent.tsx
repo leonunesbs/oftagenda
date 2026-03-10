@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { GoogleTagManager } from "@next/third-parties/google";
 import Link from "next/link";
 import Script from "next/script";
 
@@ -54,6 +53,13 @@ export function AnalyticsConsent() {
     setConsent(savedConsent);
     if (savedConsent) {
       window.__oftConsent = savedConsent;
+      const granted = savedConsent === "granted";
+      window.gtag?.("consent", "update", {
+        ad_storage: granted ? "granted" : "denied",
+        ad_user_data: granted ? "granted" : "denied",
+        ad_personalization: granted ? "granted" : "denied",
+        analytics_storage: granted ? "granted" : "denied",
+      });
       return;
     }
 
@@ -137,9 +143,17 @@ export function AnalyticsConsent() {
       // In restricted contexts (e.g., embedded third-party iframes), keep runtime consent in memory.
     }
     window.__oftConsent = nextConsent;
+
+    const granted = nextConsent === "granted";
+    window.gtag?.("consent", "update", {
+      ad_storage: granted ? "granted" : "denied",
+      ad_user_data: granted ? "granted" : "denied",
+      ad_personalization: granted ? "granted" : "denied",
+      analytics_storage: granted ? "granted" : "denied",
+    });
+
     setConsent(nextConsent);
-    if (nextConsent === "granted") {
-      // Trigger the first pageview right after consent is granted.
+    if (granted) {
       window.setTimeout(() => {
         trackEvent("view_content", { path: window.location.pathname });
       }, 0);
@@ -152,10 +166,6 @@ export function AnalyticsConsent() {
 
   return (
     <>
-      {shouldLoadScripts && gtmId && process.env.NODE_ENV === "production" ? (
-        <GoogleTagManager gtmId={gtmId} />
-      ) : null}
-
       {shouldLoadGa4Directly ? (
         <>
           <Script

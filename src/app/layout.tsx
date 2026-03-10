@@ -3,6 +3,7 @@ import "./globals.css";
 import Link from "next/link";
 import { Noto_Sans } from "next/font/google";
 import { auth } from "@clerk/nextjs/server";
+import { GoogleTagManager } from "@next/third-parties/google";
 
 import { AppHeader } from "@/components/app-header";
 import { AnalyticsConsent } from "@/components/analytics-consent";
@@ -144,6 +145,8 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const clerkEnabled = isClerkConfigured();
+  const gtmId = process.env.NEXT_PUBLIC_GTM_ID;
+  const shouldLoadGtm = process.env.NODE_ENV === "production" && Boolean(gtmId);
   const sessionState = await getHeaderSessionState(clerkEnabled);
   const legalFooter = (
     <footer data-app-legal-footer className="mx-auto w-full max-w-5xl px-4 pb-8 pt-2 text-xs text-muted-foreground md:px-6">
@@ -168,6 +171,13 @@ export default async function RootLayout({
             __html: `(function(){try{var t=localStorage.getItem("oftagenda-theme");var dark=t==="dark"||((t===null||t==="system")&&window.matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.classList.toggle("dark",dark);}catch{}})();`,
           }}
         />
+        <script
+          id="gtm-consent-bootstrap"
+          dangerouslySetInnerHTML={{
+            __html: `window.dataLayer=window.dataLayer||[];function gtag(){window.dataLayer.push(arguments);}window.gtag=gtag;gtag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'denied',wait_for_update:500});`,
+          }}
+        />
+        {shouldLoadGtm ? <GoogleTagManager gtmId={gtmId!} /> : null}
         <NuqsAdapter>
           <script
             id="website-schema"

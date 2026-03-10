@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -28,6 +28,7 @@ export type SessionState = {
 
 export function HeaderAuthButton({ clerkEnabled, initialSessionState }: HeaderAuthButtonProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [{ isAuthenticated, userId, avatarUrl, firstName }, setSessionState] =
     useState<SessionState>(initialSessionState);
@@ -87,7 +88,9 @@ export function HeaderAuthButton({ clerkEnabled, initialSessionState }: HeaderAu
   }
 
   if (!isAuthenticated) {
-    const signInHref = `/sign-in?redirect_url=${encodeURIComponent(pathname || "/")}`;
+    const qs = searchParams.toString();
+    const returnPath = qs ? `${pathname}?${qs}` : (pathname || "/");
+    const signInHref = `/sign-in?redirect_url=${encodeURIComponent(returnPath)}`;
     return (
       <Button asChild>
         <Link href={signInHref}>Entrar</Link>

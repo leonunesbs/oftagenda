@@ -17,7 +17,20 @@ export const metadata: Metadata = {
   },
 };
 
-export default function SignInPage() {
+type SignInPageProps = {
+  searchParams?:
+    | Promise<{
+        redirect_url?: string;
+      }>
+    | {
+        redirect_url?: string;
+      };
+};
+
+export default async function SignInPage({ searchParams }: SignInPageProps) {
+  const params = (await searchParams) ?? {};
+  const redirectUrl = normalizeRedirectUrl(params.redirect_url);
+
   if (!isClerkConfigured()) {
     return (
       <section className="mx-auto w-full max-w-lg">
@@ -55,6 +68,8 @@ export default function SignInPage() {
             path="/sign-in"
             routing="path"
             signUpUrl="/sign-up"
+            fallbackRedirectUrl={redirectUrl}
+            forceRedirectUrl={redirectUrl}
             appearance={{
               elements: {
                 rootBox: "w-full",
@@ -81,4 +96,20 @@ export default function SignInPage() {
       </Card>
     </section>
   );
+}
+
+function normalizeRedirectUrl(rawRedirectUrl?: string) {
+  if (typeof rawRedirectUrl !== "string" || rawRedirectUrl.trim().length === 0) {
+    return undefined;
+  }
+
+  try {
+    const parsedUrl = new URL(rawRedirectUrl, "http://localhost");
+    if (!parsedUrl.pathname.startsWith("/")) {
+      return undefined;
+    }
+    return `${parsedUrl.pathname}${parsedUrl.search}${parsedUrl.hash}`;
+  } catch {
+    return undefined;
+  }
 }

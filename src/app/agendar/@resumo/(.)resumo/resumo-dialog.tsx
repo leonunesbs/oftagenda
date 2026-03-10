@@ -24,6 +24,7 @@ type ResumoDialogProps = {
   payment: string;
   hasRedactedParams: boolean;
   hasInvalidSelection: boolean;
+  isAuthenticated: boolean;
 };
 
 export function ResumoDialog({
@@ -37,6 +38,7 @@ export function ResumoDialog({
   payment,
   hasRedactedParams,
   hasInvalidSelection,
+  isAuthenticated,
 }: ResumoDialogProps) {
   const router = useRouter();
   const checkoutNotCompleted = payment === "cancelled";
@@ -130,6 +132,7 @@ export function ResumoDialog({
                 date={date}
                 time={time}
                 label="Seguir para pagamento"
+                isAuthenticated={isAuthenticated}
               />
             </>
           )}

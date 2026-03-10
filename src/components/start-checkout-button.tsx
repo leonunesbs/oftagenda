@@ -11,6 +11,7 @@ type StartCheckoutButtonProps = {
   date: string;
   time: string;
   label?: string;
+  isAuthenticated?: boolean;
 };
 
 type CheckoutErrorState = {
@@ -33,6 +34,7 @@ export function StartCheckoutButton({
   date,
   time,
   label = "Ir para pagamento",
+  isAuthenticated,
 }: StartCheckoutButtonProps) {
   const [isLoading, startCheckoutTransition] = useTransition();
   const [error, setError] = useState<CheckoutErrorState | null>(null);
@@ -50,6 +52,12 @@ export function StartCheckoutButton({
     if (isLoading) {
       return;
     }
+
+    if (isAuthenticated === false) {
+      redirectToSignIn();
+      return;
+    }
+
     setError(null);
     startCheckoutTransition(async () => {
       try {

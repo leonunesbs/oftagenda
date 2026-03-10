@@ -10,6 +10,7 @@ import { StartCheckoutButton } from "@/components/start-checkout-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { resolvePreBookingSummary } from "@/lib/pre-booking-summary";
+import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 
 type ResumoPageProps = {
@@ -34,7 +35,10 @@ export default async function ResumoPreAgendamentoPage({
   searchParams,
 }: ResumoPageProps) {
   const params = (await searchParams) ?? {};
-  const summary = await resolvePreBookingSummary(params);
+  const [summary, { userId }] = await Promise.all([
+    resolvePreBookingSummary(params),
+    auth(),
+  ]);
   const checkoutNotCompleted = summary.payment === "cancelled";
   const hasErrorState =
     summary.hasRedactedParams ||
@@ -123,6 +127,7 @@ export default async function ResumoPreAgendamentoPage({
               date={summary.date}
               time={summary.time}
               label="Seguir para pagamento"
+              isAuthenticated={Boolean(userId)}
             />
           </div>
         </CardContent>

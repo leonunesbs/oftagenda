@@ -1,4 +1,5 @@
 import { resolvePreBookingSummary } from "@/lib/pre-booking-summary";
+import { auth } from "@clerk/nextjs/server";
 import { ResumoDialog } from "./resumo-dialog";
 
 type ResumoInterceptPageProps = {
@@ -23,7 +24,10 @@ export default async function ResumoInterceptPage({
   searchParams,
 }: ResumoInterceptPageProps) {
   const params = (await searchParams) ?? {};
-  const summary = await resolvePreBookingSummary(params);
+  const [summary, { userId }] = await Promise.all([
+    resolvePreBookingSummary(params),
+    auth(),
+  ]);
 
   return (
     <ResumoDialog
@@ -37,6 +41,7 @@ export default async function ResumoInterceptPage({
       payment={summary.payment}
       hasRedactedParams={summary.hasRedactedParams}
       hasInvalidSelection={summary.hasInvalidSelection}
+      isAuthenticated={Boolean(userId)}
     />
   );
 }

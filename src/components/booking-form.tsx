@@ -534,9 +534,23 @@ export function BookingForm({
                           value={item.value}
                         />
                         <div className="flex min-w-0 flex-1 flex-col gap-1 md:flex-row md:items-center md:justify-between md:gap-3">
-                          <span className="block min-w-0 wrap-break-word">
-                            {item.label}
-                          </span>
+                          <div className="min-w-0">
+                            <span className="block min-w-0 wrap-break-word">
+                              {item.label}
+                            </span>
+                            {typeof item.consultationPriceCents === "number" &&
+                            item.consultationPriceCents > 0 ? (
+                              <span className="block text-xs text-muted-foreground">
+                                Consulta:{" "}
+                                {formatMoney(item.consultationPriceCents)} | Taxa
+                                de reserva (20%):{" "}
+                                {formatMoney(
+                                  item.reservationFeeCents ??
+                                    Math.round(item.consultationPriceCents * 0.2),
+                                )}
+                              </span>
+                            ) : null}
+                          </div>
                           {item.address ? (
                             <span className="block min-w-0 wrap-break-word text-xs text-muted-foreground md:text-right">
                               {item.address}
@@ -850,4 +864,11 @@ function scrollToSection(sectionRef: { current: HTMLElement | null }) {
   window.setTimeout(() => {
     sectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, 100);
+}
+
+function formatMoney(cents: number) {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format((cents || 0) / 100);
 }

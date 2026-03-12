@@ -62,6 +62,9 @@ export default async function DashboardPage({
     }>;
     reschedulePolicy: {
       canReschedule: boolean;
+      canCancel: boolean;
+      cancelReason: string | null;
+      requiresHumanSupport: boolean;
       reason: string | null;
       maxReschedules: number;
       reschedulesUsed: number;
@@ -80,6 +83,9 @@ export default async function DashboardPage({
     pendingReservations: [],
     reschedulePolicy: {
       canReschedule: false,
+      canCancel: false,
+      cancelReason: "Nenhuma consulta ativa encontrada.",
+      requiresHumanSupport: false,
       reason: "Nenhuma consulta ativa encontrada.",
       maxReschedules: 1,
       reschedulesUsed: 0,
@@ -131,6 +137,9 @@ export default async function DashboardPage({
       })),
       reschedulePolicy: {
         canReschedule: data.reschedulePolicy.canReschedule,
+        canCancel: data.reschedulePolicy.canCancel,
+        cancelReason: data.reschedulePolicy.cancelReason,
+        requiresHumanSupport: data.reschedulePolicy.requiresHumanSupport,
         reason: data.reschedulePolicy.reason,
         maxReschedules: data.reschedulePolicy.maxReschedules,
         reschedulesUsed: data.reschedulePolicy.reschedulesUsed,

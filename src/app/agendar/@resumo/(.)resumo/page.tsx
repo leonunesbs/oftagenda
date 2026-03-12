@@ -34,6 +34,9 @@ export default async function ResumoInterceptPage({
       locationId={summary.locationId}
       locationLabel={summary.locationLabel}
       locationAddress={summary.locationAddress}
+      consultationPriceCents={summary.consultationPriceCents}
+      reservationFeeCents={summary.reservationFeeCents}
+      reservationFeePercent={summary.reservationFeePercent}
       date={summary.date}
       dateLabel={summary.dateLabel}
       time={summary.time}

@@ -9,6 +9,7 @@ const RESERVATION_HOLD_DURATION_MS = 15 * 60_000;
 const RESCHEDULE_MIN_NOTICE_MS = 24 * 60 * 60_000;
 const RESCHEDULE_MAX_DAYS_AHEAD = 30;
 const RESCHEDULE_MAX_PER_APPOINTMENT = 1;
+const RESERVATION_FEE_PERCENT = 20;
 
 const bookingLocationValidator = v.string();
 
@@ -293,6 +294,12 @@ export const getActiveBookingLocations = query({
       )
       .sort((a, b) => (a.name ?? a.title).localeCompare(b.name ?? b.title, "pt-BR"))
       .map((eventType) => ({
+        consultationPriceCents: normalizeAmountCents(eventType.priceCents) ?? 0,
+        reservationFeeCents: calculateReservationFeeCents(
+          normalizeAmountCents(eventType.priceCents) ?? 0,
+          RESERVATION_FEE_PERCENT,
+        ),
+        reservationFeePercent: RESERVATION_FEE_PERCENT,
         value: eventType.slug,
         label: eventType.name ?? eventType.title,
         address: eventType.address ?? "",
@@ -355,6 +362,9 @@ export const getDashboardState = query({
       ? await buildReschedulePolicy(ctx, nextAppointment, now)
       : {
           canReschedule: false,
+          canCancel: false,
+          cancelReason: "Nenhuma consulta ativa encontrada.",
+          requiresHumanSupport: false,
           reason: "Nenhuma consulta ativa encontrada.",
           maxReschedules: RESCHEDULE_MAX_PER_APPOINTMENT,
           reschedulesUsed: 0,
@@ -400,6 +410,10 @@ export const rescheduleOwnAppointment = mutation({
     if (!policy.canReschedule) {
       throw new Error(policy.reason ?? "Consulta indisponível para remarcação.");
     }
+    const scheduledFor = appointment.scheduledFor;
+    if (typeof scheduledFor !== "number") {
+      throw new Error("Consulta ainda sem horário definido.");
+    }
 
     const eventType = await resolveSingleActiveEventType(ctx, args.location);
     const availability = eventType.availabilityId ? await ctx.db.get(eventType.availabilityId) : null;
@@ -408,7 +422,7 @@ export const rescheduleOwnAppointment = mutation({
     }
 
     const slotTimestamp = parseIsoDateAndTimeToTimestamp(args.date, args.time, availability.timezone);
-    assertRescheduleWindow(slotTimestamp, now);
+    assertRescheduleWindow(slotTimestamp, now, scheduledFor);
     await assertSlotIsAvailable(ctx, eventType, args.date, args.time, identity.subject);
 
     const previousScheduledFor = appointment.scheduledFor ?? null;
@@ -471,6 +485,80 @@ export const rescheduleOwnAppointment = mutation({
       location: eventType.location,
       consultationType: eventType.name ?? eventType.title ?? "Consulta oftalmologica",
     };
+  },
+});
+
+export const cancelOwnAppointment = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (identity === null) {
+      throw new Error("Not authenticated");
+    }
+
+    const now = Date.now();
+    const appointments = await ctx.db
+      .query("appointments")
+      .withIndex("by_clerk_user_id", (q) => q.eq("clerkUserId", identity.subject))
+      .collect();
+    const sorted = [...appointments].sort((a, b) => b.requestedAt - a.requestedAt);
+    const appointment =
+      sorted.find((item) => item.status === "confirmed" || item.status === "rescheduled") ?? null;
+    if (!appointment) {
+      throw new Error("Nenhuma consulta ativa encontrada para cancelamento.");
+    }
+
+    const scheduledFor = appointment.scheduledFor;
+    if (typeof scheduledFor !== "number") {
+      throw new Error("Esta consulta ainda não possui horário definido para cancelamento automático.");
+    }
+    if (scheduledFor - now < RESCHEDULE_MIN_NOTICE_MS) {
+      throw new Error("Cancelamento disponível somente com no mínimo 24h de antecedência.");
+    }
+
+    if (appointment.reservationId) {
+      const linkedReservation = await ctx.db.get(appointment.reservationId);
+      if (linkedReservation && (linkedReservation.status === "confirmed" || linkedReservation.status === "pending")) {
+        await ctx.db.patch(linkedReservation._id, {
+          status: "cancelled",
+          notes: "Reserva cancelada pelo paciente com antecedência mínima de 24h.",
+          updatedAt: now,
+        });
+      }
+
+      const linkedPayment = await ctx.db
+        .query("payments")
+        .withIndex("by_reservation_id", (q) => q.eq("reservationId", appointment.reservationId!))
+        .first();
+      if (linkedPayment?.status === "paid") {
+        await ctx.db.patch(linkedPayment._id, {
+          status: "refunded",
+          notes: "Reembolso integral elegível por cancelamento com mais de 24h de antecedência.",
+          updatedAt: now,
+        });
+      } else if (linkedPayment?.status === "pending") {
+        await ctx.db.patch(linkedPayment._id, {
+          status: "failed",
+          notes: "Pagamento cancelado após cancelamento da consulta pelo paciente.",
+          updatedAt: now,
+        });
+      }
+    }
+
+    await ctx.db.patch(appointment._id, {
+      status: "cancelled",
+      updatedAt: now,
+    });
+    await ctx.db.insert("appointment_events", {
+      appointmentId: appointment._id,
+      clerkUserId: identity.subject,
+      eventType: "cancelled",
+      notes:
+        "Consulta cancelada pelo paciente no painel com antecedência mínima de 24h e elegível a reembolso integral da taxa de reserva.",
+      createdAt: now,
+    });
+
+    return { ok: true, appointmentId: appointment._id };
   },
 });
 
@@ -583,6 +671,9 @@ async function buildReschedulePolicy(
   if (typeof scheduledFor !== "number") {
     return {
       canReschedule: false,
+      canCancel: false,
+      cancelReason: "Consulta ainda sem horário definido.",
+      requiresHumanSupport: false,
       reason: "Consulta ainda sem horário definido.",
       maxReschedules: RESCHEDULE_MAX_PER_APPOINTMENT,
       reschedulesUsed: 0,
@@ -600,6 +691,9 @@ async function buildReschedulePolicy(
   if (reschedulesUsed >= RESCHEDULE_MAX_PER_APPOINTMENT) {
     return {
       canReschedule: false,
+      canCancel: true,
+      cancelReason: null,
+      requiresHumanSupport: false,
       reason: "Você já utilizou o limite de 1 remarcação sem custo.",
       maxReschedules: RESCHEDULE_MAX_PER_APPOINTMENT,
       reschedulesUsed,
@@ -611,6 +705,9 @@ async function buildReschedulePolicy(
   if (scheduledFor - now < RESCHEDULE_MIN_NOTICE_MS) {
     return {
       canReschedule: false,
+      canCancel: false,
+      cancelReason: "Cancelamento disponível somente a partir de 24h de antecedência da consulta.",
+      requiresHumanSupport: true,
       reason: "Remarcação disponível somente a partir de 24h de antecedência da consulta.",
       maxReschedules: RESCHEDULE_MAX_PER_APPOINTMENT,
       reschedulesUsed,
@@ -621,6 +718,9 @@ async function buildReschedulePolicy(
 
   return {
     canReschedule: true,
+    canCancel: true,
+    cancelReason: null,
+    requiresHumanSupport: false,
     reason: null,
     maxReschedules: RESCHEDULE_MAX_PER_APPOINTMENT,
     reschedulesUsed,
@@ -788,16 +888,21 @@ async function resolveSingleActiveEventType(ctx: MutationCtx, location: string) 
   return eventType;
 }
 
-function assertRescheduleWindow(slotTimestamp: number, now: number) {
+function assertRescheduleWindow(
+  slotTimestamp: number,
+  now: number,
+  currentAppointmentTimestamp: number,
+) {
   if (!Number.isFinite(slotTimestamp)) {
     throw new Error("Novo horário inválido para remarcação.");
   }
   if (slotTimestamp - now < RESCHEDULE_MIN_NOTICE_MS) {
     throw new Error("Escolha um horário com no mínimo 24h de antecedência.");
   }
-  const maxAllowedTimestamp = now + RESCHEDULE_MAX_DAYS_AHEAD * 24 * 60 * 60_000;
+  const maxAllowedTimestamp =
+    currentAppointmentTimestamp + RESCHEDULE_MAX_DAYS_AHEAD * 24 * 60 * 60_000;
   if (slotTimestamp > maxAllowedTimestamp) {
-    throw new Error("A nova data deve estar dentro de 30 dias a partir de hoje.");
+    throw new Error("A nova data deve estar até 30 dias após a data do agendamento atual.");
   }
 }
 
@@ -979,5 +1084,34 @@ function inferPreferredPeriod(timestamp: number) {
     return "tarde" as const;
   }
   return "noite" as const;
+}
+
+function normalizeAmountCents(value: number | undefined) {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
+    return undefined;
+  }
+  if (!Number.isInteger(value)) {
+    if (value >= 1000) {
+      return Math.round(value);
+    }
+    return Math.round(value * 100);
+  }
+  if (value >= 1000) {
+    return value;
+  }
+  return value * 100;
+}
+
+function calculateReservationFeeCents(
+  consultationAmountCents: number,
+  reservationFeePercent: number,
+) {
+  if (!Number.isFinite(consultationAmountCents) || consultationAmountCents <= 0) {
+    return 0;
+  }
+  if (!Number.isFinite(reservationFeePercent) || reservationFeePercent <= 0) {
+    return 0;
+  }
+  return Math.round((consultationAmountCents * reservationFeePercent) / 100);
 }
 

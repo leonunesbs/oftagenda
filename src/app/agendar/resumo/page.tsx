@@ -75,8 +75,7 @@ export default async function ResumoPreAgendamentoPage({
         <CardHeader className="space-y-2">
           <CardTitle>Resumo do pré-agendamento</CardTitle>
           <CardDescription>
-            Confira os dados selecionados antes de seguir para a confirmação com
-            Dr Leonardo.
+            Confira os dados antes de seguir para a taxa de reserva do horário.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
@@ -84,8 +83,9 @@ export default async function ResumoPreAgendamentoPage({
             <Alert variant="destructive">
               <AlertTitle>Pagamento não concluído</AlertTitle>
               <AlertDescription>
-                Seu pagamento não foi concluído. Se desejar confirmar a consulta,
-                você pode tentar novamente abaixo.
+                Seu pagamento da taxa de reserva não foi concluído. Se desejar
+                confirmar a intenção de reservar este horário, você pode tentar
+                novamente abaixo.
               </AlertDescription>
             </Alert>
           ) : null}
@@ -117,6 +117,22 @@ export default async function ResumoPreAgendamentoPage({
               </p>
             </div>
           </div>
+          <div className="rounded-xl border border-border/70 bg-muted/20 p-4 text-sm">
+            <p className="font-medium text-foreground">Sobre o pagamento</p>
+            <p className="mt-1 text-muted-foreground">
+              Este fluxo de pagamento serve apenas para reservar o horário
+              selecionado. O valor cobrado agora não corresponde ao valor total
+              da consulta.
+            </p>
+            <p className="mt-1 text-muted-foreground">
+              Taxa de reserva ({summary.reservationFeePercent}%):{" "}
+              {formatMoney(summary.reservationFeeCents)}.
+            </p>
+            <p className="mt-1 text-muted-foreground">
+              Valor da consulta neste local:{" "}
+              {formatMoney(summary.consultationPriceCents)}.
+            </p>
+          </div>
 
           <div className="flex w-full flex-col gap-2 border-t border-border/70 pt-4 sm:flex-row sm:items-start sm:justify-between">
             <Button asChild variant="outline" className="w-full sm:w-auto">
@@ -126,8 +142,11 @@ export default async function ResumoPreAgendamentoPage({
               location={summary.locationId}
               date={summary.date}
               time={summary.time}
-              label="Seguir para pagamento"
+              label="Pagar taxa de reserva"
               isAuthenticated={Boolean(userId)}
+              reservationAmountCents={summary.reservationFeeCents}
+              consultationAmountCents={summary.consultationPriceCents}
+              reservationFeePercent={summary.reservationFeePercent}
             />
           </div>
         </CardContent>
@@ -138,4 +157,11 @@ export default async function ResumoPreAgendamentoPage({
 
 function buildAddressHref(address: string) {
   return `geo:0,0?q=${encodeURIComponent(address)}`;
+}
+
+function formatMoney(cents: number) {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format((cents || 0) / 100);
 }

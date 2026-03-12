@@ -265,6 +265,69 @@ export default async function HomePage() {
           </p>
         ) : null}
       </section>
+
+      <section aria-labelledby="home-faq-politicas" className="space-y-4">
+        <div className="space-y-2">
+          <h2 id="home-faq-politicas" className="text-xl font-semibold tracking-tight md:text-2xl">
+            FAQ e políticas de agendamento
+          </h2>
+          <p className="max-w-3xl text-sm text-muted-foreground">
+            Regras de pagamento, remarcação, cancelamento, reembolso e no-show.
+          </p>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-2">
+          <Card className="rounded-2xl border-border/70">
+            <CardHeader className="space-y-2 pb-3">
+              <h3 className="text-base font-medium">
+                O que é a taxa de reserva de 20%?
+              </h3>
+              <CardDescription className="text-sm">
+                A taxa de reserva confirma apenas a intenção de reservar o
+                horário. Ela não representa o valor total da consulta.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground">
+              Esses 20% são considerados sinal e entram como valor de entrada.
+              O saldo restante da consulta corresponde a 80%. Em cancelamentos
+              com mais de 24h de antecedência, há reembolso integral da taxa de
+              reserva.
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-2xl border-border/70">
+            <CardHeader className="space-y-2 pb-3">
+              <h3 className="text-base font-medium">
+                Como funciona remarcação e cancelamento?
+              </h3>
+              <CardDescription className="text-sm">
+                Reagendamentos e cancelamentos são permitidos até 24h antes do
+                início da consulta.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground">
+              Você tem 1 remarcação sem custo. A partir da segunda remarcação,
+              será necessária uma nova taxa de reserva de 20%, sem abatimento no
+              valor da consulta. Com menos de 24h, cancelamento e remarcação
+              ficam bloqueados no app e seguem apenas por WhatsApp.
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-2xl border-border/70 md:col-span-2">
+            <CardHeader className="space-y-2 pb-3">
+              <h3 className="text-base font-medium">Reembolso, no-show e nova reserva</h3>
+              <CardDescription className="text-sm">
+                Em caso de não comparecimento, a taxa de reserva é retida.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground">
+              Quando ocorre no-show, a reserva é cancelada e marcada como
+              ausência. Depois disso, um novo agendamento deve ser iniciado do
+              zero com nova taxa de reserva.
+            </CardContent>
+          </Card>
+        </div>
+      </section>
     </div>
   );
 }

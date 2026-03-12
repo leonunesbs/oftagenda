@@ -4,6 +4,17 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import type {
   BookingLocationOption,
   LocationAvailabilityResponse,
@@ -11,6 +22,9 @@ import type {
 
 type ReschedulePolicy = {
   canReschedule: boolean;
+  canCancel: boolean;
+  cancelReason: string | null;
+  requiresHumanSupport: boolean;
   reason: string | null;
   maxReschedules: number;
   reschedulesUsed: number;
@@ -42,6 +56,8 @@ export function RescheduleAppointmentCard({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [isRescheduleDialogOpen, setIsRescheduleDialogOpen] = useState(false);
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
 
   const availability = location ? availabilityByLocation[location] : undefined;
   const availabilityError = location ? availabilityErrorsByLocation[location] : undefined;
@@ -53,7 +69,7 @@ export function RescheduleAppointmentCard({
 
   const policyText = useMemo(
     () =>
-      `1 remarcação sem custo, até ${policy.maxDaysAhead} dias e com mínimo de ${policy.minNoticeHours}h de antecedência.`,
+      `1 remarcação sem custo, até ${policy.maxDaysAhead} dias e com mínimo de ${policy.minNoticeHours}h de antecedência. Cancelamentos também podem ser feitos até ${policy.minNoticeHours}h antes.`,
     [policy.maxDaysAhead, policy.minNoticeHours],
   );
 
@@ -78,13 +94,6 @@ export function RescheduleAppointmentCard({
     }
     if (!canSubmit) {
       setError("Selecione local, data e horário para continuar.");
-      return;
-    }
-
-    const confirmed = window.confirm(
-      "Confirmar remarcação? Sua consulta atual será substituída por este novo horário.",
-    );
-    if (!confirmed) {
       return;
     }
 
@@ -117,6 +126,36 @@ export function RescheduleAppointmentCard({
     });
   }
 
+  function handleCancelAppointment() {
+    if (isPending) {
+      return;
+    }
+    setError(null);
+    setSuccess(null);
+    startTransition(async () => {
+      try {
+        const response = await fetch("/api/appointments/cancel", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        });
+        const data = await response.json();
+        if (!response.ok || !data?.ok) {
+          throw new Error(data?.error ?? "Não foi possível cancelar a consulta.");
+        }
+        setSuccess(
+          "Consulta cancelada com sucesso. Você já pode iniciar uma nova reserva do zero.",
+        );
+        router.refresh();
+      } catch (submitError) {
+        setError(
+          submitError instanceof Error
+            ? submitError.message
+            : "Falha ao cancelar consulta.",
+        );
+      }
+    });
+  }
+
   return (
     <section id="remarcacao-consulta" className="space-y-3 rounded-xl border border-border p-4">
       <h3 className="font-medium">Remarcação facilitada</h3>
@@ -124,13 +163,51 @@ export function RescheduleAppointmentCard({
       <p className="text-xs text-muted-foreground">
         Remarcações utilizadas: {policy.reschedulesUsed}/{policy.maxReschedules}
       </p>
+      <p className="text-xs text-muted-foreground">
+        A taxa de reserva de 20% entra como sinal e abate 20% do valor da
+        consulta, restando 80% para pagamento no atendimento. Após a remarcação
+        gratuita, novas remarcações exigem nova taxa de 20%, sem abatimento.
+      </p>
+      <p className="text-xs text-muted-foreground">
+        Cancelamentos com mais de 24h de antecedência têm reembolso integral da
+        taxa de reserva.
+      </p>
+      <p className="text-xs text-muted-foreground">
+        Em caso de não comparecimento, a taxa de reserva é retida, o agendamento
+        é cancelado como no-show e uma nova reserva deverá ser iniciada.
+      </p>
 
       {!policy.canReschedule ? (
         <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-900 dark:text-amber-200">
           {policy.reason ?? "Sua consulta não está elegível para remarcação automática."}
         </div>
       ) : null}
+      {!policy.canCancel && policy.cancelReason ? (
+        <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-900 dark:text-amber-200">
+          {policy.cancelReason}
+        </div>
+      ) : null}
 
+      {policy.requiresHumanSupport ? (
+        <div className="space-y-2 rounded-md border border-border/70 bg-muted/20 p-3">
+          <p className="text-sm text-muted-foreground">
+            Para consultas com menos de {policy.minNoticeHours}h, o cancelamento e
+            a remarcação automáticos ficam bloqueados. Continue pelo WhatsApp.
+          </p>
+          <Button asChild variant="secondary" size="sm">
+            <a
+              href="https://wa.me/5585999853811?text=Ol%C3%A1!%20Preciso%20de%20ajuda%20com%20cancelamento%20ou%20remarca%C3%A7%C3%A3o%20da%20minha%20consulta."
+              target="_blank"
+              rel="noreferrer"
+            >
+              Falar no WhatsApp
+            </a>
+          </Button>
+        </div>
+      ) : null}
+
+      {!policy.requiresHumanSupport ? (
+        <>
       <div className="space-y-2">
         <p className="text-sm font-medium">1. Local</p>
         <div className="flex flex-wrap gap-2">
@@ -192,10 +269,63 @@ export function RescheduleAppointmentCard({
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <Button type="button" onClick={handleSubmit} disabled={!canSubmit || isPending}>
-          {isPending ? "Remarcando..." : "Remarcar consulta"}
-        </Button>
+        <AlertDialog open={isRescheduleDialogOpen} onOpenChange={setIsRescheduleDialogOpen}>
+          <AlertDialogTrigger asChild>
+            <Button type="button" disabled={!canSubmit || isPending}>
+              {isPending ? "Remarcando..." : "Remarcar consulta"}
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmar remarcação?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Sua consulta atual será substituída por este novo horário.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Voltar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  setIsRescheduleDialogOpen(false);
+                  handleSubmit();
+                }}
+              >
+                Confirmar remarcação
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
+          <AlertDialogTrigger asChild>
+            <Button type="button" variant="outline" disabled={isPending || !policy.canCancel}>
+              Cancelar consulta
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmar cancelamento?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Você poderá cancelar somente com antecedência mínima de 24h.
+                Após o cancelamento, será necessário iniciar uma nova reserva.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Voltar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  setIsCancelDialogOpen(false);
+                  handleCancelAppointment();
+                }}
+              >
+                Confirmar cancelamento
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
+        </>
+      ) : null}
 
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
       {success ? <p className="text-sm text-emerald-700 dark:text-emerald-300">{success}</p> : null}

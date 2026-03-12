@@ -57,20 +57,20 @@ export async function POST(request: Request) {
     });
 
     try {
-      const lineItems = draft.stripePriceId
-        ? [{ price: draft.stripePriceId, quantity: 1 }]
-        : [
-            {
-              price_data: {
-                currency: draft.currency.toLowerCase(),
-                unit_amount: draft.amountCents,
-                product_data: {
-                  name: draft.eventTypeName || 'Consulta oftalmologica',
-                },
-              },
-              quantity: 1,
+      const lineItems: StripeSdk.Checkout.SessionCreateParams.LineItem[] = [
+        {
+          price_data: {
+            currency: draft.currency.toLowerCase(),
+            unit_amount: draft.amountCents,
+            product_data: {
+              name: draft.eventTypeName || 'Consulta oftalmologica',
+              description:
+                'Taxa de reserva de horário (20% da consulta). Não corresponde ao valor total da consulta.',
             },
-          ];
+          },
+          quantity: 1,
+        },
+      ];
 
       const desiredHoldExpiresAt = draft.holdExpiresAt ?? Date.now() + CHECKOUT_SESSION_DURATION_SECONDS * 1000;
       const successUrl = `${origin}/dashboard?payment=success`;

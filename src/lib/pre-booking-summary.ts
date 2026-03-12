@@ -15,6 +15,9 @@ export type PreBookingSummaryData = {
   locationId: string;
   locationLabel: string;
   locationAddress: string;
+  consultationPriceCents: number;
+  reservationFeeCents: number;
+  reservationFeePercent: number;
   date: string;
   dateLabel: string;
   time: string;
@@ -42,6 +45,9 @@ export async function resolvePreBookingSummary(
       locationId: rawLocationId,
       locationLabel: rawLocationId || "Local não informado",
       locationAddress: "",
+      consultationPriceCents: 0,
+      reservationFeeCents: 0,
+      reservationFeePercent: 20,
       date,
       dateLabel: date ? formatDateLabel(date) : "Data não informada",
       time,
@@ -70,11 +76,26 @@ export async function resolvePreBookingSummary(
           time,
         })
       : { hasDateOption: false, hasValidTime: false };
+  const consultationPriceCents =
+    typeof selectedLocation?.consultationPriceCents === "number"
+      ? selectedLocation.consultationPriceCents
+      : 0;
+  const reservationFeePercent =
+    typeof selectedLocation?.reservationFeePercent === "number"
+      ? selectedLocation.reservationFeePercent
+      : 20;
+  const reservationFeeCents =
+    typeof selectedLocation?.reservationFeeCents === "number"
+      ? selectedLocation.reservationFeeCents
+      : calculatePercentageCents(consultationPriceCents, reservationFeePercent);
 
   return {
     locationId: selectedLocation?.value ?? rawLocationId,
     locationLabel: selectedLocation?.label ?? rawLocationId,
     locationAddress: selectedLocation?.address ?? "",
+    consultationPriceCents,
+    reservationFeeCents,
+    reservationFeePercent,
     date,
     dateLabel: date ? formatDateLabel(date) : "Data não informada",
     time,
@@ -85,6 +106,16 @@ export async function resolvePreBookingSummary(
     hasInvalidSelection:
       !selectedLocation || !validation.hasDateOption || !validation.hasValidTime,
   };
+}
+
+function calculatePercentageCents(amountCents: number, percent: number) {
+  if (!Number.isFinite(amountCents) || amountCents <= 0) {
+    return 0;
+  }
+  if (!Number.isFinite(percent) || percent <= 0) {
+    return 0;
+  }
+  return Math.round((amountCents * percent) / 100);
 }
 
 async function validateSelectionForLocation(input: {

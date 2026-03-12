@@ -12,6 +12,9 @@ type StartCheckoutButtonProps = {
   time: string;
   label?: string;
   isAuthenticated?: boolean;
+  reservationAmountCents?: number;
+  consultationAmountCents?: number;
+  reservationFeePercent?: number;
 };
 
 type CheckoutErrorState = {
@@ -35,6 +38,9 @@ export function StartCheckoutButton({
   time,
   label = "Ir para pagamento",
   isAuthenticated,
+  reservationAmountCents,
+  consultationAmountCents,
+  reservationFeePercent = 20,
 }: StartCheckoutButtonProps) {
   const [isLoading, startCheckoutTransition] = useTransition();
   const [error, setError] = useState<CheckoutErrorState | null>(null);
@@ -120,7 +126,11 @@ export function StartCheckoutButton({
         {isLoading ? "Redirecionando..." : label}
       </Button>
       <p className="w-full rounded-md border border-border/60 bg-muted/30 px-3 py-1.5 text-center text-xs text-muted-foreground sm:w-auto sm:text-left">
-        Link de pagamento (cartão e Pix) e bloqueio do horário válidos por 30 minutos.
+        {buildPaymentDisclaimer({
+          reservationAmountCents,
+          consultationAmountCents,
+          reservationFeePercent,
+        })}
       </p>
       {error ? (
         <div className="w-full rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive sm:max-w-[24rem]">
@@ -160,6 +170,37 @@ export function StartCheckoutButton({
       return window.location.href;
     }
   }
+}
+
+function buildPaymentDisclaimer(input: {
+  reservationAmountCents?: number;
+  consultationAmountCents?: number;
+  reservationFeePercent: number;
+}) {
+  const baseText =
+    "Pagamento para reserva de horário (cartão e Pix), com bloqueio por 30 minutos.";
+  if (
+    typeof input.reservationAmountCents !== "number" ||
+    input.reservationAmountCents <= 0
+  ) {
+    return `${baseText} Não corresponde ao valor total da consulta.`;
+  }
+
+  const reservationValue = formatMoney(input.reservationAmountCents);
+  if (
+    typeof input.consultationAmountCents === "number" &&
+    input.consultationAmountCents > 0
+  ) {
+    return `${baseText} Taxa de reserva: ${reservationValue} (${input.reservationFeePercent}% de ${formatMoney(input.consultationAmountCents)}).`;
+  }
+  return `${baseText} Taxa de reserva: ${reservationValue}.`;
+}
+
+function formatMoney(cents: number) {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(cents / 100);
 }
 
 function requiresAuthentication(

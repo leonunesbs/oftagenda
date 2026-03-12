@@ -7,6 +7,9 @@ export type BookingLocationOption = {
   label: string;
   address?: string;
   eventTypesCount?: number;
+  consultationPriceCents?: number;
+  reservationFeeCents?: number;
+  reservationFeePercent?: number;
 };
 
 export type LocationAvailabilityDate = {

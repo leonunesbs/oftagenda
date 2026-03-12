@@ -5,6 +5,7 @@ import type { MutationCtx } from "./_generated/server";
 import { mutation } from "./_generated/server";
 
 const RESERVATION_HOLD_DURATION_MS = 30 * 60_000;
+const RESERVATION_FEE_PERCENT = 20;
 
 const checkoutDraftSchema = {
   location: v.string(),
@@ -30,12 +31,13 @@ export const createCheckoutDraft = mutation({
     const now = Date.now();
 
     const eventType = await resolveActiveEventType(ctx, args.location);
-    const rawStripePriceId = eventType.stripePriceId?.trim() || readStripePriceIdFromEnv();
-    const stripePriceId = normalizeStripePriceId(rawStripePriceId);
-    const amountCentsFromEvent =
+    const consultationAmountCentsFromEvent =
       normalizeAmountCents(eventType.priceCents) ??
-      parseLegacyAmountCentsFromStripePriceId(rawStripePriceId);
-    const amountCents = amountCentsFromEvent ?? (stripePriceId ? 1 : undefined);
+      parseLegacyAmountCentsFromStripePriceId(eventType.stripePriceId?.trim() || readStripePriceIdFromEnv());
+    const consultationAmountCents = consultationAmountCentsFromEvent;
+    const amountCents = consultationAmountCents
+      ? calculateReservationFeeCents(consultationAmountCents, RESERVATION_FEE_PERCENT)
+      : undefined;
     if (!eventType.availabilityId) {
       throw new Error("Evento sem disponibilidade configurada.");
     }
@@ -48,9 +50,14 @@ export const createCheckoutDraft = mutation({
       args.time,
       referenceAvailability.timezone,
     );
+    if (!consultationAmountCents || consultationAmountCents <= 0) {
+      throw new Error(
+        "Local sem valor de consulta configurado. Configure `priceCents` em centavos (ex.: 24700) no evento correspondente ao local.",
+      );
+    }
     if (!amountCents || amountCents <= 0) {
       throw new Error(
-        "Evento sem valor válido para pagamento. Configure `priceCents` em centavos (ex.: 24700) no evento ou use um valor numérico válido no campo legado de preço.",
+        "Não foi possível calcular a taxa de reserva para o local selecionado.",
       );
     }
 
@@ -135,13 +142,14 @@ export const createCheckoutDraft = mutation({
     return {
       reservationId,
       paymentId,
-      stripePriceId,
       amountCents,
+      consultationAmountCents,
       currency: "BRL",
       eventTypeSlug: eventType.slug,
       eventTypeName: eventType.name ?? eventType.title,
       clerkUserId: identity.subject,
       holdExpiresAt,
+      reservationFeePercent: RESERVATION_FEE_PERCENT,
     };
   },
 });
@@ -971,17 +979,6 @@ function readStripePriceIdFromEnv() {
   return value;
 }
 
-function normalizeStripePriceId(value: string | undefined) {
-  if (!value) {
-    return undefined;
-  }
-  const normalized = value.trim();
-  if (!normalized) {
-    return undefined;
-  }
-  return normalized.startsWith("price_") ? normalized : undefined;
-}
-
 function normalizeAmountCents(value: number | undefined) {
   if (typeof value !== "number") {
     return undefined;
@@ -1024,5 +1021,18 @@ function parseLegacyAmountCentsFromStripePriceId(value: string | undefined) {
     return undefined;
   }
   return Math.round(parsed * 100);
+}
+
+function calculateReservationFeeCents(
+  consultationAmountCents: number,
+  reservationFeePercent: number,
+) {
+  if (!Number.isFinite(consultationAmountCents) || consultationAmountCents <= 0) {
+    return undefined;
+  }
+  if (!Number.isFinite(reservationFeePercent) || reservationFeePercent <= 0) {
+    return undefined;
+  }
+  return Math.round((consultationAmountCents * reservationFeePercent) / 100);
 }
 

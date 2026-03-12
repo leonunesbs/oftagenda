@@ -16,6 +16,7 @@ export const createPhoneLinkToken = mutation({
     phone: v.string(),
     email: v.string(),
     token: v.string(),
+    clerkUserId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const phone = normalizePhone(args.phone);
@@ -28,12 +29,16 @@ export const createPhoneLinkToken = mutation({
       throw new Error("Email obrigatório.");
     }
 
-    const allPatients = await ctx.db.query("patients").collect();
-    const patient = allPatients.find(
-      (p) => p.email.trim().toLowerCase() === email,
-    );
-    if (!patient) {
-      throw new Error("Nenhuma conta encontrada com esse email.");
+    let resolvedClerkUserId = args.clerkUserId?.trim();
+    if (!resolvedClerkUserId) {
+      const allPatients = await ctx.db.query("patients").collect();
+      const patient = allPatients.find(
+        (p) => p.email.trim().toLowerCase() === email,
+      );
+      if (!patient) {
+        throw new Error("Nenhuma conta encontrada com esse email.");
+      }
+      resolvedClerkUserId = patient.clerkUserId;
     }
 
     const now = Date.now();
@@ -53,7 +58,7 @@ export const createPhoneLinkToken = mutation({
     await ctx.db.insert("phone_link_tokens", {
       token: args.token,
       phone,
-      clerkUserId: patient.clerkUserId,
+      clerkUserId: resolvedClerkUserId,
       expiresAt: now + TOKEN_TTL_MS,
       used: false,
       createdAt: now,
@@ -61,7 +66,7 @@ export const createPhoneLinkToken = mutation({
 
     return {
       token: args.token,
-      clerkUserId: patient.clerkUserId,
+      clerkUserId: resolvedClerkUserId,
     };
   },
 });

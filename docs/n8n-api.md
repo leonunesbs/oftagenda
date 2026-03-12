@@ -215,7 +215,7 @@ Body:
 }
 ```
 
-Se o email corresponder a um paciente cadastrado, envia magic link por email. O paciente clica no botao no email e a vinculacao e ativada automaticamente.
+Se o email corresponder a uma conta no Clerk (ou a um paciente cadastrado no Convex), envia magic link por email. O paciente clica no botao no email e a vinculacao e ativada automaticamente.
 
 Resposta:
 

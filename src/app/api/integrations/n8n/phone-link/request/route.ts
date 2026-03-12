@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 
+import { clerkClient } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
 import { api } from "@convex/_generated/api";
@@ -27,10 +28,12 @@ export async function POST(request: Request) {
   try {
     const token = crypto.randomBytes(32).toString("hex");
     const client = getConvexHttpClient();
+    const clerkUserId = await findClerkUserIdByEmail(parsed.data.email);
     const result = await client.mutation(api.phoneLinks.createPhoneLinkToken, {
       phone: parsed.data.phone,
       email: parsed.data.email,
       token,
+      clerkUserId: clerkUserId ?? undefined,
     });
 
     const siteUrl = resolveSiteUrl();
@@ -51,5 +54,24 @@ export async function POST(request: Request) {
         : "Falha ao solicitar vinculação.";
     const status = /inválid|encontrad|limite/i.test(message) ? 400 : 500;
     return NextResponse.json({ ok: false, error: message }, { status });
+  }
+}
+
+async function findClerkUserIdByEmail(email: string) {
+  try {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) {
+      return null;
+    }
+
+    const clerk = await clerkClient();
+    const users = await clerk.users.getUserList({
+      emailAddress: [normalizedEmail],
+      limit: 1,
+    });
+
+    return users.data[0]?.id ?? null;
+  } catch {
+    return null;
   }
 }

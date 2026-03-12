@@ -111,16 +111,18 @@ export function ResumoDialog({
               {timeLabel}
             </p>
             <p className="mt-2 font-medium text-foreground">
-              Pagamento da reserva
+              Garanta seu horário
             </p>
             <p className="text-muted-foreground">
-              Para confirmar este horário, seguimos com a taxa de reserva. Esse
-              valor funciona como sinal e não representa o valor integral da
-              consulta.
+              Você está a um passo da confirmação: agora é cobrada apenas a
+              taxa de reserva para garantir este horário.
+            </p>
+            <p className="text-muted-foreground">
+              O valor total da consulta é tratado separadamente no atendimento.
             </p>
             <div className="mt-2 space-y-1 rounded-lg border border-border/60 bg-background/60 p-3">
               <p className="text-muted-foreground">
-                Taxa de reserva ({reservationFeePercent}%):{" "}
+                Taxa para garantir seu horário ({reservationFeePercent}%):{" "}
                 <span className="font-medium text-foreground">
                   {formatReservationFee(reservationFeeCents)}
                 </span>
@@ -187,7 +189,7 @@ function formatMoney(cents: number) {
 
 function formatReservationFee(cents: number) {
   if (cents <= 0) {
-    return "Sem cobrança no momento.";
+    return "Hoje, sem custo para reservar.";
   }
 
   return formatMoney(cents);
@@ -195,7 +197,7 @@ function formatReservationFee(cents: number) {
 
 function formatConsultationPrice(cents: number) {
   if (cents <= 0) {
-    return "Valor informado na confirmação do agendamento.";
+    return "Você recebe este valor na confirmação do agendamento.";
   }
 
   return formatMoney(cents);

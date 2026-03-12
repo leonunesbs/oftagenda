@@ -118,15 +118,18 @@ export default async function ResumoPreAgendamentoPage({
             </div>
           </div>
           <div className="rounded-xl border border-border/70 bg-muted/20 p-4 text-sm">
-            <p className="font-medium text-foreground">Pagamento da reserva</p>
+            <p className="font-medium text-foreground">Garanta seu horário</p>
             <p className="mt-1 text-muted-foreground">
-              Para confirmar este horário, seguimos com a taxa de reserva. Esse
-              valor funciona como sinal e não representa o valor integral da
-              consulta.
+              Você está a um passo da confirmação: agora é cobrada apenas a
+              taxa de reserva para garantir este horário.
+            </p>
+            <p className="mt-1 text-muted-foreground">
+              O valor total da consulta é tratado separadamente no atendimento.
             </p>
             <div className="mt-3 space-y-1 rounded-lg border border-border/60 bg-background/60 p-3">
               <p className="text-muted-foreground">
-                Taxa de reserva ({summary.reservationFeePercent}%):{" "}
+                Taxa para garantir seu horário ({summary.reservationFeePercent}
+                %):{" "}
                 <span className="font-medium text-foreground">
                   {formatReservationFee(summary.reservationFeeCents)}
                 </span>
@@ -174,7 +177,7 @@ function formatMoney(cents: number) {
 
 function formatReservationFee(cents: number) {
   if (cents <= 0) {
-    return "Sem cobrança no momento.";
+    return "Hoje, sem custo para reservar.";
   }
 
   return formatMoney(cents);
@@ -182,7 +185,7 @@ function formatReservationFee(cents: number) {
 
 function formatConsultationPrice(cents: number) {
   if (cents <= 0) {
-    return "Valor informado na confirmação do agendamento.";
+    return "Você recebe este valor na confirmação do agendamento.";
   }
 
   return formatMoney(cents);

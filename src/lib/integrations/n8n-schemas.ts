@@ -12,6 +12,15 @@ export const n8nAppointmentLookupSchema = z.object({
   includeHistory: z.coerce.boolean().optional().default(false),
 });
 
+export const n8nPhoneLinkRequestSchema = z.object({
+  phone: z.string().trim().min(8).max(30),
+  email: z.string().trim().email().max(320),
+});
+
+export const n8nPatientContextSchema = z.object({
+  phone: z.string().trim().min(8).max(30),
+});
+
 export const n8nCancelAppointmentSchema = z.object({
   appointmentId: z.string().trim().min(1),
   phone: z.string().trim().min(8).max(30),

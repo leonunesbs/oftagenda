@@ -68,6 +68,24 @@ export async function GET(request: Request) {
           summaryUrl: `${forwardOrigin}/agendar/resumo?location=fortaleza&date=2026-03-20&time=14%3A00&source=n8n`,
         },
       },
+      {
+        method: "GET",
+        path: "/api/integrations/n8n/patient-context?phone=5585999999999",
+        description: "Retorna contexto completo do paciente se o telefone estiver vinculado (linked=true). Caso contrário, retorna linked=false.",
+      },
+      {
+        method: "POST",
+        path: "/api/integrations/n8n/phone-link/request",
+        description: "Solicita vinculação de WhatsApp. Envia magic link por email ao paciente.",
+        body: {
+          phone: "5585999999999",
+          email: "paciente@email.com",
+        },
+        responseExample: {
+          ok: true,
+          emailSent: true,
+        },
+      },
     ],
     docsPath: "/docs/n8n-api.md",
   });

@@ -164,6 +164,140 @@ export const updateAppointmentStatusByPhone = mutation({
   },
 });
 
+export const getPatientContextByPhone = query({
+  args: {
+    phone: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const phone = normalizePhone(args.phone);
+    if (!phone) {
+      return { linked: false, patient: null };
+    }
+
+    const link = await ctx.db
+      .query("phone_links")
+      .withIndex("by_phone", (q) => q.eq("phone", phone))
+      .first();
+
+    if (!link) {
+      return { linked: false, patient: null };
+    }
+
+    const patient = await ctx.db
+      .query("patients")
+      .withIndex("by_clerk_user_id", (q) =>
+        q.eq("clerkUserId", link.clerkUserId),
+      )
+      .first();
+
+    if (!patient) {
+      return { linked: true, patient: null };
+    }
+
+    const allAppointments = await ctx.db.query("appointments").collect();
+    const userAppointments = allAppointments
+      .filter((a) => a.clerkUserId === link.clerkUserId)
+      .sort((a, b) => b.requestedAt - a.requestedAt);
+
+    const activeAppointment =
+      userAppointments.find(
+        (a) => a.status === "confirmed" || a.status === "rescheduled",
+      ) ?? null;
+
+    const recentHistory = userAppointments.slice(0, 5).map((a) => ({
+      appointmentId: String(a._id),
+      location: a.location,
+      status: a.status,
+      scheduledFor: a.scheduledFor ?? null,
+      consultationType: a.consultationType ?? null,
+      requestedAt: a.requestedAt,
+    }));
+
+    const locationCounts = new Map<string, number>();
+    const consultationCounts = new Map<string, number>();
+    for (const a of userAppointments) {
+      locationCounts.set(a.location, (locationCounts.get(a.location) ?? 0) + 1);
+      if (a.consultationType) {
+        consultationCounts.set(
+          a.consultationType,
+          (consultationCounts.get(a.consultationType) ?? 0) + 1,
+        );
+      }
+    }
+
+    const frequentLocation =
+      [...locationCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ??
+      null;
+    const frequentConsultationType =
+      [...consultationCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ??
+      null;
+
+    const lastCompleted = userAppointments.find(
+      (a) => a.status === "completed",
+    );
+
+    let triageHighlights = null;
+    const appointmentIds = userAppointments.map((a) => a._id);
+    if (appointmentIds.length > 0) {
+      const allDetails = await ctx.db
+        .query("appointment_details")
+        .withIndex("by_clerk_user_id", (q) =>
+          q.eq("clerkUserId", link.clerkUserId),
+        )
+        .collect();
+      const latestDetail = allDetails.sort(
+        (a, b) => b.submittedAt - a.submittedAt,
+      )[0];
+      if (latestDetail) {
+        triageHighlights = {
+          conditions: latestDetail.conditions ?? [],
+          symptoms: latestDetail.symptoms ?? [],
+          lastReason: latestDetail.reason ?? null,
+          dilatationLevel: latestDetail.dilatationLevel,
+          oneSentenceSummary: latestDetail.oneSentenceSummary ?? null,
+        };
+      }
+    }
+
+    const maskedEmail = maskEmail(patient.email);
+
+    return {
+      linked: true,
+      patient: {
+        name: patient.name,
+        email: maskedEmail,
+        registeredAt: patient.createdAt,
+      },
+      summary: {
+        totalAppointments: userAppointments.length,
+        hasActiveAppointment: activeAppointment !== null,
+        lastVisitLocation: lastCompleted?.location ?? null,
+        lastVisitDate: lastCompleted?.scheduledFor ?? null,
+        frequentLocation,
+        frequentConsultationType,
+      },
+      activeAppointment: activeAppointment
+        ? {
+            appointmentId: String(activeAppointment._id),
+            location: activeAppointment.location,
+            status: activeAppointment.status,
+            scheduledFor: activeAppointment.scheduledFor ?? null,
+            consultationType: activeAppointment.consultationType ?? null,
+          }
+        : null,
+      recentHistory,
+      triageHighlights,
+    };
+  },
+});
+
+function maskEmail(email: string) {
+  const [local, domain] = email.split("@");
+  if (!local || !domain) return "***@***";
+  if (local.length <= 2) return `${local[0]}***@${domain}`;
+  return `${local[0]}${"*".repeat(local.length - 2)}${local[local.length - 1]}@${domain}`;
+}
+
 function normalizePhone(rawPhone: string) {
   const digits = rawPhone.replace(/\D/g, "");
   return digits.length >= 8 ? digits : "";

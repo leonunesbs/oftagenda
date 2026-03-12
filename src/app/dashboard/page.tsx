@@ -5,6 +5,7 @@ import { BookingConfirmedEvent } from "@/components/booking-confirmed-event";
 import { CheckoutReturnUrlCleaner } from "@/components/checkout-return-url-cleaner";
 import { PendingReservationsList } from "@/components/pending-reservations-list";
 import { PatientPanelForm } from "@/components/patient-panel-form";
+import { PhoneLinkCard } from "@/components/phone-link-card";
 import { RescheduleAppointmentCard } from "@/components/reschedule-appointment-card";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,7 +19,7 @@ import { Separator } from "@/components/ui/separator";
 import { getBookingBootstrapData } from "@/lib/booking-bootstrap";
 import { getUserRoleFromClerkAuth, hasConfirmedBooking } from "@/lib/access";
 import { getAuthenticatedConvexHttpClient } from "@/lib/convex-server";
-import { api } from "../../../convex/_generated/api";
+import { api } from "@convex/_generated/api";
 
 type DashboardPageProps = {
   searchParams?:
@@ -87,6 +88,7 @@ export default async function DashboardPage({
     },
     history: [],
   };
+  let phoneLinkStatus: { linked: boolean; phone?: string } = { linked: false };
   let rematchBootstrap: Awaited<ReturnType<typeof getBookingBootstrapData>> = {
     locations: [],
     locationsError: null,
@@ -96,6 +98,15 @@ export default async function DashboardPage({
 
   try {
     const { client } = await getAuthenticatedConvexHttpClient();
+    const phoneLinkResult = await client.query(api.phoneLinks.getPhoneLinkByClerkUser, {
+      clerkUserId: authData.userId!,
+    });
+    if (phoneLinkResult) {
+      const masked = phoneLinkResult.phone.length > 4
+        ? `${"*".repeat(phoneLinkResult.phone.length - 4)}${phoneLinkResult.phone.slice(-4)}`
+        : phoneLinkResult.phone;
+      phoneLinkStatus = { linked: true, phone: masked };
+    }
     const data = await client.query(api.appointments.getDashboardState, {});
     dashboardState = {
       hasConfirmedBooking: data.hasConfirmedBooking,
@@ -275,6 +286,8 @@ export default async function DashboardPage({
               <Separator />
             </>
           ) : null}
+
+          <PhoneLinkCard linked={phoneLinkStatus.linked} maskedPhone={phoneLinkStatus.phone} />
 
           <div className="space-y-3">
             <Button variant="secondary" asChild>

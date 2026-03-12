@@ -10,6 +10,8 @@ export const serverEnv = createEnv({
     STRIPE_WEBHOOK_SECRET: z.string().optional(),
     N8N_OFTAGENDA_FORWARD_ORIGIN: z.string().url().optional(),
     TRIAGE_E2E_PRIVATE_KEY: z.string().optional(),
+    RESEND_API_KEY: z.string().optional(),
+    RESEND_FROM_EMAIL: z.string().email().optional(),
   },
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,
   emptyStringAsUndefined: true,

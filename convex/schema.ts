@@ -207,7 +207,29 @@ export default defineSchema({
     email: v.string(),
     createdAt: v.number(),
     updatedAt: v.number(),
-  }).index("by_clerk_user_id", ["clerkUserId"]),
+  })
+    .index("by_clerk_user_id", ["clerkUserId"])
+    .index("by_phone", ["phone"]),
+
+  phone_links: defineTable({
+    phone: v.string(),
+    clerkUserId: v.string(),
+    verifiedAt: v.number(),
+    createdAt: v.number(),
+  })
+    .index("by_phone", ["phone"])
+    .index("by_clerk_user_id", ["clerkUserId"]),
+
+  phone_link_tokens: defineTable({
+    token: v.string(),
+    phone: v.string(),
+    clerkUserId: v.string(),
+    expiresAt: v.number(),
+    used: v.boolean(),
+    createdAt: v.number(),
+  })
+    .index("by_token", ["token"])
+    .index("by_phone", ["phone"]),
 
   user_roles: defineTable({
     clerkUserId: v.string(),

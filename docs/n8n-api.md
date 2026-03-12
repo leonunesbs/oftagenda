@@ -159,6 +159,75 @@ Resposta:
 
 Com esse `summaryUrl`, o chatbot pode encaminhar o paciente para revisar a selecao e seguir para pagamento.
 
+### 7) Consultar contexto do paciente por telefone
+
+- `GET /api/integrations/n8n/patient-context?phone=5585999999999`
+
+Retorna contexto completo apenas se o telefone estiver vinculado a uma conta (via verificacao por email).
+
+Resposta quando vinculado:
+
+```json
+{
+  "ok": true,
+  "linked": true,
+  "patient": {
+    "name": "Maria Silva",
+    "email": "m***a@email.com",
+    "registeredAt": 1700000000000
+  },
+  "summary": {
+    "totalAppointments": 3,
+    "hasActiveAppointment": true,
+    "lastVisitLocation": "fortaleza",
+    "frequentConsultationType": "retina"
+  },
+  "activeAppointment": { "..." : "..." },
+  "recentHistory": ["..."],
+  "triageHighlights": {
+    "conditions": ["diabetes"],
+    "lastReason": "retina_follow",
+    "dilatationLevel": "ALTA"
+  }
+}
+```
+
+Resposta quando nao vinculado:
+
+```json
+{
+  "ok": true,
+  "linked": false,
+  "patient": null
+}
+```
+
+### 8) Solicitar vinculacao de WhatsApp (magic link por email)
+
+- `POST /api/integrations/n8n/phone-link/request`
+
+Body:
+
+```json
+{
+  "phone": "5585999999999",
+  "email": "paciente@email.com"
+}
+```
+
+Se o email corresponder a um paciente cadastrado, envia magic link por email. O paciente clica no botao no email e a vinculacao e ativada automaticamente.
+
+Resposta:
+
+```json
+{
+  "ok": true,
+  "emailSent": true
+}
+```
+
+Rate limit: maximo 3 solicitacoes por telefone a cada 30 minutos. Token valido por 30 minutos e uso unico.
+
 ## Endpoint rapido de referencia
 
 - `GET /api/integrations/n8n/docs`

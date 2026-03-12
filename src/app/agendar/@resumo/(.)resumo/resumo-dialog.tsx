@@ -122,7 +122,7 @@ export function ResumoDialog({
             </p>
             <div className="mt-2 space-y-1 rounded-lg border border-border/60 bg-background/60 p-3">
               <p className="text-muted-foreground">
-                Taxa para garantir seu horário ({reservationFeePercent}%):{" "}
+                Taxa para garantir seu horário:{" "}
                 <span className="font-medium text-foreground">
                   {formatReservationFee(reservationFeeCents)}
                 </span>

@@ -128,8 +128,7 @@ export default async function ResumoPreAgendamentoPage({
             </p>
             <div className="mt-3 space-y-1 rounded-lg border border-border/60 bg-background/60 p-3">
               <p className="text-muted-foreground">
-                Taxa para garantir seu horário ({summary.reservationFeePercent}
-                %):{" "}
+                Taxa para garantir seu horário:{" "}
                 <span className="font-medium text-foreground">
                   {formatReservationFee(summary.reservationFeeCents)}
                 </span>

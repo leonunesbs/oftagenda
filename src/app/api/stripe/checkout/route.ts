@@ -5,6 +5,7 @@ import { requireMemberApiAccess } from "@/lib/access";
 import { getAuthenticatedConvexHttpClient } from "@/lib/convex-server";
 import { getStripeClient } from "@/lib/stripe";
 import { api } from "@convex/_generated/api";
+import Stripe from "stripe";
 
 export const runtime = "nodejs";
 const CHECKOUT_SESSION_DURATION_SECONDS = 30 * 60;
@@ -83,7 +84,7 @@ export async function POST(request: Request) {
         Date.now() + CHECKOUT_SESSION_DURATION_SECONDS * 1000;
       const successUrl = `${origin}/dashboard?payment=success`;
 
-      const session = await stripe.checkout.sessions.create({
+      const checkoutSessionParams: Stripe.Checkout.SessionCreateParams = {
         expires_at: Math.floor(desiredHoldExpiresAt / 1000),
         mode: "payment",
         line_items: lineItems,
@@ -109,6 +110,13 @@ export async function POST(request: Request) {
           date: parsed.data.date,
           time: parsed.data.time,
         },
+      };
+      const supportsPix =
+        draft.currency.trim().toLowerCase() === "brl";
+      const session = await createCheckoutSessionWithPixFallback({
+        stripe,
+        params: checkoutSessionParams,
+        supportsPix,
       });
 
       await client.mutation(api.stripe.attachCheckoutSession, {
@@ -183,4 +191,48 @@ export async function POST(request: Request) {
     const status = message.toLowerCase().includes("not authenticated") ? 401 : 500;
     return NextResponse.json({ ok: false, error: message }, { status });
   }
+}
+
+async function createCheckoutSessionWithPixFallback(input: {
+  stripe: Stripe;
+  params: Stripe.Checkout.SessionCreateParams;
+  supportsPix: boolean;
+}) {
+  if (!input.supportsPix) {
+    return input.stripe.checkout.sessions.create(input.params);
+  }
+
+  try {
+    return await input.stripe.checkout.sessions.create({
+      ...input.params,
+      payment_method_types: ["card", "pix"],
+    });
+  } catch (error) {
+    if (!isPixUnavailableError(error)) {
+      throw error;
+    }
+
+    return input.stripe.checkout.sessions.create(input.params);
+  }
+}
+
+function isPixUnavailableError(error: unknown) {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+  const candidate = error as {
+    type?: string;
+    message?: string;
+    param?: string | null;
+  };
+  if (candidate.type !== "StripeInvalidRequestError") {
+    return false;
+  }
+  const message = (candidate.message ?? "").toLowerCase();
+  const param = (candidate.param ?? "").toLowerCase();
+  const referencesPix = message.includes("pix") || param.includes("pix");
+  const referencesPaymentMethod =
+    message.includes("payment method") ||
+    param.includes("payment_method_types");
+  return referencesPix && referencesPaymentMethod;
 }

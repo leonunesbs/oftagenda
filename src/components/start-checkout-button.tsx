@@ -120,7 +120,7 @@ export function StartCheckoutButton({
         {isLoading ? "Redirecionando..." : label}
       </Button>
       <p className="w-full rounded-md border border-border/60 bg-muted/30 px-3 py-1.5 text-center text-xs text-muted-foreground sm:w-auto sm:text-left">
-        Link de pagamento e bloqueio do horário válidos por 30 minutos.
+        Link de pagamento (cartão e Pix) e bloqueio do horário válidos por 30 minutos.
       </p>
       {error ? (
         <div className="w-full rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive sm:max-w-[24rem]">

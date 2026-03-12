@@ -8,6 +8,7 @@ import {
 import { BookingFormContainer } from "@/components/booking-form-container";
 import { BookingFormFallback } from "@/components/booking-form-fallback";
 import { ScrollToIdButton } from "@/components/scroll-to-id-button";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { siteConfig } from "@/config/site";
 import { isClerkConfigured } from "@/lib/access";
@@ -87,6 +88,47 @@ const clinicSchema = {
     },
   ],
 };
+
+const faqPolicies = [
+  {
+    label: "Pagamento",
+    tag: "Taxa de reserva",
+    title: "O que é a taxa de reserva?",
+    description:
+      "A taxa confirma apenas a intenção de reservar o horário e não representa o valor total da consulta.",
+    points: [
+      "A taxa funciona como sinal e entra como valor de entrada.",
+      "O saldo restante é pago no atendimento.",
+      "Em cancelamentos com mais de 24h de antecedência, o reembolso da taxa é integral.",
+    ],
+    fullWidth: false,
+  },
+  {
+    label: "Remarcação",
+    tag: "Janela de 24h",
+    title: "Como funciona remarcação e cancelamento?",
+    description:
+      "Reagendamentos e cancelamentos são permitidos até 24h antes do início da consulta.",
+    points: [
+      "Você tem 1 remarcação sem custo.",
+      "A partir da segunda remarcação, é necessária nova taxa de reserva, sem abatimento.",
+      "Com menos de 24h, remarcação e cancelamento ficam bloqueados no app e seguem apenas por WhatsApp.",
+    ],
+    fullWidth: false,
+  },
+  {
+    label: "Ausência",
+    tag: "No-show",
+    title: "Reembolso, no-show e nova reserva",
+    description: "Em caso de não comparecimento, a taxa de reserva é retida.",
+    points: [
+      "Quando ocorre no-show, a reserva é cancelada e marcada como ausência.",
+      "Após o no-show, um novo agendamento deve ser iniciado do zero.",
+      "A nova reserva exige nova taxa de reserva.",
+    ],
+    fullWidth: true,
+  },
+] as const;
 
 export default async function HomePage() {
   const clerkEnabled = isClerkConfigured();
@@ -268,7 +310,16 @@ export default async function HomePage() {
 
       <section aria-labelledby="home-faq-politicas" className="space-y-4">
         <div className="space-y-2">
-          <h2 id="home-faq-politicas" className="text-xl font-semibold tracking-tight md:text-2xl">
+          <Badge
+            variant="outline"
+            className="border-primary/20 bg-primary/5 text-primary"
+          >
+            Transparência no agendamento
+          </Badge>
+          <h2
+            id="home-faq-politicas"
+            className="text-xl font-semibold tracking-tight md:text-2xl"
+          >
             FAQ e políticas de agendamento
           </h2>
           <p className="max-w-3xl text-sm text-muted-foreground">
@@ -277,55 +328,40 @@ export default async function HomePage() {
         </div>
 
         <div className="grid gap-3 md:grid-cols-2">
-          <Card className="rounded-2xl border-border/70">
-            <CardHeader className="space-y-2 pb-3">
-              <h3 className="text-base font-medium">
-                O que é a taxa de reserva de 20%?
-              </h3>
-              <CardDescription className="text-sm">
-                A taxa de reserva confirma apenas a intenção de reservar o
-                horário. Ela não representa o valor total da consulta.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
-              Esses 20% são considerados sinal e entram como valor de entrada.
-              O saldo restante da consulta corresponde a 80%. Em cancelamentos
-              com mais de 24h de antecedência, há reembolso integral da taxa de
-              reserva.
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-2xl border-border/70">
-            <CardHeader className="space-y-2 pb-3">
-              <h3 className="text-base font-medium">
-                Como funciona remarcação e cancelamento?
-              </h3>
-              <CardDescription className="text-sm">
-                Reagendamentos e cancelamentos são permitidos até 24h antes do
-                início da consulta.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
-              Você tem 1 remarcação sem custo. A partir da segunda remarcação,
-              será necessária uma nova taxa de reserva de 20%, sem abatimento no
-              valor da consulta. Com menos de 24h, cancelamento e remarcação
-              ficam bloqueados no app e seguem apenas por WhatsApp.
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-2xl border-border/70 md:col-span-2">
-            <CardHeader className="space-y-2 pb-3">
-              <h3 className="text-base font-medium">Reembolso, no-show e nova reserva</h3>
-              <CardDescription className="text-sm">
-                Em caso de não comparecimento, a taxa de reserva é retida.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
-              Quando ocorre no-show, a reserva é cancelada e marcada como
-              ausência. Depois disso, um novo agendamento deve ser iniciado do
-              zero com nova taxa de reserva.
-            </CardContent>
-          </Card>
+          {faqPolicies.map((item) => (
+            <Card
+              key={item.title}
+              className={[
+                "rounded-2xl border-border/70 bg-linear-to-b from-card to-card/70 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md",
+                item.fullWidth ? "md:col-span-2" : "",
+              ].join(" ")}
+            >
+              <CardHeader className="space-y-3 pb-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <Badge variant="outline" className="border-border/80">
+                    {item.label}
+                  </Badge>
+                  <Badge variant="secondary">{item.tag}</Badge>
+                </div>
+                <h3 className="text-base font-medium text-foreground">
+                  {item.title}
+                </h3>
+                <CardDescription className="text-sm text-foreground/85">
+                  {item.description}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pb-5">
+                <ul className="space-y-2 text-sm text-muted-foreground">
+                  {item.points.map((point) => (
+                    <li key={point} className="flex items-start gap-2">
+                      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary/70" />
+                      <span>{point}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </section>
     </div>

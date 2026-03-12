@@ -543,7 +543,7 @@ export function BookingForm({
                               <span className="block text-xs text-muted-foreground">
                                 Consulta:{" "}
                                 {formatMoney(item.consultationPriceCents)} | Taxa
-                                de reserva (20%):{" "}
+                                de reserva:{" "}
                                 {formatMoney(
                                   item.reservationFeeCents ??
                                     Math.round(item.consultationPriceCents * 0.2),

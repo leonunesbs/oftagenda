@@ -164,9 +164,9 @@ export function RescheduleAppointmentCard({
         Remarcações utilizadas: {policy.reschedulesUsed}/{policy.maxReschedules}
       </p>
       <p className="text-xs text-muted-foreground">
-        A taxa de reserva de 20% entra como sinal e abate 20% do valor da
-        consulta, restando 80% para pagamento no atendimento. Após a remarcação
-        gratuita, novas remarcações exigem nova taxa de 20%, sem abatimento.
+        A taxa de reserva entra como sinal e é abatida no valor da consulta. Após
+        a remarcação gratuita, novas remarcações exigem nova taxa de reserva, sem
+        abatimento.
       </p>
       <p className="text-xs text-muted-foreground">
         Cancelamentos com mais de 24h de antecedência têm reembolso integral da

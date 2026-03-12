@@ -80,14 +80,8 @@ export default function TermsOfUsePage() {
             As regras de agendamento seguem a política abaixo:
           </p>
           <ul className="list-disc space-y-1 pl-5">
-            <li>
-              a taxa de reserva corresponde a 20% do valor da consulta no local
-              selecionado e funciona como sinal;
-            </li>
-            <li>
-              no comparecimento à consulta, essa taxa é abatida do valor total e
-              o saldo devedor corresponde aos 80% restantes;
-            </li>
+            <li>a taxa de reserva funciona como sinal para confirmação do horário;</li>
+            <li>no comparecimento à consulta, essa taxa é abatida do valor total;</li>
             <li>
               em cancelamentos com mais de 24h de antecedência, há reembolso
               integral da taxa de reserva;
@@ -103,7 +97,7 @@ export default function TermsOfUsePage() {
             </li>
             <li>
               é permitida 1 remarcação sem custo; a partir da segunda
-              remarcação, há cobrança de nova taxa de 20%, sem abatimento no
+              remarcação, há cobrança de nova taxa de reserva, sem abatimento no
               valor da consulta;
             </li>
             <li>

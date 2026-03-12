@@ -110,18 +110,28 @@ export function ResumoDialog({
               <span className="font-medium text-foreground">Horário:</span>{" "}
               {timeLabel}
             </p>
-            <p className="mt-2 text-muted-foreground">
-              Este pagamento serve apenas para reservar o horário. Ele não
-              corresponde ao valor total da consulta.
+            <p className="mt-2 font-medium text-foreground">
+              Pagamento da reserva
             </p>
             <p className="text-muted-foreground">
-              Taxa de reserva ({reservationFeePercent}%):{" "}
-              {formatMoney(reservationFeeCents)}.
+              Para confirmar este horário, seguimos com a taxa de reserva. Esse
+              valor funciona como sinal e não representa o valor integral da
+              consulta.
             </p>
-            <p className="text-muted-foreground">
-              Valor da consulta neste local:{" "}
-              {formatMoney(consultationPriceCents)}.
-            </p>
+            <div className="mt-2 space-y-1 rounded-lg border border-border/60 bg-background/60 p-3">
+              <p className="text-muted-foreground">
+                Taxa de reserva ({reservationFeePercent}%):{" "}
+                <span className="font-medium text-foreground">
+                  {formatReservationFee(reservationFeeCents)}
+                </span>
+              </p>
+              <p className="text-muted-foreground">
+                Valor da consulta neste local:{" "}
+                <span className="font-medium text-foreground">
+                  {formatConsultationPrice(consultationPriceCents)}
+                </span>
+              </p>
+            </div>
             {checkoutNotCompleted ? (
               <p className="mt-2 text-destructive">
                 Você saiu do checkout sem concluir o pagamento da taxa de
@@ -165,7 +175,7 @@ export function ResumoDialog({
 }
 
 function buildAddressHref(address: string) {
-  return `geo:0,0?q=${encodeURIComponent(address)}`;
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
 }
 
 function formatMoney(cents: number) {
@@ -173,4 +183,20 @@ function formatMoney(cents: number) {
     style: "currency",
     currency: "BRL",
   }).format((cents || 0) / 100);
+}
+
+function formatReservationFee(cents: number) {
+  if (cents <= 0) {
+    return "Sem cobrança no momento.";
+  }
+
+  return formatMoney(cents);
+}
+
+function formatConsultationPrice(cents: number) {
+  if (cents <= 0) {
+    return "Valor informado na confirmação do agendamento.";
+  }
+
+  return formatMoney(cents);
 }

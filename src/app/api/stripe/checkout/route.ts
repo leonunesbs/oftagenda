@@ -65,7 +65,7 @@ export async function POST(request: Request) {
             product_data: {
               name: draft.eventTypeName || 'Consulta oftalmologica',
               description:
-                'Taxa de reserva de horário (20% da consulta). Não corresponde ao valor total da consulta.',
+                'Taxa de reserva de horário. Não corresponde ao valor total da consulta.',
             },
           },
           quantity: 1,

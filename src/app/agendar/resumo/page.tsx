@@ -118,20 +118,26 @@ export default async function ResumoPreAgendamentoPage({
             </div>
           </div>
           <div className="rounded-xl border border-border/70 bg-muted/20 p-4 text-sm">
-            <p className="font-medium text-foreground">Sobre o pagamento</p>
+            <p className="font-medium text-foreground">Pagamento da reserva</p>
             <p className="mt-1 text-muted-foreground">
-              Este fluxo de pagamento serve apenas para reservar o horário
-              selecionado. O valor cobrado agora não corresponde ao valor total
-              da consulta.
+              Para confirmar este horário, seguimos com a taxa de reserva. Esse
+              valor funciona como sinal e não representa o valor integral da
+              consulta.
             </p>
-            <p className="mt-1 text-muted-foreground">
-              Taxa de reserva ({summary.reservationFeePercent}%):{" "}
-              {formatMoney(summary.reservationFeeCents)}.
-            </p>
-            <p className="mt-1 text-muted-foreground">
-              Valor da consulta neste local:{" "}
-              {formatMoney(summary.consultationPriceCents)}.
-            </p>
+            <div className="mt-3 space-y-1 rounded-lg border border-border/60 bg-background/60 p-3">
+              <p className="text-muted-foreground">
+                Taxa de reserva ({summary.reservationFeePercent}%):{" "}
+                <span className="font-medium text-foreground">
+                  {formatReservationFee(summary.reservationFeeCents)}
+                </span>
+              </p>
+              <p className="text-muted-foreground">
+                Valor da consulta neste local:{" "}
+                <span className="font-medium text-foreground">
+                  {formatConsultationPrice(summary.consultationPriceCents)}
+                </span>
+              </p>
+            </div>
           </div>
 
           <div className="flex w-full flex-col gap-2 border-t border-border/70 pt-4 sm:flex-row sm:items-start sm:justify-between">
@@ -156,7 +162,7 @@ export default async function ResumoPreAgendamentoPage({
 }
 
 function buildAddressHref(address: string) {
-  return `geo:0,0?q=${encodeURIComponent(address)}`;
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
 }
 
 function formatMoney(cents: number) {
@@ -164,4 +170,20 @@ function formatMoney(cents: number) {
     style: "currency",
     currency: "BRL",
   }).format((cents || 0) / 100);
+}
+
+function formatReservationFee(cents: number) {
+  if (cents <= 0) {
+    return "Sem cobrança no momento.";
+  }
+
+  return formatMoney(cents);
+}
+
+function formatConsultationPrice(cents: number) {
+  if (cents <= 0) {
+    return "Valor informado na confirmação do agendamento.";
+  }
+
+  return formatMoney(cents);
 }

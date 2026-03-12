@@ -135,6 +135,7 @@ Body:
   "location": "fortaleza",
   "date": "2026-03-20",
   "time": "14:00",
+  "phone": "5585999999999",
   "source": "n8n",
   "utmSource": "whatsapp",
   "utmMedium": "chatbot",
@@ -153,11 +154,13 @@ Resposta:
 ```json
 {
   "ok": true,
-  "summaryUrl": "https://agenda.oftleonardo.com.br/agendar/resumo?location=fortaleza&date=2026-03-20&time=14%3A00&source=n8n&utm_source=whatsapp&utm_medium=chatbot&utm_campaign=agendamento_n8n&utm_content=fire_assistente"
+  "summaryPath": "agendar/resumo?location=fortaleza&date=2026-03-20&time=14%3A00&phone=5585999999999&source=n8n&utm_source=whatsapp&utm_medium=chatbot&utm_campaign=agendamento_n8n&utm_content=fire_assistente",
+  "summaryUrl": "https://agenda.oftleonardo.com.br/agendar/resumo?location=fortaleza&date=2026-03-20&time=14%3A00&phone=5585999999999&source=n8n&utm_source=whatsapp&utm_medium=chatbot&utm_campaign=agendamento_n8n&utm_content=fire_assistente"
 }
 ```
 
-Com esse `summaryUrl`, o chatbot pode encaminhar o paciente para revisar a selecao e seguir para pagamento.
+Com esse `summaryPath`, o chatbot pode preencher a variavel dinamica `{{1}}` do template WhatsApp (com URL base fixa `https://agenda.oftleonardo.com.br/`).
+Com o `summaryUrl`, o chatbot continua tendo a versao completa para fallback de texto.
 
 ### 7) Consultar contexto do paciente por telefone
 

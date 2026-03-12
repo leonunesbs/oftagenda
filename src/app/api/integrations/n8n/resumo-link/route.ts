@@ -61,9 +61,15 @@ export async function POST(request: Request) {
     params.set("msclkid", parsed.data.msclkid);
   }
 
-  const summaryUrl = `${resolveForwardOrigin()}/agendar/resumo?${params.toString()}`;
+  if (parsed.data.phone) {
+    params.set("phone", parsed.data.phone);
+  }
+
+  const summaryPath = buildSummaryPath(params);
+  const summaryUrl = `${resolveForwardOrigin()}/${summaryPath}`;
   return NextResponse.json({
     ok: true,
+    summaryPath,
     summaryUrl,
   });
 }
@@ -78,4 +84,12 @@ function resolveForwardOrigin() {
   } catch {
     return DEFAULT_FORWARD_ORIGIN;
   }
+}
+
+function buildSummaryPath(params: URLSearchParams) {
+  const query = params.toString();
+  if (!query) {
+    return "agendar/resumo";
+  }
+  return `agendar/resumo?${query}`;
 }

@@ -55,21 +55,25 @@ export const n8nResumoLinkSchema = bookingCheckoutSchema
     location: n8nResumoLocationSchema,
     date: n8nResumoDateSchema,
     time: n8nResumoTimeSchema,
+    phone: z.preprocess(
+      (value) => normalizePhoneInput(value),
+      z.string().trim().min(8).max(30).optional(),
+    ),
   })
   .extend({
-  payment: z.enum(["cancelled"]).optional(),
-  source: z.string().trim().max(80).optional(),
-  utmSource: z.string().trim().max(120).optional(),
-  utmMedium: z.string().trim().max(120).optional(),
-  utmCampaign: z.string().trim().max(160).optional(),
-  utmContent: z.string().trim().max(160).optional(),
-  utmTerm: z.string().trim().max(160).optional(),
-  gclid: z.string().trim().max(240).optional(),
-  gbraid: z.string().trim().max(240).optional(),
-  wbraid: z.string().trim().max(240).optional(),
-  fbclid: z.string().trim().max(240).optional(),
-  msclkid: z.string().trim().max(240).optional(),
-});
+    payment: z.enum(["cancelled"]).optional(),
+    source: z.string().trim().max(80).optional(),
+    utmSource: z.string().trim().max(120).optional(),
+    utmMedium: z.string().trim().max(120).optional(),
+    utmCampaign: z.string().trim().max(160).optional(),
+    utmContent: z.string().trim().max(160).optional(),
+    utmTerm: z.string().trim().max(160).optional(),
+    gclid: z.string().trim().max(240).optional(),
+    gbraid: z.string().trim().max(240).optional(),
+    wbraid: z.string().trim().max(240).optional(),
+    fbclid: z.string().trim().max(240).optional(),
+    msclkid: z.string().trim().max(240).optional(),
+  });
 
 function normalizeLocationInput(value: unknown) {
   if (typeof value !== "string") {
@@ -129,4 +133,12 @@ function normalizeTimeInput(value: unknown) {
     return trimmed;
   }
   return `${hours.padStart(2, "0")}:${minutes}`;
+}
+
+function normalizePhoneInput(value: unknown) {
+  if (typeof value !== "string") {
+    return value;
+  }
+  const digitsOnly = value.replaceAll(/\D+/g, "").trim();
+  return digitsOnly || undefined;
 }

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import {
   LayoutBottomIcon,
   LayoutIcon,
@@ -64,7 +65,9 @@ export function AppHeader({ clerkEnabled, sessionState }: AppHeaderProps) {
             </Link>
           </Button>
           <ColorModeToggle />
-          <HeaderAuthButton clerkEnabled={clerkEnabled} initialSessionState={sessionState} />
+          <Suspense fallback={<Button variant="outline">Entrar</Button>}>
+            <HeaderAuthButton clerkEnabled={clerkEnabled} initialSessionState={sessionState} />
+          </Suspense>
         </nav>
 
         <div className="flex items-center gap-2 md:hidden">
@@ -106,7 +109,9 @@ export function AppHeader({ clerkEnabled, sessionState }: AppHeaderProps) {
                   </Button>
                 </SheetClose>
                 <div className="mt-2">
-                  <HeaderAuthButton clerkEnabled={clerkEnabled} initialSessionState={sessionState} />
+                  <Suspense fallback={<Button variant="outline">Entrar</Button>}>
+                    <HeaderAuthButton clerkEnabled={clerkEnabled} initialSessionState={sessionState} />
+                  </Suspense>
                 </div>
               </nav>
             </SheetContent>

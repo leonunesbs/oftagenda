@@ -35,11 +35,12 @@ export function resolveSiteUrl() {
     return new URL(siteConfig.canonical);
   }
 
-  const normalizedSiteUrl = siteUrl.startsWith("http") ? siteUrl : `https://${siteUrl}`;
+  const normalizedSiteUrl = siteUrl.startsWith("http")
+    ? siteUrl
+    : `https://${siteUrl}`;
   try {
     return new URL(normalizedSiteUrl);
   } catch {
     return new URL(siteConfig.canonical);
   }
 }
-

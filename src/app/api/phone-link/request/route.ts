@@ -3,11 +3,14 @@ import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod/v4";
 
-import { api } from "@convex/_generated/api";
-import { requireMemberApiAccess } from "@/lib/access";
-import { getAuthenticatedConvexHttpClient, getConvexHttpClient } from "@/lib/convex-server";
-import { sendPhoneVerificationEmail } from "@/lib/email/resend";
 import { resolveSiteUrl } from "@/config/site";
+import { requireMemberApiAccess } from "@/lib/access";
+import {
+  getAuthenticatedConvexHttpClient,
+  getConvexHttpClient,
+} from "@/lib/convex-server";
+import { sendPhoneVerificationEmail } from "@/lib/email/resend";
+import { api } from "@convex/_generated/api";
 
 export const runtime = "nodejs";
 
@@ -23,7 +26,11 @@ export async function POST(request: Request) {
     const parsed = requestSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { ok: false, error: "Número de WhatsApp inválido.", issues: parsed.error.flatten() },
+        {
+          ok: false,
+          error: "Número de WhatsApp inválido.",
+          issues: parsed.error.flatten(),
+        },
         { status: 400 },
       );
     }

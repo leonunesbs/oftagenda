@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { MailIcon, PhoneIcon, UnlinkIcon } from "lucide-react";
+import { useState } from "react";
 
 import {
   AlertDialog,
@@ -34,7 +34,10 @@ type PhoneLinkCardProps = {
   maskedPhone?: string;
 };
 
-export function PhoneLinkCard({ linked: initialLinked, maskedPhone: initialMaskedPhone }: PhoneLinkCardProps) {
+export function PhoneLinkCard({
+  linked: initialLinked,
+  maskedPhone: initialMaskedPhone,
+}: PhoneLinkCardProps) {
   const [linked, setLinked] = useState(initialLinked);
   const [maskedPhone, setMaskedPhone] = useState(initialMaskedPhone ?? "");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -67,19 +70,20 @@ export function PhoneLinkCard({ linked: initialLinked, maskedPhone: initialMaske
 
   async function handleRevoke() {
     setLoading(true);
+    setError("");
     try {
       const res = await fetch("/api/phone-link/verify", {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: maskedPhone }),
       });
       const data = await res.json();
       if (data.ok) {
         setLinked(false);
         setMaskedPhone("");
+        return;
       }
+      setError(data.error ?? "Falha ao desvincular WhatsApp.");
     } catch {
-      // silent fail
+      setError("Erro de conexão. Tente novamente.");
     } finally {
       setLoading(false);
     }
@@ -109,12 +113,18 @@ export function PhoneLinkCard({ linked: initialLinked, maskedPhone: initialMaske
             <PhoneIcon className="size-4" />
             WhatsApp
           </CardTitle>
-          <Badge variant="outline" className="border-emerald-500/40 text-emerald-600 dark:text-emerald-400">
+          <Badge
+            variant="outline"
+            className="border-emerald-500/40 text-emerald-600 dark:text-emerald-400"
+          >
             Vinculado
           </Badge>
         </CardHeader>
         <CardContent className="flex items-center justify-between gap-4">
-          <p className="text-sm text-muted-foreground">{maskedPhone}</p>
+          <div className="space-y-1">
+            <p className="text-sm text-muted-foreground">{maskedPhone}</p>
+            {error ? <p className="text-xs text-destructive">{error}</p> : null}
+          </div>
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="ghost" size="sm" className="text-destructive">
@@ -126,12 +136,17 @@ export function PhoneLinkCard({ linked: initialLinked, maskedPhone: initialMaske
               <AlertDialogHeader>
                 <AlertDialogTitle>Desvincular WhatsApp?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  A assistente virtual não poderá mais personalizar seu atendimento pelo WhatsApp.
+                  A assistente virtual não poderá mais personalizar seu
+                  atendimento pelo WhatsApp.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction onClick={handleRevoke} disabled={loading} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                <AlertDialogAction
+                  onClick={handleRevoke}
+                  disabled={loading}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
                   Desvincular
                 </AlertDialogAction>
               </AlertDialogFooter>
@@ -154,7 +169,9 @@ export function PhoneLinkCard({ linked: initialLinked, maskedPhone: initialMaske
       <CardContent>
         <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
           <DialogTrigger asChild>
-            <Button variant="outline" size="sm">Vincular WhatsApp</Button>
+            <Button variant="outline" size="sm">
+              Vincular WhatsApp
+            </Button>
           </DialogTrigger>
           <DialogContent>
             {step === "input" ? (
@@ -162,7 +179,8 @@ export function PhoneLinkCard({ linked: initialLinked, maskedPhone: initialMaske
                 <DialogHeader>
                   <DialogTitle>Vincular WhatsApp</DialogTitle>
                   <DialogDescription>
-                    Informe seu número de WhatsApp. Enviaremos um email de confirmação para o endereço cadastrado na sua conta.
+                    Informe seu número de WhatsApp. Enviaremos um email de
+                    confirmação para o endereço cadastrado na sua conta.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-2">
@@ -193,12 +211,16 @@ export function PhoneLinkCard({ linked: initialLinked, maskedPhone: initialMaske
                     Email enviado!
                   </DialogTitle>
                   <DialogDescription>
-                    Enviamos um email para o endereço cadastrado na sua conta. Clique no botão
-                    &quot;Confirmar meu número&quot; no email para completar a vinculação.
+                    Enviamos um email para o endereço cadastrado na sua conta.
+                    Clique no botão &quot;Confirmar meu número&quot; no email
+                    para completar a vinculação.
                   </DialogDescription>
                 </DialogHeader>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => handleDialogOpenChange(false)}>
+                  <Button
+                    variant="outline"
+                    onClick={() => handleDialogOpenChange(false)}
+                  >
                     Entendi
                   </Button>
                 </DialogFooter>

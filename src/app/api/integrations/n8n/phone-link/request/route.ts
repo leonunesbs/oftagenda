@@ -3,11 +3,11 @@ import crypto from "node:crypto";
 import { clerkClient } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
-import { api } from "@convex/_generated/api";
+import { resolveSiteUrl } from "@/config/site";
 import { getConvexHttpClient } from "@/lib/convex-server";
 import { sendPhoneVerificationEmail } from "@/lib/email/resend";
 import { n8nPhoneLinkRequestSchema } from "@/lib/integrations/n8n-schemas";
-import { resolveSiteUrl } from "@/config/site";
+import { api } from "@convex/_generated/api";
 
 export const runtime = "nodejs";
 
@@ -49,9 +49,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, emailSent: true });
   } catch (error) {
     const message =
-      error instanceof Error
-        ? error.message
-        : "Falha ao solicitar vinculação.";
+      error instanceof Error ? error.message : "Falha ao solicitar vinculação.";
     const status = /inválid|encontrad|limite/i.test(message) ? 400 : 500;
     return NextResponse.json({ ok: false, error: message }, { status });
   }

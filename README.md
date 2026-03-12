@@ -14,6 +14,7 @@ MVP de agendamento oftalmologico com foco em **agendar primeiro, detalhes depois
 - Zod para validacao
 - Clerk para autenticacao
 - Convex para backend + banco de dados
+- Stripe Checkout + Webhook para pagamentos
 - Billing via Clerk: **nao implementado agora** (somente feature flag)
 
 ## Como rodar
@@ -30,6 +31,8 @@ cp .env.example .env.local
    - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
    - `CLERK_SECRET_KEY`
    - `CLERK_FRONTEND_API_URL`
+   - `STRIPE_SECRET_KEY`
+   - `STRIPE_WEBHOOK_SECRET`
    - `NEXT_PUBLIC_TRIAGE_E2E_PUBLIC_KEY`
    - `NEXT_PUBLIC_TRIAGE_E2E_KEY_VERSION`
 
@@ -158,7 +161,46 @@ openssl pkey -in .secrets/triage-e2e/private-key.pem -outform DER | base64 | tr 
 - Arquivo: `src/config/billing.ts`
 - Flag atual: `BILLING_ENABLED=false`
 - TODO: validar entitlements do Clerk quando habilitar billing
-- Nenhum SDK Stripe/webhook no MVP
+
+## Pagamentos Stripe Checkout + Link
+
+O fluxo atual usa `Stripe Checkout` hospedado. O `Link` e habilitado como metodo dentro do Checkout (sem migracao para Elements).
+Referencias oficiais:
+- https://docs.stripe.com/payments/link
+- https://docs.stripe.com/payments/link/checkout-link
+
+### Backend atual
+
+- Criacao da sessao: `POST /api/stripe/checkout`
+- Confirmacao/reconciliacao: `POST /api/stripe/webhook`
+- Nao ha env dedicada para Link no backend; o comportamento depende da configuracao no Dashboard Stripe.
+
+### Variaveis de ambiente
+
+- `STRIPE_SECRET_KEY` (obrigatoria)
+- `STRIPE_WEBHOOK_SECRET` (obrigatoria)
+- `STRIPE_PRICE_ID` (opcional, fallback de preco em alguns cenarios)
+
+### Habilitacao do Link (test e live)
+
+1. Stripe Dashboard -> **Payment methods**.
+2. Ative `Link` nas configuracoes de **test** e **live**.
+3. Confirme o dominio registrado para pagamentos (exigencia do Stripe para Link).
+4. Se o Checkout usa metodos dinamicos (padrao atual), nao force `payment_method_types` manualmente.
+
+### Observacao para Brasil
+
+- A exibicao do Link depende de elegibilidade da conta/pais/moeda.
+- Quando Link nao estiver elegivel, o Checkout continua com fallback para os demais metodos habilitados (ex.: cartao), sem quebrar o fluxo.
+
+### Checklist de validacao (ponta a ponta)
+
+1. Inicie um pagamento em `/agendar/resumo`.
+2. Verifique o redirecionamento para o `Stripe Checkout`.
+3. Confirme se o Link aparece quando elegivel para a conta e contexto.
+4. Finalize o pagamento e confirme retorno para `/dashboard?payment=success`.
+5. Verifique processamento do webhook em `POST /api/stripe/webhook`.
+6. Confirme status final da reserva/pagamento no dashboard.
 
 ## Deploy na Vercel (Next.js + Convex)
 

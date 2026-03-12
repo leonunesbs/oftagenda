@@ -1,32 +1,28 @@
 import { NextResponse } from "next/server";
-import { z } from "zod/v4";
 
-import { api } from "@convex/_generated/api";
 import { requireMemberApiAccess } from "@/lib/access";
 import { getConvexHttpClient } from "@/lib/convex-server";
+import { api } from "@convex/_generated/api";
 
 export const runtime = "nodejs";
 
-const revokeSchema = z.object({
-  phone: z.string().trim().min(8).max(30),
-});
-
-export async function DELETE(request: Request) {
+export async function DELETE() {
   try {
     const userId = await requireMemberApiAccess();
 
-    const body = await request.json().catch(() => null);
-    const parsed = revokeSchema.safeParse(body);
-    if (!parsed.success) {
+    const client = getConvexHttpClient();
+    const linkedPhone = await client.query(api.phoneLinks.getPhoneLinkByClerkUser, {
+      clerkUserId: userId,
+    });
+    if (!linkedPhone?.phone) {
       return NextResponse.json(
-        { ok: false, error: "Telefone inválido.", issues: parsed.error.flatten() },
-        { status: 400 },
+        { ok: false, error: "Nenhuma vinculação encontrada para este usuário." },
+        { status: 404 },
       );
     }
 
-    const client = getConvexHttpClient();
     await client.mutation(api.phoneLinks.revokePhoneLink, {
-      phone: parsed.data.phone,
+      phone: linkedPhone.phone,
       clerkUserId: userId,
     });
 

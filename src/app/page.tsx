@@ -282,10 +282,7 @@ export default async function HomePage() {
           </CardHeader>
           <CardContent className="flex flex-wrap gap-3">
             <Button variant="outline" asChild>
-              <Link href="/politica-de-reserva">Política de reserva</Link>
-            </Button>
-            <Button variant="outline" asChild>
-              <Link href="/politica-de-reembolso">Política de reembolso</Link>
+              <Link href="/faq-agendamento">Ver políticas de agendamento</Link>
             </Button>
           </CardContent>
         </Card>

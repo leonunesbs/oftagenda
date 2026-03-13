@@ -54,7 +54,7 @@ export function ColorModeToggle() {
 
   function cycleTheme() {
     const idx = CYCLE.indexOf(mode);
-    const next = CYCLE[(idx + 1) % CYCLE.length];
+    const next = CYCLE[(idx + 1) % CYCLE.length] ?? "system";
     setMode(next);
     applyTheme(next);
     window.localStorage.setItem(THEME_STORAGE_KEY, next);

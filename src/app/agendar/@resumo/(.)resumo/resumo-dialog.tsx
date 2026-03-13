@@ -63,16 +63,18 @@ export function ResumoDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {hasError ? "Erro ao carregar agendamento" : "Resumo do agendamento"}
+            {hasError
+              ? "Erro ao carregar agendamento"
+              : "Resumo do agendamento"}
           </DialogTitle>
           <DialogDescription>
             {hasRedactedParams
               ? "Detectamos dados inválidos na URL. Por segurança, inicie um novo agendamento."
               : checkoutNotCompleted
                 ? "Você não concluiu o checkout da taxa de reserva. Esse horário foi liberado e pode já ter sido reservado. Escolha um novo horário."
-              : hasInvalidSelection
-                ? "Esse horário não está mais disponível para o local selecionado. Escolha um novo horário."
-                : "Confira os dados selecionados antes de seguir para o pagamento da taxa de reserva."}
+                : hasInvalidSelection
+                  ? "Esse horário não está mais disponível para o local selecionado. Escolha um novo horário."
+                  : "Confira os dados selecionados antes de seguir para o pagamento da taxa de reserva."}
           </DialogDescription>
         </DialogHeader>
 
@@ -114,8 +116,8 @@ export function ResumoDialog({
               Garanta seu horário
             </p>
             <p className="text-muted-foreground">
-              Você está a um passo da confirmação: agora é cobrada apenas a
-              taxa de reserva para garantir este horário.
+              Você está a um passo da confirmação: agora é cobrada apenas a taxa
+              de reserva para garantir este horário.
             </p>
             <p className="text-muted-foreground">
               O valor total da consulta é tratado separadamente no atendimento.
@@ -189,7 +191,7 @@ function formatMoney(cents: number) {
 
 function formatReservationFee(cents: number) {
   if (cents <= 0) {
-    return "Hoje, sem custo para reservar.";
+    return "Cobrada no checkout de confirmação.";
   }
 
   return formatMoney(cents);

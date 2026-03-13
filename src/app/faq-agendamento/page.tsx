@@ -24,10 +24,10 @@ const faqPolicies = [
     tag: "Taxa de reserva",
     title: "O que é a taxa de reserva?",
     description:
-      "A taxa de reserva corresponde a 20% do valor da consulta. Os 80% restantes são pagos no atendimento.",
+      "A taxa de reserva é cobrada para confirmar a intenção de reservar o horário, e o restante é pago no atendimento.",
     points: [
       "A taxa confirma a intenção de reservar o horário.",
-      "O saldo restante (80%) é pago no atendimento.",
+      "O saldo restante é pago no atendimento.",
       "Em cancelamentos com mais de 24h de antecedência, o reembolso da taxa é integral.",
     ],
     fullWidth: false,

@@ -68,6 +68,10 @@ export default async function ResumoPreAgendamentoPage({
   const addressHref = summary.locationAddress
     ? buildAddressHref(summary.locationAddress)
     : "";
+  const remainingAtConsultationCents = Math.max(
+    summary.consultationPriceCents - summary.reservationFeeCents,
+    0,
+  );
 
   return (
     <section className="mx-auto flex min-h-[55vh] w-full max-w-4xl items-center">
@@ -118,27 +122,54 @@ export default async function ResumoPreAgendamentoPage({
             </div>
           </div>
           <div className="rounded-xl border border-border/70 bg-muted/20 p-4 text-sm">
-            <p className="font-medium text-foreground">Garanta seu horário</p>
+            <p className="font-medium text-foreground">Resumo financeiro</p>
             <p className="mt-1 text-muted-foreground">
-              Você está a um passo da confirmação: agora é cobrada apenas a taxa
-              de reserva para garantir este horário.
+              Confira os valores como em um checkout antes de seguir para o
+              pagamento.
             </p>
-            <p className="mt-1 text-muted-foreground">
-              O valor total da consulta é tratado separadamente no atendimento.
-            </p>
-            <div className="mt-3 space-y-1 rounded-lg border border-border/60 bg-background/60 p-3">
-              <p className="text-muted-foreground">
-                Taxa para garantir seu horário:{" "}
-                <span className="font-medium text-foreground">
-                  {formatReservationFee(summary.reservationFeeCents)}
-                </span>
-              </p>
-              <p className="text-muted-foreground">
-                Valor da consulta neste local:{" "}
-                <span className="font-medium text-foreground">
-                  {formatConsultationPrice(summary.consultationPriceCents)}
-                </span>
-              </p>
+            <div className="mt-3 space-y-3 rounded-lg border border-border/60 bg-background/70 p-3">
+              <div className="space-y-1">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="font-medium text-foreground">Consulta oftalmológica</p>
+                  <p className="font-medium text-foreground">
+                    {formatConsultationPrice(summary.consultationPriceCents)}
+                  </p>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Valor total da consulta.
+                </p>
+              </div>
+              <div className="h-px w-full bg-border/70" />
+              <div className="space-y-1">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="font-medium text-foreground">
+                    Taxa de reserva (pago agora)
+                  </p>
+                  <p className="font-medium text-foreground">
+                    {formatReservationFee(summary.reservationFeeCents)}
+                  </p>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Pagamento online para confirmar a reserva.
+                </p>
+              </div>
+              <div className="h-px w-full bg-border/70" />
+              <div className="space-y-1">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="font-medium text-foreground">
+                    Pagamento na consulta (presencial)
+                  </p>
+                  <p className="font-medium text-foreground">
+                    {formatRemainingAtConsultation(
+                      summary.consultationPriceCents,
+                      remainingAtConsultationCents,
+                    )}
+                  </p>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Valor restante para pagamento presencial no dia da consulta.
+                </p>
+              </div>
             </div>
           </div>
 
@@ -184,8 +215,16 @@ function formatReservationFee(cents: number) {
 
 function formatConsultationPrice(cents: number) {
   if (cents <= 0) {
-    return "Você recebe este valor na confirmação do agendamento.";
+    return "A confirmar";
   }
 
   return formatMoney(cents);
+}
+
+function formatRemainingAtConsultation(totalCents: number, remainingCents: number) {
+  if (totalCents <= 0) {
+    return "A confirmar";
+  }
+
+  return formatMoney(remainingCents);
 }

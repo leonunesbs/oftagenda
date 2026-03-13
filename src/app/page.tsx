@@ -8,6 +8,7 @@ import {
 import { BookingFormContainer } from "@/components/booking-form-container";
 import { BookingFormFallback } from "@/components/booking-form-fallback";
 import { ScrollToIdButton } from "@/components/scroll-to-id-button";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { siteConfig } from "@/config/site";
 import { isClerkConfigured } from "@/lib/access";
@@ -111,11 +112,13 @@ export default async function HomePage() {
       />
 
       <section aria-labelledby="home-hero">
-        <Card className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-2 motion-safe:duration-500 rounded-3xl border-white/10 bg-linear-to-br from-card/95 via-card/90 to-card/65 backdrop-blur-2xl">
-          <CardHeader className="space-y-4">
-            <p className="inline-flex w-fit rounded-full border border-border/70 bg-muted/30 px-3 py-1 text-xs text-foreground/90">
+        <Card className="relative overflow-hidden motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-2 motion-safe:duration-500 rounded-3xl border border-primary/15 bg-linear-to-br from-primary/8 via-card/95 to-card/70 backdrop-blur-2xl">
+          <div className="pointer-events-none absolute -left-24 -top-24 h-60 w-60 rounded-full bg-primary/20 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-20 -right-20 h-44 w-44 rounded-full bg-primary/10 blur-3xl" />
+          <CardHeader className="relative space-y-4">
+            <Badge variant="outline" className="w-fit border-primary/30 bg-background/90 text-primary">
               Atendimento oftalmológico especializado
-            </p>
+            </Badge>
             <h1
               id="home-hero"
               className="max-w-3xl text-3xl font-semibold tracking-tight md:text-5xl"
@@ -127,7 +130,7 @@ export default async function HomePage() {
               clínica.
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-wrap items-center gap-3">
+          <CardContent className="relative flex flex-wrap items-center gap-3">
             <ScrollToIdButton
               className="h-10 px-5 text-sm transition-transform duration-200 hover:-translate-y-0.5"
               targetId="agendamento"

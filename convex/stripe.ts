@@ -31,13 +31,25 @@ export const createCheckoutDraft = mutation({
     const now = Date.now();
 
     const eventType = await resolveActiveEventType(ctx, args.location);
+    const paymentMode = eventType.paymentMode ?? "booking_fee";
+
+    if (paymentMode === "in_person") {
+      throw new Error(
+        "Este evento utiliza pagamento presencial. Use o fluxo de confirmação direta.",
+      );
+    }
+
     const consultationAmountCentsFromEvent =
       normalizeAmountCents(eventType.priceCents) ??
       parseLegacyAmountCentsFromStripePriceId(eventType.stripePriceId?.trim() || readStripePriceIdFromEnv());
     const consultationAmountCents = consultationAmountCentsFromEvent;
-    const amountCents = consultationAmountCents
-      ? calculateReservationFeeCents(consultationAmountCents, RESERVATION_FEE_PERCENT)
-      : undefined;
+
+    const amountCents = paymentMode === "full_payment"
+      ? consultationAmountCents
+      : consultationAmountCents
+        ? calculateReservationFeeCents(consultationAmountCents, RESERVATION_FEE_PERCENT)
+        : undefined;
+
     if (!eventType.availabilityId) {
       throw new Error("Evento sem disponibilidade configurada.");
     }
@@ -57,7 +69,9 @@ export const createCheckoutDraft = mutation({
     }
     if (!amountCents || amountCents <= 0) {
       throw new Error(
-        "Não foi possível calcular a taxa de reserva para o local selecionado.",
+        paymentMode === "full_payment"
+          ? "Não foi possível calcular o valor da consulta para o local selecionado."
+          : "Não foi possível calcular a taxa de reserva para o local selecionado.",
       );
     }
 
@@ -149,7 +163,8 @@ export const createCheckoutDraft = mutation({
       eventTypeName: eventType.name ?? eventType.title,
       clerkUserId: identity.subject,
       holdExpiresAt,
-      reservationFeePercent: RESERVATION_FEE_PERCENT,
+      reservationFeePercent: paymentMode === "full_payment" ? 100 : RESERVATION_FEE_PERCENT,
+      paymentMode,
     };
   },
 });
@@ -284,6 +299,115 @@ export const cancelPendingReservation = mutation({
     }
 
     return { ok: true };
+  },
+});
+
+export const confirmInPersonBooking = mutation({
+  args: checkoutDraftSchema,
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (identity === null) {
+      throw new Error("Not authenticated");
+    }
+
+    const now = Date.now();
+    const eventType = await resolveActiveEventType(ctx, args.location);
+    const paymentMode = eventType.paymentMode ?? "booking_fee";
+
+    if (paymentMode !== "in_person") {
+      throw new Error(
+        "Este evento requer pagamento online. Use o fluxo de checkout.",
+      );
+    }
+
+    if (!eventType.availabilityId) {
+      throw new Error("Evento sem disponibilidade configurada.");
+    }
+    const referenceAvailability = await ctx.db.get(eventType.availabilityId);
+    if (!referenceAvailability) {
+      throw new Error("Disponibilidade base não encontrada.");
+    }
+    const slotTimestamp = parseIsoDateAndTimeToTimestamp(
+      args.date,
+      args.time,
+      referenceAvailability.timezone,
+    );
+
+    await assertSlotIsAvailable(ctx, eventType, args.date, args.time, identity.subject);
+
+    const existingReservations = await ctx.db
+      .query("reservations")
+      .withIndex("by_clerk_user_id", (q) => q.eq("clerkUserId", identity.subject))
+      .collect();
+    await assertCanCreateNewBookingDraft(ctx, identity.subject, existingReservations, null, now);
+
+    const endsAt = slotTimestamp + eventType.durationMinutes * 60_000;
+
+    const reservationId = await ctx.db.insert("reservations", {
+      clerkUserId: identity.subject,
+      eventTypeId: eventType._id,
+      availabilityId: eventType.availabilityId,
+      startsAt: slotTimestamp,
+      endsAt,
+      status: "confirmed",
+      notes: "Reserva confirmada — pagamento presencial.",
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    const patient = await findOrCreatePatient(
+      ctx,
+      identity.subject,
+      identity.name ?? "Paciente",
+      (identity as Record<string, unknown>).phone_number as string ?? "Não informado",
+      identity.email ?? "nao-informado@exemplo.com",
+      now,
+    );
+
+    const appointmentId = await ctx.db.insert("appointments", {
+      clerkUserId: identity.subject,
+      patientId: patient._id,
+      name: patient.name,
+      phone: patient.phone,
+      email: patient.email,
+      location: eventType.location,
+      eventTypeId: eventType._id,
+      reservationId,
+      preferredPeriod: inferPreferredPeriod(slotTimestamp),
+      status: "confirmed",
+      requestedAt: now,
+      scheduledFor: slotTimestamp,
+      consultationType: eventType.name ?? eventType.title ?? "Consulta oftalmologica",
+      updatedAt: now,
+    });
+
+    await ctx.db.patch(reservationId, {
+      appointmentId,
+      updatedAt: now,
+    });
+
+    await ctx.db.insert("appointment_events", {
+      appointmentId,
+      clerkUserId: identity.subject,
+      eventType: "confirmed",
+      notes: "Agendamento confirmado — pagamento presencial no dia da consulta.",
+      createdAt: now,
+    });
+
+    return {
+      ok: true,
+      appointmentId: String(appointmentId),
+      notification: {
+        type: "appointment_confirmed" as const,
+        appointmentId: String(appointmentId),
+        patientName: patient.name,
+        patientPhone: patient.phone,
+        location: eventType.location,
+        scheduledFor: slotTimestamp,
+        timezone: referenceAvailability.timezone,
+        consultationType: eventType.name ?? eventType.title ?? "Consulta oftalmologica",
+      },
+    };
   },
 });
 

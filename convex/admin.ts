@@ -37,6 +37,12 @@ const paymentMethodValidator = v.union(
 );
 const eventKindValidator = v.union(v.literal("consulta"), v.literal("procedimento"), v.literal("exame"));
 
+const paymentModeValidator = v.union(
+  v.literal("booking_fee"),
+  v.literal("full_payment"),
+  v.literal("in_person"),
+);
+
 async function requireAdmin(ctx: QueryCtx | MutationCtx) {
   const identity = await ctx.auth.getUserIdentity();
   if (identity === null) {
@@ -261,6 +267,7 @@ export const createEventType = mutation({
     durationMinutes: v.number(),
     priceCents: v.number(),
     stripePriceId: v.optional(v.string()),
+    paymentMode: v.optional(paymentModeValidator),
     location: locationValidator,
     availabilityId: v.id("availabilities"),
   },
@@ -309,6 +316,7 @@ export const createEventType = mutation({
       durationMinutes: args.durationMinutes,
       priceCents: normalizedPriceCents,
       stripePriceId: args.stripePriceId?.trim() || undefined,
+      paymentMode: args.paymentMode ?? "booking_fee",
       location: args.location,
       availabilityId: args.availabilityId,
       active: true,
@@ -331,6 +339,7 @@ export const updateEventType = mutation({
     durationMinutes: v.number(),
     priceCents: v.number(),
     stripePriceId: v.optional(v.string()),
+    paymentMode: v.optional(paymentModeValidator),
     location: locationValidator,
     availabilityId: v.id("availabilities"),
     active: v.boolean(),
@@ -380,6 +389,7 @@ export const updateEventType = mutation({
       durationMinutes: args.durationMinutes,
       priceCents: normalizedPriceCents,
       stripePriceId: args.stripePriceId?.trim() || undefined,
+      paymentMode: args.paymentMode ?? "booking_fee",
       location: args.location,
       availabilityId: args.availabilityId,
       active: args.active,

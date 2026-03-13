@@ -57,6 +57,7 @@ export async function POST(request: Request) {
     });
 
     try {
+      const isFullPayment = draft.paymentMode === 'full_payment';
       const lineItems: StripeSdk.Checkout.SessionCreateParams.LineItem[] = [
         {
           price_data: {
@@ -64,8 +65,9 @@ export async function POST(request: Request) {
             unit_amount: draft.amountCents,
             product_data: {
               name: draft.eventTypeName || 'Consulta oftalmologica',
-              description:
-                'Taxa de reserva de horário. Não corresponde ao valor total da consulta.',
+              description: isFullPayment
+                ? 'Pagamento integral da consulta.'
+                : 'Taxa de reserva de horário. Não corresponde ao valor total da consulta.',
             },
           },
           quantity: 1,

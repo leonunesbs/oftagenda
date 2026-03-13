@@ -1,5 +1,6 @@
 import { api } from "@convex/_generated/api";
 
+import type { PaymentMode } from "@/lib/booking-bootstrap";
 import { getBookingBootstrapData } from "@/lib/booking-bootstrap";
 import { getConvexHttpClient } from "@/lib/convex-server";
 
@@ -18,6 +19,7 @@ export type PreBookingSummaryData = {
   consultationPriceCents: number;
   reservationFeeCents: number;
   reservationFeePercent: number;
+  paymentMode: PaymentMode;
   date: string;
   dateLabel: string;
   time: string;
@@ -48,6 +50,7 @@ export async function resolvePreBookingSummary(
       consultationPriceCents: 0,
       reservationFeeCents: 0,
       reservationFeePercent: 20,
+      paymentMode: "booking_fee" as PaymentMode,
       date,
       dateLabel: date ? formatDateLabel(date) : "Data não informada",
       time,
@@ -76,6 +79,7 @@ export async function resolvePreBookingSummary(
           time,
         })
       : { hasDateOption: false, hasValidTime: false };
+  const paymentMode: PaymentMode = selectedLocation?.paymentMode ?? "booking_fee";
   const consultationPriceCents =
     typeof selectedLocation?.consultationPriceCents === "number"
       ? selectedLocation.consultationPriceCents
@@ -96,6 +100,7 @@ export async function resolvePreBookingSummary(
     consultationPriceCents,
     reservationFeeCents,
     reservationFeePercent,
+    paymentMode,
     date,
     dateLabel: date ? formatDateLabel(date) : "Data não informada",
     time,

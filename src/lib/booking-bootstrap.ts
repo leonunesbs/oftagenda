@@ -2,6 +2,8 @@ import { api } from "@convex/_generated/api";
 
 import { getConvexHttpClient } from "@/lib/convex-server";
 
+export type PaymentMode = "booking_fee" | "full_payment" | "in_person";
+
 export type BookingLocationOption = {
   value: string;
   label: string;
@@ -10,6 +12,7 @@ export type BookingLocationOption = {
   consultationPriceCents?: number;
   reservationFeeCents?: number;
   reservationFeePercent?: number;
+  paymentMode?: PaymentMode;
 };
 
 export type LocationAvailabilityDate = {

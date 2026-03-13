@@ -6,12 +6,15 @@ import { Button } from "@/components/ui/button";
 import { trackEvent } from "@/lib/analytics";
 import Link from "next/link";
 
+import type { PaymentMode } from "@/lib/booking-bootstrap";
+
 type StartCheckoutButtonProps = {
   location: string;
   date: string;
   time: string;
   label?: string;
   isAuthenticated?: boolean;
+  paymentMode?: PaymentMode;
   reservationAmountCents?: number;
   consultationAmountCents?: number;
   reservationFeePercent?: number;
@@ -38,6 +41,7 @@ export function StartCheckoutButton({
   time,
   label = "Ir para pagamento",
   isAuthenticated,
+  paymentMode = "booking_fee",
   reservationAmountCents,
   consultationAmountCents,
   reservationFeePercent = 20,
@@ -71,49 +75,84 @@ export function StartCheckoutButton({
           location,
           date,
           time,
-          step: "checkout",
+          step: paymentMode === "in_person" ? "confirm_in_person" : "checkout",
         });
-        const response = await fetch("/api/stripe/checkout", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ location, date, time }),
-        });
-        const data = (await response
-          .json()
-          .catch(() => null)) as CheckoutApiResponse | null;
-        if (requiresAuthentication(response, data)) {
-          redirectToSignIn();
-          return;
+
+        if (paymentMode === "in_person") {
+          await handleInPersonConfirmation();
+        } else {
+          await handleStripeCheckout();
         }
-        if (!response.ok || !data?.ok || typeof data.url !== "string") {
-          const normalizedError = normalizeCheckoutError(data);
-          setError(normalizedError);
-          if (normalizedError.redirectTo) {
-            if (redirectTimerRef.current) {
-              clearTimeout(redirectTimerRef.current);
-            }
-            redirectTimerRef.current = setTimeout(() => {
-              const target = window.self !== window.top ? window.top! : window;
-              target.location.href = normalizedError.redirectTo!;
-            }, 1200);
-          }
-          return;
-        }
-        const target = window.self !== window.top ? window.top! : window;
-        target.location.href = data.url;
       } catch (checkoutError) {
         setError(
           checkoutError instanceof Error
-            ? {
-                title: checkoutError.message,
-              }
-            : {
-                title: "Falha ao redirecionar para o pagamento.",
-              },
+            ? { title: checkoutError.message }
+            : { title: "Falha ao processar o agendamento." },
         );
       }
     });
   }
+
+  async function handleStripeCheckout() {
+    const response = await fetch("/api/stripe/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ location, date, time }),
+    });
+    const data = (await response
+      .json()
+      .catch(() => null)) as CheckoutApiResponse | null;
+    if (requiresAuthentication(response, data)) {
+      redirectToSignIn();
+      return;
+    }
+    if (!response.ok || !data?.ok || typeof data.url !== "string") {
+      handleErrorResponse(data);
+      return;
+    }
+    const target = window.self !== window.top ? window.top! : window;
+    target.location.href = data.url;
+  }
+
+  async function handleInPersonConfirmation() {
+    const response = await fetch("/api/booking/confirm", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ location, date, time }),
+    });
+    const data = (await response
+      .json()
+      .catch(() => null)) as CheckoutApiResponse | null;
+    if (requiresAuthentication(response, data)) {
+      redirectToSignIn();
+      return;
+    }
+    if (!response.ok || !data?.ok) {
+      handleErrorResponse(data);
+      return;
+    }
+    const redirectTo = data.redirectTo ?? "/dashboard?booking=confirmed";
+    const target = window.self !== window.top ? window.top! : window;
+    target.location.href = redirectTo;
+  }
+
+  function handleErrorResponse(data: CheckoutApiResponse | null) {
+    const normalizedError = normalizeCheckoutError(data);
+    setError(normalizedError);
+    if (normalizedError.redirectTo) {
+      if (redirectTimerRef.current) {
+        clearTimeout(redirectTimerRef.current);
+      }
+      redirectTimerRef.current = setTimeout(() => {
+        const target = window.self !== window.top ? window.top! : window;
+        target.location.href = normalizedError.redirectTo!;
+      }, 1200);
+    }
+  }
+
+  const loadingLabel = paymentMode === "in_person"
+    ? "Confirmando..."
+    : "Redirecionando...";
 
   return (
     <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
@@ -123,10 +162,11 @@ export function StartCheckoutButton({
         disabled={isLoading}
         className="w-full sm:w-auto"
       >
-        {isLoading ? "Redirecionando..." : label}
+        {isLoading ? loadingLabel : label}
       </Button>
       <p className="w-full rounded-md border border-border/60 bg-muted/30 px-3 py-1.5 text-center text-xs text-muted-foreground sm:w-auto sm:text-left">
         {buildPaymentDisclaimer({
+          paymentMode,
           reservationAmountCents,
           consultationAmountCents,
           reservationFeePercent,
@@ -166,17 +206,31 @@ export function StartCheckoutButton({
     try {
       return topWindow.location.href;
     } catch {
-      // Cross-origin iframe: fallback to current frame URL.
       return window.location.href;
     }
   }
 }
 
 function buildPaymentDisclaimer(input: {
+  paymentMode: PaymentMode;
   reservationAmountCents?: number;
   consultationAmountCents?: number;
   reservationFeePercent: number;
 }) {
+  if (input.paymentMode === "in_person") {
+    return "Ao confirmar, seu horário será reservado. O pagamento será realizado presencialmente no dia da consulta.";
+  }
+
+  if (input.paymentMode === "full_payment") {
+    if (
+      typeof input.consultationAmountCents === "number" &&
+      input.consultationAmountCents > 0
+    ) {
+      return `Pagamento online integral (cartão e Pix): ${formatMoney(input.consultationAmountCents)}.`;
+    }
+    return "Pagamento online integral (cartão e Pix) para confirmar a reserva.";
+  }
+
   const baseText =
     "Pagamento para reserva de horário (cartão e Pix), com bloqueio por 30 minutos.";
   if (
@@ -270,6 +324,6 @@ function normalizeCheckoutError(
     };
   }
   return {
-    title: "Não foi possível iniciar o checkout.",
+    title: "Não foi possível processar o agendamento.",
   };
 }

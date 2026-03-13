@@ -54,6 +54,18 @@ const kindClassName: Record<"consulta" | "exame" | "procedimento", string> = {
   procedimento: "bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-200",
 };
 
+const paymentModeLabels: Record<string, string> = {
+  booking_fee: "Taxa de reserva",
+  full_payment: "Reserva completa",
+  in_person: "Pagamento presencial",
+};
+
+const paymentModeClassName: Record<string, string> = {
+  booking_fee: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200",
+  full_payment: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200",
+  in_person: "bg-slate-100 text-slate-800 dark:bg-slate-950 dark:text-slate-200",
+};
+
 export default async function AdminEventsPage({
   searchParams,
 }: {
@@ -111,13 +123,21 @@ export default async function AdminEventsPage({
                 <Label htmlFor="event-stripe-price-id">Stripe Price ID</Label>
                 <Input id="event-stripe-price-id" name="stripePriceId" placeholder="price_..." />
               </div>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <div className="space-y-2">
                   <Label htmlFor="event-kind">Tipo</Label>
                   <select id="event-kind" name="kind" className={selectClassName} defaultValue="consulta">
                     <option value="consulta">consulta</option>
                     <option value="procedimento">procedimento</option>
                     <option value="exame">exame</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="event-payment-mode">Modo de pagamento</Label>
+                  <select id="event-payment-mode" name="paymentMode" className={selectClassName} defaultValue="booking_fee">
+                    <option value="booking_fee">Taxa de reserva</option>
+                    <option value="full_payment">Reserva completa</option>
+                    <option value="in_person">Pagamento presencial</option>
                   </select>
                 </div>
                 <div className="space-y-2">
@@ -158,6 +178,7 @@ export default async function AdminEventsPage({
                 <TableHead>Tipo</TableHead>
                 <TableHead>Duração</TableHead>
                 <TableHead>Preço</TableHead>
+                <TableHead>Pagamento</TableHead>
                 <TableHead>Disponibilidade</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Reservas</TableHead>
@@ -185,6 +206,11 @@ export default async function AdminEventsPage({
                     </TableCell>
                     <TableCell>{eventType.durationMinutes} min</TableCell>
                     <TableCell>{formatMoney(eventType.priceCents ?? 0)}</TableCell>
+                    <TableCell>
+                      <Badge className={paymentModeClassName[eventType.paymentMode ?? "booking_fee"] ?? ""}>
+                        {paymentModeLabels[eventType.paymentMode ?? "booking_fee"] ?? "Taxa de reserva"}
+                      </Badge>
+                    </TableCell>
                     <TableCell>{linkedAvailabilityGroup?.name ?? "Sem grupo"}</TableCell>
                     <TableCell>
                       <Badge variant={eventType.active ? "default" : "outline"}>
@@ -238,6 +264,11 @@ export default async function AdminEventsPage({
                                   <option value="consulta">consulta</option>
                                   <option value="procedimento">procedimento</option>
                                   <option value="exame">exame</option>
+                                </select>
+                                <select name="paymentMode" className={selectClassName} defaultValue={eventType.paymentMode ?? "booking_fee"}>
+                                  <option value="booking_fee">Taxa de reserva</option>
+                                  <option value="full_payment">Reserva completa</option>
+                                  <option value="in_person">Pagamento presencial</option>
                                 </select>
                                 <select
                                   name="availabilityId"

@@ -100,6 +100,12 @@ const adminEventKindValidator = v.union(
   v.literal("exame"),
 );
 
+const paymentModeValidator = v.union(
+  v.literal("booking_fee"),
+  v.literal("full_payment"),
+  v.literal("in_person"),
+);
+
 export default defineSchema({
   event_types: defineTable({
     slug: v.string(),
@@ -112,6 +118,7 @@ export default defineSchema({
     durationMinutes: v.number(),
     priceCents: v.optional(v.number()),
     stripePriceId: v.optional(v.string()),
+    paymentMode: v.optional(paymentModeValidator),
     location: locationValidator,
     availabilityId: v.optional(v.id("availabilities")),
     active: v.boolean(),

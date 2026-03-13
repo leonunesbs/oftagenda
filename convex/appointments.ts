@@ -293,17 +293,26 @@ export const getActiveBookingLocations = query({
           Boolean(eventType.availabilityId),
       )
       .sort((a, b) => (a.name ?? a.title).localeCompare(b.name ?? b.title, "pt-BR"))
-      .map((eventType) => ({
-        consultationPriceCents: normalizeAmountCents(eventType.priceCents) ?? 0,
-        reservationFeeCents: calculateReservationFeeCents(
-          normalizeAmountCents(eventType.priceCents) ?? 0,
-          RESERVATION_FEE_PERCENT,
-        ),
-        reservationFeePercent: RESERVATION_FEE_PERCENT,
-        value: eventType.slug,
-        label: eventType.name ?? eventType.title,
-        address: eventType.address ?? "",
-      }));
+      .map((eventType) => {
+        const paymentMode = eventType.paymentMode ?? "booking_fee";
+        const priceCents = normalizeAmountCents(eventType.priceCents) ?? 0;
+        const feePercent = paymentMode === "full_payment" ? 100
+          : paymentMode === "in_person" ? 0
+          : RESERVATION_FEE_PERCENT;
+        return {
+          consultationPriceCents: priceCents,
+          reservationFeeCents: paymentMode === "in_person"
+            ? 0
+            : paymentMode === "full_payment"
+              ? priceCents
+              : calculateReservationFeeCents(priceCents, RESERVATION_FEE_PERCENT),
+          reservationFeePercent: feePercent,
+          paymentMode,
+          value: eventType.slug,
+          label: eventType.name ?? eventType.title,
+          address: eventType.address ?? "",
+        };
+      });
   },
 });
 

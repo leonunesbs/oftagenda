@@ -46,6 +46,10 @@ export async function createEventTypeAction(formData: FormData) {
     priceCents: toCentsFromReais(formData.get("priceReais"), 0),
     stripePriceId:
       toStringValue(formData.get("stripePriceId")) || toStringValue(formData.get("priceId")) || undefined,
+    paymentMode: (toStringValue(formData.get("paymentMode")) || "booking_fee") as
+      | "booking_fee"
+      | "full_payment"
+      | "in_person",
     availabilityId: toStringValue(formData.get("availabilityId")) as Id<"availabilities">,
     location: (toStringValue(formData.get("location")) || "fortaleza") as
       | "fortaleza"
@@ -79,6 +83,10 @@ export async function updateEventTypeAction(formData: FormData) {
     priceCents: toCentsFromReais(formData.get("priceReais"), 0),
     stripePriceId:
       toStringValue(formData.get("stripePriceId")) || toStringValue(formData.get("priceId")) || undefined,
+    paymentMode: (toStringValue(formData.get("paymentMode")) || "booking_fee") as
+      | "booking_fee"
+      | "full_payment"
+      | "in_person",
     availabilityId: toStringValue(formData.get("availabilityId")) as Id<"availabilities">,
     location: (toStringValue(formData.get("location")) || "fortaleza") as
       | "fortaleza"

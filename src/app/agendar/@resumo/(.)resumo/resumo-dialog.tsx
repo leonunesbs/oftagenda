@@ -13,6 +13,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+import type { PaymentMode } from "@/lib/booking-bootstrap";
+
 type ResumoDialogProps = {
   locationId: string;
   locationLabel: string;
@@ -20,6 +22,7 @@ type ResumoDialogProps = {
   consultationPriceCents: number;
   reservationFeeCents: number;
   reservationFeePercent: number;
+  paymentMode?: PaymentMode;
   date: string;
   dateLabel: string;
   time: string;
@@ -37,6 +40,7 @@ export function ResumoDialog({
   consultationPriceCents,
   reservationFeeCents,
   reservationFeePercent,
+  paymentMode = "booking_fee",
   date,
   dateLabel,
   time,
@@ -75,10 +79,14 @@ export function ResumoDialog({
             {hasRedactedParams
               ? "Detectamos dados inválidos na URL. Por segurança, inicie um novo agendamento."
               : checkoutNotCompleted
-                ? "Você não concluiu o checkout da taxa de reserva. Esse horário foi liberado e pode já ter sido reservado. Escolha um novo horário."
+                ? "Você não concluiu o checkout. Esse horário foi liberado e pode já ter sido reservado. Escolha um novo horário."
                 : hasInvalidSelection
                   ? "Esse horário não está mais disponível para o local selecionado. Escolha um novo horário."
-                  : "Confira os dados selecionados antes de seguir para o pagamento da taxa de reserva."}
+                  : paymentMode === "in_person"
+                    ? "Confira os dados antes de confirmar o agendamento."
+                    : paymentMode === "full_payment"
+                      ? "Confira os dados antes de seguir para o pagamento da consulta."
+                      : "Confira os dados selecionados antes de seguir para o pagamento da taxa de reserva."}
           </DialogDescription>
         </DialogHeader>
 
@@ -116,58 +124,100 @@ export function ResumoDialog({
               <span className="font-medium text-foreground">Horário:</span>{" "}
               {timeLabel}
             </p>
-            <p className="mt-2 font-medium text-foreground">Resumo financeiro</p>
-            <p className="text-muted-foreground">
-              Visualize os valores do checkout antes de pagar.
-            </p>
-            <div className="mt-2 space-y-3 rounded-lg border border-border/60 bg-background/60 p-3">
-              <div className="space-y-1">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="font-medium text-foreground">Consulta oftalmológica</p>
-                  <p className="font-medium text-foreground">
-                    {formatConsultationPrice(consultationPriceCents)}
+            {paymentMode === "in_person" ? (
+              <>
+                <p className="mt-2 font-medium text-foreground">Pagamento presencial</p>
+                <p className="text-muted-foreground">
+                  O pagamento será realizado presencialmente no dia da consulta.
+                </p>
+                {consultationPriceCents > 0 ? (
+                  <div className="mt-2 rounded-lg border border-border/60 bg-background/60 p-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="font-medium text-foreground">Consulta oftalmológica</p>
+                      <p className="font-medium text-foreground">
+                        {formatConsultationPrice(consultationPriceCents)}
+                      </p>
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Valor a ser pago presencialmente.
+                    </p>
+                  </div>
+                ) : null}
+              </>
+            ) : paymentMode === "full_payment" ? (
+              <>
+                <p className="mt-2 font-medium text-foreground">Resumo financeiro</p>
+                <p className="text-muted-foreground">
+                  O valor integral será cobrado online.
+                </p>
+                <div className="mt-2 rounded-lg border border-border/60 bg-background/60 p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="font-medium text-foreground">Consulta oftalmológica (pago agora)</p>
+                    <p className="font-medium text-foreground">
+                      {formatConsultationPrice(consultationPriceCents)}
+                    </p>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Pagamento online integral para confirmar a reserva.
                   </p>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Valor total da consulta.
+              </>
+            ) : (
+              <>
+                <p className="mt-2 font-medium text-foreground">Resumo financeiro</p>
+                <p className="text-muted-foreground">
+                  Visualize os valores do checkout antes de pagar.
                 </p>
-              </div>
-              <div className="h-px w-full bg-border/70" />
-              <div className="space-y-1">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="font-medium text-foreground">
-                    Taxa de reserva (pago agora)
-                  </p>
-                  <p className="font-medium text-foreground">
-                    {formatReservationFee(reservationFeeCents)}
-                  </p>
+                <div className="mt-2 space-y-3 rounded-lg border border-border/60 bg-background/60 p-3">
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="font-medium text-foreground">Consulta oftalmológica</p>
+                      <p className="font-medium text-foreground">
+                        {formatConsultationPrice(consultationPriceCents)}
+                      </p>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Valor total da consulta.
+                    </p>
+                  </div>
+                  <div className="h-px w-full bg-border/70" />
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="font-medium text-foreground">
+                        Taxa de reserva (pago agora)
+                      </p>
+                      <p className="font-medium text-foreground">
+                        {formatReservationFee(reservationFeeCents)}
+                      </p>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Pagamento online para confirmar a reserva.
+                    </p>
+                  </div>
+                  <div className="h-px w-full bg-border/70" />
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="font-medium text-foreground">
+                        Pagamento na consulta (presencial)
+                      </p>
+                      <p className="font-medium text-foreground">
+                        {formatRemainingAtConsultation(
+                          consultationPriceCents,
+                          remainingAtConsultationCents,
+                        )}
+                      </p>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Valor restante para pagamento presencial no dia da consulta.
+                    </p>
+                  </div>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Pagamento online para confirmar a reserva.
-                </p>
-              </div>
-              <div className="h-px w-full bg-border/70" />
-              <div className="space-y-1">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="font-medium text-foreground">
-                    Pagamento na consulta (presencial)
-                  </p>
-                  <p className="font-medium text-foreground">
-                    {formatRemainingAtConsultation(
-                      consultationPriceCents,
-                      remainingAtConsultationCents,
-                    )}
-                  </p>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Valor restante para pagamento presencial no dia da consulta.
-                </p>
-              </div>
-            </div>
+              </>
+            )}
             {checkoutNotCompleted ? (
               <p className="mt-2 text-destructive">
-                Você saiu do checkout sem concluir o pagamento da taxa de
-                reserva. Para confirmar a intenção de reserva, inicie uma nova
+                Você saiu do checkout sem concluir o pagamento.
+                Para confirmar a intenção de reserva, inicie uma nova
                 tentativa.
               </p>
             ) : null}
@@ -192,8 +242,15 @@ export function ResumoDialog({
                 location={locationId}
                 date={date}
                 time={time}
-                label="Pagar taxa de reserva"
+                label={
+                  paymentMode === "in_person"
+                    ? "Confirmar agendamento"
+                    : paymentMode === "full_payment"
+                      ? "Pagar consulta"
+                      : "Pagar taxa de reserva"
+                }
                 isAuthenticated={isAuthenticated}
+                paymentMode={paymentMode}
                 reservationAmountCents={reservationFeeCents}
                 consultationAmountCents={consultationPriceCents}
                 reservationFeePercent={reservationFeePercent}

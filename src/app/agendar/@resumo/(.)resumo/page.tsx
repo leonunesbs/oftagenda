@@ -37,6 +37,7 @@ export default async function ResumoInterceptPage({
       consultationPriceCents={summary.consultationPriceCents}
       reservationFeeCents={summary.reservationFeeCents}
       reservationFeePercent={summary.reservationFeePercent}
+      paymentMode={summary.paymentMode}
       date={summary.date}
       dateLabel={summary.dateLabel}
       time={summary.time}

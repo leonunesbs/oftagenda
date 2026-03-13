@@ -273,16 +273,19 @@ export default async function HomePage() {
               id="home-politicas"
               className="text-xl font-semibold tracking-tight md:text-2xl"
             >
-              Dúvidas sobre pagamento e políticas
+              Dúvidas sobre políticas
             </h2>
             <CardDescription className="max-w-3xl">
-              Consulte a página de FAQ para ver regras de taxa de reserva,
-              remarcação, cancelamento, reembolso e no-show.
+              Acesse as políticas oficiais com regras de reserva, remarcação,
+              cancelamento, reembolso e no-show.
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex flex-wrap gap-3">
             <Button variant="outline" asChild>
-              <Link href="/faq-agendamento">Abrir FAQ de agendamento</Link>
+              <Link href="/politica-de-reserva">Política de reserva</Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link href="/politica-de-reembolso">Política de reembolso</Link>
             </Button>
           </CardContent>
         </Card>

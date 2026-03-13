@@ -112,11 +112,11 @@ export default async function HomePage() {
       />
 
       <section aria-labelledby="home-hero">
-        <Card className="relative overflow-hidden motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-2 motion-safe:duration-500 rounded-3xl border border-primary/15 bg-linear-to-br from-primary/8 via-card/95 to-card/70 backdrop-blur-2xl">
-          <div className="pointer-events-none absolute -left-24 -top-24 h-60 w-60 rounded-full bg-primary/20 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-20 -right-20 h-44 w-44 rounded-full bg-primary/10 blur-3xl" />
+        <Card className="relative overflow-hidden motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-top-2 motion-safe:duration-500 rounded-3xl border border-primary/10 bg-linear-to-br from-primary/5 via-card/95 to-card/75 backdrop-blur-2xl">
+          <div className="pointer-events-none absolute -left-20 -top-20 h-40 w-40 rounded-full bg-primary/10 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-16 -right-16 h-32 w-32 rounded-full bg-primary/5 blur-3xl" />
           <CardHeader className="relative space-y-4">
-            <Badge variant="outline" className="w-fit border-primary/30 bg-background/90 text-primary">
+            <Badge variant="outline" className="w-fit border-primary/20 bg-background/90 text-primary/90">
               Atendimento oftalmológico especializado
             </Badge>
             <h1

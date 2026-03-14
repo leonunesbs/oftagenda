@@ -40,6 +40,7 @@ const clerkProxy = clerkMiddleware(
     const pathname = req.nextUrl.pathname;
     const requiresAuth =
       pathname.startsWith("/dashboard") ||
+      pathname.startsWith("/verificar-whatsapp") ||
       (pathname.startsWith("/api/") && !isPublicApiBypass(pathname));
 
     if (requiresAuth) {

@@ -20,14 +20,20 @@ export const getAppointmentsByPhone = query({
     if (!normalizedPhone) {
       throw new Error("Telefone inválido.");
     }
+    const phoneKeys = buildPhoneMatchKeys(args.phone);
+    if (phoneKeys.length === 0) {
+      throw new Error("Telefone inválido.");
+    }
+    const phoneKeySet = new Set(phoneKeys);
 
     const allAppointments = await ctx.db.query("appointments").collect();
     const allReservations = await ctx.db.query("reservations").collect();
     const reservationById = new Map(allReservations.map((item) => [String(item._id), item]));
 
-    const matchedAppointments = allAppointments.filter((appointment) =>
-      normalizePhone(appointment.phone) === normalizedPhone,
-    );
+    const matchedAppointments = allAppointments.filter((appointment) => {
+      const appointmentKeys = buildPhoneMatchKeys(appointment.phone);
+      return appointmentKeys.some((key) => phoneKeySet.has(key));
+    });
     const sorted = [...matchedAppointments].sort((a, b) => b.requestedAt - a.requestedAt);
 
     const filtered = args.includeHistory
@@ -68,7 +74,7 @@ export const cancelAppointmentByPhone = mutation({
       throw new Error("Agendamento não encontrado.");
     }
 
-    if (normalizePhone(appointment.phone) !== normalizedPhone) {
+    if (!phonesMatch(appointment.phone, normalizedPhone)) {
       throw new Error("Agendamento não corresponde ao telefone informado.");
     }
 
@@ -134,7 +140,7 @@ export const updateAppointmentStatusByPhone = mutation({
       throw new Error("Agendamento não encontrado.");
     }
 
-    if (normalizePhone(appointment.phone) !== normalizedPhone) {
+    if (!phonesMatch(appointment.phone, normalizedPhone)) {
       throw new Error("Agendamento não corresponde ao telefone informado.");
     }
 
@@ -301,6 +307,46 @@ function maskEmail(email: string) {
 function normalizePhone(rawPhone: string) {
   const digits = rawPhone.replace(/\D/g, "");
   return digits.length >= 8 ? digits : "";
+}
+
+function buildPhoneMatchKeys(rawPhone: string) {
+  const normalized = normalizePhone(rawPhone);
+  if (!normalized) {
+    return [];
+  }
+
+  const keys = new Set<string>();
+  keys.add(normalized);
+
+  const withoutCountryCode = normalized.startsWith("55") ? normalized.slice(2) : normalized;
+  if (withoutCountryCode) {
+    keys.add(withoutCountryCode);
+  }
+
+  if (!normalized.startsWith("55") && (normalized.length === 10 || normalized.length === 11)) {
+    keys.add(`55${normalized}`);
+  }
+
+  // Aceita variação de celular BR com ou sem o 9º dígito.
+  if (withoutCountryCode.length === 10) {
+    const withNinthDigit = `${withoutCountryCode.slice(0, 2)}9${withoutCountryCode.slice(2)}`;
+    keys.add(withNinthDigit);
+    keys.add(`55${withNinthDigit}`);
+  }
+
+  if (withoutCountryCode.length === 11 && withoutCountryCode[2] === "9") {
+    const withoutNinthDigit = `${withoutCountryCode.slice(0, 2)}${withoutCountryCode.slice(3)}`;
+    keys.add(withoutNinthDigit);
+    keys.add(`55${withoutNinthDigit}`);
+  }
+
+  return [...keys];
+}
+
+function phonesMatch(phoneA: string, phoneB: string) {
+  const keysA = new Set(buildPhoneMatchKeys(phoneA));
+  const keysB = buildPhoneMatchKeys(phoneB);
+  return keysB.some((key) => keysA.has(key));
 }
 
 function mapAppointmentForResponse(

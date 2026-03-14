@@ -97,6 +97,32 @@ export async function GET(request: Request) {
         },
       },
     ],
+    fallbackPlaybooks: [
+      {
+        id: "no-appointments-for-phone",
+        when: "GET /appointments retorna total=0 para o telefone consultado.",
+        steps: [
+          {
+            action: "Responder ao paciente",
+            message:
+              "Não encontrei agendamentos vinculados a este número. Quer que eu agende uma nova consulta para você?",
+          },
+          {
+            action: "Consultar vínculo de contato",
+            request: "GET /api/integrations/n8n/patient-context?phone=<telefone>",
+          },
+          {
+            action: "Se linked=false, sugerir vinculação",
+            message:
+              "Também não encontrei cadastro vinculado a este número. Se quiser, posso te ajudar a vincular este WhatsApp ao seu cadastro para facilitar os próximos atendimentos.",
+          },
+          {
+            action: "Se paciente aceitar vinculação, enviar solicitação",
+            request: "POST /api/integrations/n8n/phone-link/request { phone, email }",
+          },
+        ],
+      },
+    ],
     docsPath: "/docs/n8n-api.md",
   });
 }

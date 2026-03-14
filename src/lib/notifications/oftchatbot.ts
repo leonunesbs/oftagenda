@@ -56,6 +56,13 @@ function getOftchatbotApiBaseUrl() {
   return configured && configured.length > 0 ? configured : DEFAULT_OFTCHATBOT_API_BASE_URL;
 }
 
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return "erro desconhecido";
+}
+
 function buildAppointmentConfirmationMessage(input: AppointmentConfirmedNotificationInput) {
   const firstName = getFirstName(input.patientName);
   const when = formatScheduledDateTime(input.scheduledFor, input.timezone);
@@ -105,7 +112,18 @@ export async function sendAppointmentConfirmedNotification(
     };
   }
 
-  const apiUrl = new URL("/api/chat/send-text", getOftchatbotApiBaseUrl());
+  let apiUrl: URL;
+  try {
+    apiUrl = new URL("/api/chat/send-text", getOftchatbotApiBaseUrl());
+  } catch (error) {
+    return {
+      ok: false,
+      status: 500,
+      chatId,
+      error: `OFTCHATBOT_API_BASE_URL inválida: ${getErrorMessage(error)}`,
+    };
+  }
+
   return sendTextViaOftchatbot({
     chatId,
     text: buildAppointmentConfirmationMessage(input),
@@ -126,7 +144,18 @@ export async function sendPhoneLinkVerificationMessage(input: {
     };
   }
 
-  const apiUrl = new URL("/api/chat/send-text", getOftchatbotApiBaseUrl());
+  let apiUrl: URL;
+  try {
+    apiUrl = new URL("/api/chat/send-text", getOftchatbotApiBaseUrl());
+  } catch (error) {
+    return {
+      ok: false,
+      status: 500,
+      chatId,
+      error: `OFTCHATBOT_API_BASE_URL inválida: ${getErrorMessage(error)}`,
+    };
+  }
+
   return sendTextViaOftchatbot({
     chatId,
     text: buildPhoneLinkVerificationMessage({ confirmUrl: input.confirmUrl }),
@@ -139,17 +168,27 @@ async function sendTextViaOftchatbot(input: {
   text: string;
   apiUrl: URL;
 }): Promise<NotificationDeliveryResult> {
-  const response = await fetch(input.apiUrl, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
+  let response: Response;
+  try {
+    response = await fetch(input.apiUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        chatId: input.chatId,
+        text: input.text,
+      }),
+      signal: AbortSignal.timeout(10_000),
+    });
+  } catch (error) {
+    return {
+      ok: false,
+      status: 503,
       chatId: input.chatId,
-      text: input.text,
-    }),
-    signal: AbortSignal.timeout(10_000),
-  });
+      error: `Falha de rede ao enviar mensagem via oftchatbot (${input.apiUrl.origin}): ${getErrorMessage(error)}`,
+    };
+  }
 
   const rawBody = await response.text();
   const responseBody = parseUnknownBody(rawBody);

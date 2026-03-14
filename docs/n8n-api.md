@@ -131,6 +131,39 @@ Resposta:
 }
 ```
 
+#### Fluxo recomendado quando nao houver agendamentos
+
+Se a resposta de `appointments` vier com `total: 0` (nenhum agendamento vinculado ao numero):
+
+1. Responda ao paciente:
+
+```text
+Nao encontrei agendamentos vinculados a este numero.
+Quer que eu agende uma nova consulta para voce?
+```
+
+2. Em seguida, consulte o contexto do paciente:
+
+- `GET /api/integrations/n8n/patient-context?phone=5585999999999`
+
+3. Se `linked: false`, sugira vinculacao do numero:
+
+```text
+Tambem nao encontrei cadastro vinculado a este numero.
+Se quiser, posso te ajudar a vincular este WhatsApp ao seu cadastro para facilitar os proximos atendimentos.
+```
+
+4. Se o paciente aceitar, solicite o e-mail e chame:
+
+- `POST /api/integrations/n8n/phone-link/request`
+
+```json
+{
+  "phone": "5585999999999",
+  "email": "paciente@email.com"
+}
+```
+
 ### 4) Atualizar status de agendamento
 
 - `PATCH /api/integrations/n8n/appointments`

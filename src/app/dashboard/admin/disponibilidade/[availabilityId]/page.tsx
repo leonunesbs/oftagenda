@@ -18,7 +18,7 @@ export default async function AvailabilityDetailsPage({
 
   if (!selectedGroup) {
     return (
-      <section className="mx-auto w-full max-w-4xl space-y-4">
+      <section className="mx-auto w-full max-w-4xl space-y-4 max-md:max-w-none max-md:px-0">
         <div className="flex items-center justify-between gap-2">
           <h1 className="text-lg font-semibold">Disponibilidade não encontrada</h1>
           <Button asChild variant="outline" size="sm">
@@ -62,7 +62,7 @@ export default async function AvailabilityDetailsPage({
     }));
 
   return (
-    <section className="mx-auto w-full max-w-6xl space-y-4">
+    <section className="mx-auto w-full max-w-6xl space-y-4 max-md:max-w-none max-md:px-0">
       <div className="flex items-center justify-between gap-2">
         <div>
           <h1 className="text-lg font-semibold">Editar horários</h1>
@@ -73,7 +73,7 @@ export default async function AvailabilityDetailsPage({
         </Button>
       </div>
 
-      <Card className="border-border/70">
+      <Card variant="flat-mobile" className="border-border/70">
         <CardHeader>
           <CardTitle>Disponibilidade</CardTitle>
         </CardHeader>

@@ -82,7 +82,7 @@ export default async function AdminEventsPage({
   );
 
   return (
-    <Card className="border-border/70">
+    <Card variant="flat-mobile" className="border-border/70">
       <CardHeader>
         <CardTitle>Eventos</CardTitle>
         <CardDescription>CRUD completo para eventos que representam os locais da reserva.</CardDescription>

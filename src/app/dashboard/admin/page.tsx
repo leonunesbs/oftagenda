@@ -61,7 +61,7 @@ export default async function AdminDashboardPage() {
 
     return (
       <div className="space-y-6">
-        <Card className="border-border/70">
+        <Card variant="flat-mobile" className="border-border/70">
           <CardHeader>
             <CardTitle>Radar operacional</CardTitle>
             <CardDescription>
@@ -81,7 +81,7 @@ export default async function AdminDashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-border/70">
+        <Card variant="flat-mobile" className="border-border/70">
           <CardHeader>
             <CardTitle>Proximos atendimentos</CardTitle>
             <CardDescription>Reservas futuras para acompanhamento rapido da agenda.</CardDescription>
@@ -124,7 +124,7 @@ export default async function AdminDashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-border/70">
+        <Card variant="flat-mobile" className="border-border/70">
           <CardHeader>
             <CardTitle>Seções rápidas</CardTitle>
             <CardDescription>Navegação para os módulos administrativos.</CardDescription>
@@ -165,7 +165,7 @@ export default async function AdminDashboardPage() {
         : "Falha ao carregar dados administrativos. Verifique a integração Clerk + Convex.";
 
     return (
-      <Card className="border-border/70">
+      <Card variant="flat-mobile" className="border-border/70">
         <CardHeader>
           <CardTitle>Painel administrativo indisponível</CardTitle>
           <CardDescription>Não foi possível autenticar sua sessão no Convex para carregar o painel.</CardDescription>

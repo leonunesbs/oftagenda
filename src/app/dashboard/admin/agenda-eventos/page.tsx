@@ -38,7 +38,7 @@ export default async function AdminScheduleEventsPage({
   });
 
   return (
-    <Card className="border-border/70">
+    <Card variant="flat-mobile" className="border-border/70">
       <CardHeader>
         <CardTitle>Eventos da agenda</CardTitle>
         <CardDescription>Monitore mudancas operacionais por tipo e janela de tempo.</CardDescription>

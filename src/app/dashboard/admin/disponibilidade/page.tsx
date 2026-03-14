@@ -9,7 +9,7 @@ export default async function AdminAvailabilityPage() {
   const availabilityGroups = buildAvailabilityGroups(data);
 
   return (
-    <Card className="border-border/70">
+    <Card variant="flat-mobile" className="border-border/70">
       <CardHeader>
         <CardTitle>Disponibilidade</CardTitle>
         <CardDescription>Visualize as disponibilidades cadastradas e abra a edição de horários.</CardDescription>

@@ -192,10 +192,10 @@ export default async function DashboardPage({
   };
 
   return (
-    <section className="mx-auto w-full max-w-3xl space-y-6">
+    <section className="mx-auto w-full max-w-3xl space-y-6 max-md:-mx-4 max-md:max-w-none max-md:px-4">
       <BookingConfirmedEvent enabled={bookingConfirmed} />
       <CheckoutReturnUrlCleaner enabled={paymentJustSucceeded} />
-      <Card className="border-border/70">
+      <Card variant="flat-mobile" className="border-border/70">
         <CardHeader>
           <CardTitle>Status do agendamento</CardTitle>
           <CardDescription>

@@ -19,7 +19,7 @@ export default async function AdminPaymentsPage() {
   const data = await getAdminSnapshot();
 
   return (
-    <Card className="border-border/70">
+    <Card variant="flat-mobile" className="border-border/70">
       <CardHeader>
         <CardTitle>Pagamentos</CardTitle>
         <CardDescription>Registrar e atualizar pagamentos vinculados a reservas.</CardDescription>

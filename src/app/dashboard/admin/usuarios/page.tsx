@@ -6,7 +6,7 @@ export default async function AdminUsersPage() {
   const data = await getAdminSnapshot();
 
   return (
-    <Card className="border-border/70">
+    <Card variant="flat-mobile" className="border-border/70">
       <CardHeader>
         <CardTitle>Usuários</CardTitle>
         <CardDescription>Atividade agregada por usuário Clerk.</CardDescription>

@@ -3,8 +3,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function DashboardLoading() {
   return (
-    <section className="mx-auto w-full max-w-3xl space-y-6">
-      <Card className="border-border/70">
+    <section className="mx-auto w-full max-w-3xl space-y-6 max-md:-mx-4 max-md:max-w-none max-md:px-4">
+      <Card variant="flat-mobile" className="border-border/70">
         <CardHeader className="space-y-3">
           <Skeleton className="h-7 w-52" />
           <Skeleton className="h-4 w-full max-w-xl" />

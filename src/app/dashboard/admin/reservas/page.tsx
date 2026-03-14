@@ -47,7 +47,7 @@ export default async function AdminReservationsPage({
   );
 
   return (
-    <Card className="border-border/70">
+    <Card variant="flat-mobile" className="border-border/70">
       <CardHeader>
         <CardTitle>Reservas</CardTitle>
         <CardDescription>Atualize status, filtre por etapa e acompanhe o tipo de atendimento.</CardDescription>

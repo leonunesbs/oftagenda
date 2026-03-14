@@ -42,7 +42,7 @@ export default async function AdminAgendaPage() {
   }));
 
   return (
-    <Card className="min-w-0 border-border/70">
+    <Card variant="flat-mobile" className="min-w-0 border-border/70">
       <CardHeader>
         <CardTitle>Agenda visual</CardTitle>
         <CardDescription>Grade semanal/diaria para operacao de consultas, exames e procedimentos.</CardDescription>

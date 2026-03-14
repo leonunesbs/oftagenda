@@ -10,7 +10,7 @@ export default function AdminDashboardLoading() {
         ))}
       </div>
 
-      <Card className="border-border/70">
+      <Card variant="flat-mobile" className="border-border/70">
         <CardHeader className="space-y-3">
           <Skeleton className="h-7 w-56" />
           <Skeleton className="h-4 w-full max-w-xl" />
@@ -28,7 +28,7 @@ export default function AdminDashboardLoading() {
         </CardContent>
       </Card>
 
-      <Card className="border-border/70">
+      <Card variant="flat-mobile" className="border-border/70">
         <CardHeader className="space-y-3">
           <Skeleton className="h-6 w-52" />
           <Skeleton className="h-4 w-full max-w-lg" />
@@ -44,7 +44,7 @@ export default function AdminDashboardLoading() {
         </CardContent>
       </Card>
 
-      <Card className="border-border/70">
+      <Card variant="flat-mobile" className="border-border/70">
         <CardHeader className="space-y-3">
           <Skeleton className="h-6 w-44" />
           <Skeleton className="h-4 w-full max-w-md" />

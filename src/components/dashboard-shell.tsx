@@ -27,7 +27,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
             <SidebarTrigger aria-label="Abrir menu lateral" />
             <span className="ml-2 text-sm font-medium text-muted-foreground">Painel administrativo</span>
           </header>
-          <div className="flex min-w-0 max-w-full flex-1 flex-col overflow-x-hidden p-4 md:p-6">{children}</div>
+          <div className="flex min-w-0 max-w-full flex-1 flex-col overflow-x-hidden px-3 py-4 md:p-6">{children}</div>
         </SidebarInset>
       </SidebarProvider>
     </div>

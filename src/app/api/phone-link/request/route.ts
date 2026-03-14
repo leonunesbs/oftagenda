@@ -9,7 +9,7 @@ import {
   getAuthenticatedConvexHttpClient,
   getConvexHttpClient,
 } from "@/lib/convex-server";
-import { sendPhoneVerificationEmail } from "@/lib/email/resend";
+import { sendPhoneLinkVerificationMessage } from "@/lib/notifications/oftchatbot";
 import { api } from "@convex/_generated/api";
 
 export const runtime = "nodejs";
@@ -56,13 +56,23 @@ export async function POST(request: Request) {
     const confirmUrl = new URL("/verificar-whatsapp", siteUrl);
     confirmUrl.searchParams.set("token", result.token);
 
-    await sendPhoneVerificationEmail({
-      to: patient.email,
-      confirmUrl: confirmUrl.toString(),
+    const delivery = await sendPhoneLinkVerificationMessage({
       phone: parsed.data.phone,
+      confirmUrl: confirmUrl.toString(),
     });
+    if (!delivery.ok) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            delivery.error ??
+            "Não foi possível enviar a verificação por WhatsApp.",
+        },
+        { status: delivery.status || 502 },
+      );
+    }
 
-    return NextResponse.json({ ok: true, emailSent: true });
+    return NextResponse.json({ ok: true, messageSent: true });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Falha ao solicitar vinculação.";

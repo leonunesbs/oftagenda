@@ -60,8 +60,8 @@ export function ColorModeToggle() {
     window.localStorage.setItem(THEME_STORAGE_KEY, next);
   }
 
-  const visible = "rotate-0 scale-100 opacity-100";
-  const hidden = "rotate-90 scale-0 opacity-0";
+  const visible = "scale-100 opacity-100";
+  const hidden = "scale-90 opacity-0";
 
   return (
     <Button
@@ -72,13 +72,19 @@ export function ColorModeToggle() {
       title={LABELS[mode]}
       className="relative overflow-hidden"
     >
-      <span className={`absolute transition-all duration-300 ${mode === "light" ? visible : hidden}`}>
+      <span
+        className={`absolute transition-opacity transition-transform duration-150 ease-out motion-reduce:transition-none ${mode === "light" ? visible : hidden}`}
+      >
         <HugeiconsIcon icon={SunIcon} strokeWidth={2} />
       </span>
-      <span className={`absolute transition-all duration-300 ${mode === "dark" ? visible : hidden}`}>
+      <span
+        className={`absolute transition-opacity transition-transform duration-150 ease-out motion-reduce:transition-none ${mode === "dark" ? visible : hidden}`}
+      >
         <HugeiconsIcon icon={MoonIcon} strokeWidth={2} />
       </span>
-      <span className={`absolute transition-all duration-300 ${mode === "system" ? visible : hidden}`}>
+      <span
+        className={`absolute transition-opacity transition-transform duration-150 ease-out motion-reduce:transition-none ${mode === "system" ? visible : hidden}`}
+      >
         <HugeiconsIcon icon={ComputerIcon} strokeWidth={2} />
       </span>
     </Button>

@@ -79,14 +79,15 @@ export async function GET(request: Request) {
       {
         method: "POST",
         path: "/api/integrations/n8n/phone-link/request",
-        description: "Solicita vinculação de WhatsApp. Envia magic link por email ao paciente.",
+        description:
+          "Solicita vinculação de WhatsApp. Envia link único de confirmação no próprio WhatsApp informado.",
         body: {
           phone: "5585999999999",
           email: "paciente@email.com",
         },
         responseExample: {
           ok: true,
-          emailSent: true,
+          messageSent: true,
         },
       },
     ],

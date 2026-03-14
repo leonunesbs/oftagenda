@@ -1,6 +1,6 @@
 "use client";
 
-import { MailIcon, PhoneIcon, UnlinkIcon } from "lucide-react";
+import { MessageCircleIcon, PhoneIcon, UnlinkIcon } from "lucide-react";
 import { useState } from "react";
 
 import {
@@ -179,8 +179,8 @@ export function PhoneLinkCard({
                 <DialogHeader>
                   <DialogTitle>Vincular WhatsApp</DialogTitle>
                   <DialogDescription>
-                    Informe seu número de WhatsApp. Enviaremos um email de
-                    confirmação para o endereço cadastrado na sua conta.
+                    Informe seu número de WhatsApp. Enviaremos um link de
+                    verificação no próprio WhatsApp informado.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-2">
@@ -207,13 +207,12 @@ export function PhoneLinkCard({
               <>
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2">
-                    <MailIcon className="size-5" />
-                    Email enviado!
+                    <MessageCircleIcon className="size-5" />
+                    Mensagem enviada!
                   </DialogTitle>
                   <DialogDescription>
-                    Enviamos um email para o endereço cadastrado na sua conta.
-                    Clique no botão &quot;Confirmar meu número&quot; no email
-                    para completar a vinculação.
+                    Enviamos um link de verificação para o WhatsApp informado.
+                    Toque no link recebido para completar a vinculação.
                   </DialogDescription>
                 </DialogHeader>
                 <DialogFooter>

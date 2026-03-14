@@ -71,6 +71,17 @@ function buildAppointmentConfirmationMessage(input: AppointmentConfirmedNotifica
   ].join("\n");
 }
 
+function buildPhoneLinkVerificationMessage(input: { confirmUrl: string }) {
+  return [
+    "Recebemos uma solicitação para vincular este WhatsApp à sua conta no OftAgenda.",
+    "",
+    "Para confirmar a vinculação, toque no link abaixo:",
+    input.confirmUrl,
+    "",
+    "Se você não fez esta solicitação, ignore esta mensagem.",
+  ].join("\n");
+}
+
 function parseUnknownBody(body: string) {
   if (!body) {
     return null;
@@ -95,15 +106,47 @@ export async function sendAppointmentConfirmedNotification(
   }
 
   const apiUrl = new URL("/api/chat/send-text", getOftchatbotApiBaseUrl());
+  return sendTextViaOftchatbot({
+    chatId,
+    text: buildAppointmentConfirmationMessage(input),
+    apiUrl,
+  });
+}
 
-  const response = await fetch(apiUrl, {
+export async function sendPhoneLinkVerificationMessage(input: {
+  phone: string;
+  confirmUrl: string;
+}): Promise<NotificationDeliveryResult> {
+  const chatId = normalizeChatIdFromPhone(input.phone);
+  if (!chatId) {
+    return {
+      ok: false,
+      status: 400,
+      error: "Telefone inválido para envio de verificação no WhatsApp.",
+    };
+  }
+
+  const apiUrl = new URL("/api/chat/send-text", getOftchatbotApiBaseUrl());
+  return sendTextViaOftchatbot({
+    chatId,
+    text: buildPhoneLinkVerificationMessage({ confirmUrl: input.confirmUrl }),
+    apiUrl,
+  });
+}
+
+async function sendTextViaOftchatbot(input: {
+  chatId: string;
+  text: string;
+  apiUrl: URL;
+}): Promise<NotificationDeliveryResult> {
+  const response = await fetch(input.apiUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      chatId,
-      text: buildAppointmentConfirmationMessage(input),
+      chatId: input.chatId,
+      text: input.text,
     }),
     signal: AbortSignal.timeout(10_000),
   });
@@ -114,7 +157,7 @@ export async function sendAppointmentConfirmedNotification(
     return {
       ok: false,
       status: response.status,
-      chatId,
+      chatId: input.chatId,
       error: `Falha ao enviar mensagem via oftchatbot (status ${response.status}).`,
       responseBody,
     };
@@ -123,7 +166,7 @@ export async function sendAppointmentConfirmedNotification(
   return {
     ok: true,
     status: response.status,
-    chatId,
+    chatId: input.chatId,
     responseBody,
   };
 }

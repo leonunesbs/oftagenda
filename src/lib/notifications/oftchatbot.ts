@@ -3,8 +3,6 @@ import type {
   NotificationDeliveryResult,
 } from "@/lib/notifications/types";
 
-const DEFAULT_OFTCHATBOT_API_BASE_URL = "http://localhost:3030";
-
 function normalizeChatIdFromPhone(rawPhone: string) {
   if (rawPhone.includes("@")) {
     return rawPhone.trim();
@@ -53,7 +51,7 @@ function formatScheduledDateTime(timestamp: number, timezone: string) {
 
 function getOftchatbotApiBaseUrl() {
   const configured = process.env.OFTCHATBOT_API_BASE_URL?.trim();
-  return configured && configured.length > 0 ? configured : DEFAULT_OFTCHATBOT_API_BASE_URL;
+  return configured && configured.length > 0 ? configured : null;
 }
 
 function getErrorMessage(error: unknown) {
@@ -112,9 +110,20 @@ export async function sendAppointmentConfirmedNotification(
     };
   }
 
+  const baseUrl = getOftchatbotApiBaseUrl();
+  if (!baseUrl) {
+    return {
+      ok: false,
+      status: 503,
+      chatId,
+      error:
+        "Integração de notificações WhatsApp não configurada (OFTCHATBOT_API_BASE_URL).",
+    };
+  }
+
   let apiUrl: URL;
   try {
-    apiUrl = new URL("/api/chat/send-text", getOftchatbotApiBaseUrl());
+    apiUrl = new URL("/api/chat/send-text", baseUrl);
   } catch (error) {
     return {
       ok: false,
@@ -144,9 +153,20 @@ export async function sendPhoneLinkVerificationMessage(input: {
     };
   }
 
+  const baseUrl = getOftchatbotApiBaseUrl();
+  if (!baseUrl) {
+    return {
+      ok: false,
+      status: 503,
+      chatId,
+      error:
+        "Integração de notificações WhatsApp não configurada (OFTCHATBOT_API_BASE_URL).",
+    };
+  }
+
   let apiUrl: URL;
   try {
-    apiUrl = new URL("/api/chat/send-text", getOftchatbotApiBaseUrl());
+    apiUrl = new URL("/api/chat/send-text", baseUrl);
   } catch (error) {
     return {
       ok: false,

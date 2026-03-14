@@ -92,7 +92,7 @@ export const confirmPhoneLink = mutation({
     const now = Date.now();
     if (now > tokenDoc.expiresAt) {
       throw new Error(
-        "Link de verificação expirado. Solicite um novo pelo WhatsApp ou pelo painel.",
+        "Link de verificação expirado. Solicite um novo pelo painel ou por um canal de atendimento.",
       );
     }
 

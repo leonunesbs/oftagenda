@@ -237,7 +237,7 @@ Com o `summaryUrl`, o chatbot continua tendo a versao completa para fallback de 
 
 - `GET /api/integrations/n8n/patient-context?phone=5585999999999`
 
-Retorna contexto completo apenas se o telefone estiver vinculado a uma conta (via verificacao no proprio WhatsApp).
+Retorna contexto completo apenas se o telefone estiver vinculado a uma conta (via verificacao de vinculo).
 
 Resposta quando vinculado:
 
@@ -276,7 +276,7 @@ Resposta quando nao vinculado:
 }
 ```
 
-### 8) Solicitar vinculacao de WhatsApp (link unico por WhatsApp)
+### 8) Solicitar vinculacao de WhatsApp (link unico por e-mail)
 
 - `POST /api/integrations/n8n/phone-link/request`
 
@@ -289,14 +289,15 @@ Body:
 }
 ```
 
-Se o email corresponder a uma conta no Clerk (ou a um paciente cadastrado no Convex), envia um link unico no proprio WhatsApp informado. O paciente toca no link no WhatsApp e a vinculacao e ativada automaticamente.
+Se o email corresponder a uma conta no Clerk (ou a um paciente cadastrado no Convex), envia um link unico de confirmacao para o e-mail informado. Ao abrir o link, a vinculacao e ativada automaticamente.
 
 Resposta:
 
 ```json
 {
   "ok": true,
-  "messageSent": true
+  "messageSent": true,
+  "emailSent": true
 }
 ```
 

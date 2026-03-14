@@ -5,8 +5,8 @@ import { NextResponse } from "next/server";
 
 import { resolveSiteUrl } from "@/config/site";
 import { getConvexHttpClient } from "@/lib/convex-server";
+import { sendPhoneVerificationEmail } from "@/lib/email/resend";
 import { n8nPhoneLinkRequestSchema } from "@/lib/integrations/n8n-schemas";
-import { sendPhoneLinkVerificationMessage } from "@/lib/notifications/oftchatbot";
 import { api } from "@convex/_generated/api";
 
 export const runtime = "nodejs";
@@ -40,23 +40,13 @@ export async function POST(request: Request) {
     const confirmUrl = new URL("/verificar-whatsapp", siteUrl);
     confirmUrl.searchParams.set("token", result.token);
 
-    const delivery = await sendPhoneLinkVerificationMessage({
+    await sendPhoneVerificationEmail({
+      to: parsed.data.email,
       phone: parsed.data.phone,
       confirmUrl: confirmUrl.toString(),
     });
-    if (!delivery.ok) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error:
-            delivery.error ??
-            "Não foi possível enviar a verificação por WhatsApp.",
-        },
-        { status: delivery.status || 502 },
-      );
-    }
 
-    return NextResponse.json({ ok: true, messageSent: true });
+    return NextResponse.json({ ok: true, messageSent: true, emailSent: true });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Falha ao solicitar vinculação.";

@@ -33,6 +33,12 @@ export async function GET(request: Request) {
       },
       {
         method: "GET",
+        path: "/api/integrations/n8n/faq",
+        description:
+          "Retorna FAQ/políticas de agendamento em JSON para documentação e respostas no n8n.",
+      },
+      {
+        method: "GET",
         path: "/api/integrations/n8n/appointments?phone=5599999999999&includeHistory=true",
         description: "Consulta agendamentos por telefone do paciente.",
       },

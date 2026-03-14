@@ -23,6 +23,7 @@ Exemplos de URL completas:
 
 - `GET https://agenda.oftleonardo.com.br/api/integrations/n8n/locations`
 - `GET https://agenda.oftleonardo.com.br/api/integrations/n8n/availability?location=fortaleza&daysAhead=14`
+- `GET https://agenda.oftleonardo.com.br/api/integrations/n8n/faq`
 - `POST https://agenda.oftleonardo.com.br/api/integrations/n8n/resumo-link`
 
 ### 1) Listar locais
@@ -57,6 +58,43 @@ Resposta:
         "label": "20/03",
         "weekdayLabel": "sex.",
         "times": ["08:00", "08:30", "09:00"]
+      }
+    ]
+  }
+}
+```
+
+### FAQ / politicas de agendamento
+
+- `GET /api/integrations/n8n/faq`
+
+Resposta:
+
+```json
+{
+  "ok": true,
+  "integration": "oftagenda-n8n",
+  "source": {
+    "pagePath": "/faq-agendamento",
+    "apiPath": "/api/integrations/n8n/faq",
+    "canonicalUrl": "https://agenda.oftleonardo.com.br/faq-agendamento",
+    "updatedAt": "2026-03-14"
+  },
+  "faq": {
+    "totalSections": 7,
+    "sections": [
+      {
+        "id": "reserva",
+        "label": "Politica 01",
+        "title": "Reservas",
+        "description": "A taxa de reserva confirma a intencao de ocupar o horario selecionado.",
+        "points": ["..."]
+      }
+    ],
+    "legalReferences": [
+      {
+        "label": "LGPD",
+        "text": "Lei 13.709/2018 - Lei Geral de Protecao de Dados Pessoais"
       }
     ]
   }

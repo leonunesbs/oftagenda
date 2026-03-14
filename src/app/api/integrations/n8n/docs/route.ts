@@ -5,7 +5,8 @@ export const runtime = "nodejs";
 export async function GET(request: Request) {
   const requestOrigin = new URL(request.url).origin;
   const forwardOrigin =
-    process.env.N8N_OFTAGENDA_FORWARD_ORIGIN?.trim() || "https://agenda.oftleonardo.com.br";
+    process.env.N8N_OFTAGENDA_FORWARD_ORIGIN?.trim() ||
+    "https://agenda.oftleonardo.com.br";
 
   return NextResponse.json({
     ok: true,
@@ -24,7 +25,8 @@ export async function GET(request: Request) {
       {
         method: "GET",
         path: "/api/integrations/n8n/locations",
-        description: "Lista locais ativos de atendimento para agendamento.",
+        description:
+          "Lista locais ativos de atendimento para agendamento, incluindo preço da consulta e taxa de reserva.",
       },
       {
         method: "GET",
@@ -45,7 +47,8 @@ export async function GET(request: Request) {
       {
         method: "PATCH",
         path: "/api/integrations/n8n/appointments",
-        description: "Atualiza status de um agendamento por appointmentId + telefone.",
+        description:
+          "Atualiza status de um agendamento por appointmentId + telefone.",
         body: {
           appointmentId: "j57...",
           phone: "5599999999999",
@@ -56,12 +59,14 @@ export async function GET(request: Request) {
       {
         method: "POST",
         path: "/api/integrations/n8n/appointments/cancel",
-        description: "Atalho para cancelar agendamento por appointmentId + telefone.",
+        description:
+          "Atalho para cancelar agendamento por appointmentId + telefone.",
       },
       {
         method: "POST",
         path: "/api/integrations/n8n/resumo-link",
-        description: "Gera link para encaminhar paciente à página /agendar/resumo.",
+        description:
+          "Gera link para encaminhar paciente à página /agendar/resumo.",
         body: {
           location: "fortaleza",
           date: "2026-03-20",
@@ -80,7 +85,8 @@ export async function GET(request: Request) {
       {
         method: "GET",
         path: "/api/integrations/n8n/patient-context?phone=5585999999999",
-        description: "Retorna contexto completo do paciente se o telefone estiver vinculado (linked=true). Caso contrário, retorna linked=false.",
+        description:
+          "Retorna contexto completo do paciente se o telefone estiver vinculado (linked=true). Caso contrário, retorna linked=false.",
       },
       {
         method: "POST",
@@ -110,7 +116,8 @@ export async function GET(request: Request) {
           },
           {
             action: "Consultar vínculo de contato",
-            request: "GET /api/integrations/n8n/patient-context?phone=<telefone>",
+            request:
+              "GET /api/integrations/n8n/patient-context?phone=<telefone>",
           },
           {
             action: "Se linked=false, sugerir vinculação",
@@ -119,7 +126,8 @@ export async function GET(request: Request) {
           },
           {
             action: "Se paciente aceitar vinculação, enviar solicitação",
-            request: "POST /api/integrations/n8n/phone-link/request { phone, email }",
+            request:
+              "POST /api/integrations/n8n/phone-link/request { phone, email }",
           },
         ],
       },

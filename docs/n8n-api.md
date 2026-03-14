@@ -36,7 +36,18 @@ Resposta:
 {
   "ok": true,
   "locations": [
-    { "value": "fortaleza", "label": "Fortaleza", "address": "..." }
+    {
+      "value": "fortaleza",
+      "label": "Fortaleza",
+      "address": "...",
+      "consultationPriceCents": 30000,
+      "consultationPriceFormatted": "R$ 300,00",
+      "reservationFeeCents": 6000,
+      "reservationFeeFormatted": "R$ 60,00",
+      "reservationFeePercent": 20,
+      "paymentMode": "booking_fee",
+      "paymentGuidance": "Taxa de reserva de 20% para garantir o horário."
+    }
   ]
 }
 ```
@@ -256,7 +267,7 @@ Resposta quando vinculado:
     "lastVisitLocation": "fortaleza",
     "frequentConsultationType": "retina"
   },
-  "activeAppointment": { "..." : "..." },
+  "activeAppointment": { "...": "..." },
   "recentHistory": ["..."],
   "triageHighlights": {
     "conditions": ["diabetes"],

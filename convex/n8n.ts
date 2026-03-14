@@ -305,39 +305,57 @@ function maskEmail(email: string) {
 }
 
 function normalizePhone(rawPhone: string) {
-  const digits = rawPhone.replace(/\D/g, "");
-  return digits.length >= 8 ? digits : "";
+  const candidates = buildPhoneMatchKeys(rawPhone);
+  if (candidates.length === 0) {
+    return "";
+  }
+  const canonical = candidates.find((candidate) => candidate.startsWith("55") && candidate.length >= 12);
+  return canonical ?? candidates[0] ?? "";
 }
 
 function buildPhoneMatchKeys(rawPhone: string) {
-  const normalized = normalizePhone(rawPhone);
-  if (!normalized) {
+  const digitsOnly = rawPhone.replace(/\D/g, "");
+  if (digitsOnly.length < 8) {
     return [];
   }
 
   const keys = new Set<string>();
-  keys.add(normalized);
+  const rawCandidates = new Set<string>([
+    digitsOnly,
+    digitsOnly.replace(/^00+/, ""),
+  ]);
 
-  const withoutCountryCode = normalized.startsWith("55") ? normalized.slice(2) : normalized;
-  if (withoutCountryCode) {
-    keys.add(withoutCountryCode);
-  }
+  for (const candidate of rawCandidates) {
+    if (!candidate || candidate.length < 8) {
+      continue;
+    }
 
-  if (!normalized.startsWith("55") && (normalized.length === 10 || normalized.length === 11)) {
-    keys.add(`55${normalized}`);
-  }
+    keys.add(candidate);
+    if (candidate.length > 11) {
+      keys.add(candidate.slice(-11));
+      keys.add(candidate.slice(-10));
+    }
 
-  // Aceita variação de celular BR com ou sem o 9º dígito.
-  if (withoutCountryCode.length === 10) {
-    const withNinthDigit = `${withoutCountryCode.slice(0, 2)}9${withoutCountryCode.slice(2)}`;
-    keys.add(withNinthDigit);
-    keys.add(`55${withNinthDigit}`);
-  }
+    const withoutCountryCode = candidate.startsWith("55") ? candidate.slice(2) : candidate;
+    const withoutTrunkPrefix = withoutCountryCode.replace(/^0+/, "");
+    if (!withoutTrunkPrefix) {
+      continue;
+    }
 
-  if (withoutCountryCode.length === 11 && withoutCountryCode[2] === "9") {
-    const withoutNinthDigit = `${withoutCountryCode.slice(0, 2)}${withoutCountryCode.slice(3)}`;
-    keys.add(withoutNinthDigit);
-    keys.add(`55${withoutNinthDigit}`);
+    keys.add(withoutTrunkPrefix);
+    keys.add(`55${withoutTrunkPrefix}`);
+
+    if (withoutTrunkPrefix.length === 10) {
+      const withNinthDigit = `${withoutTrunkPrefix.slice(0, 2)}9${withoutTrunkPrefix.slice(2)}`;
+      keys.add(withNinthDigit);
+      keys.add(`55${withNinthDigit}`);
+    }
+
+    if (withoutTrunkPrefix.length === 11 && withoutTrunkPrefix[2] === "9") {
+      const withoutNinthDigit = `${withoutTrunkPrefix.slice(0, 2)}${withoutTrunkPrefix.slice(3)}`;
+      keys.add(withoutNinthDigit);
+      keys.add(`55${withoutNinthDigit}`);
+    }
   }
 
   return [...keys];

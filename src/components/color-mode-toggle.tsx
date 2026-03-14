@@ -36,7 +36,7 @@ const LABELS: Record<ThemeMode, string> = {
 };
 
 export function ColorModeToggle() {
-  const [mode, setMode] = React.useState<ThemeMode>(getStoredTheme);
+  const [mode, setMode] = React.useState<ThemeMode>("system");
 
   React.useEffect(() => {
     const stored = getStoredTheme();

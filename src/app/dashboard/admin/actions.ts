@@ -474,12 +474,7 @@ export async function setPaymentStatusAction(formData: FormData) {
 export async function linkWhatsappToUserAction(formData: FormData) {
   await requireAdmin(ADMIN_PATH);
   const { client } = await getAuthenticatedConvexHttpClient();
-  const adminLinkWhatsappToUserMutation = (api as unknown as {
-    admin: {
-      adminLinkWhatsappToUser: typeof api.admin.createEventType;
-    };
-  }).admin.adminLinkWhatsappToUser;
-  await client.mutation(adminLinkWhatsappToUserMutation, {
+  await client.mutation(api.admin.adminLinkWhatsappToUser, {
     clerkUserId: toStringValue(formData.get("clerkUserId")),
     phone: toStringValue(formData.get("phone")),
   });

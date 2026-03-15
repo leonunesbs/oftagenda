@@ -29,6 +29,14 @@ function isPublicApiBypass(pathname: string) {
   );
 }
 
+function isRoutePrefetch(req: NextRequest) {
+  return (
+    req.headers.has("next-router-prefetch") ||
+    req.headers.get("purpose") === "prefetch" ||
+    req.headers.get("sec-purpose") === "prefetch"
+  );
+}
+
 function shouldRunClerk(_pathname: string) {
   // Keep Clerk middleware active on all matched routes so server-side `auth()`
   // can resolve the current session even on public pages like `/`.
@@ -51,6 +59,10 @@ const clerkProxy = clerkMiddleware(
 
       if (req.nextUrl.pathname.startsWith("/api/")) {
         return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+      }
+
+      if (isRoutePrefetch(req)) {
+        return NextResponse.next();
       }
 
       const redirectUrl = new URL(signInUrl, req.url);

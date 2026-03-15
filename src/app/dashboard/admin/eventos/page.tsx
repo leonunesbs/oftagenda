@@ -69,13 +69,14 @@ const paymentModeClassName: Record<string, string> = {
 export default async function AdminEventsPage({
   searchParams,
 }: {
-  searchParams?: { kind?: string };
+  searchParams?: Promise<{ kind?: string }>;
 }) {
   const data = await getAdminSnapshot();
   const availabilityById = getAvailabilityById(data);
   const availabilityGroups = buildAvailabilityGroups(data);
-  const selectedKind = kindFilters.includes((searchParams?.kind as (typeof kindFilters)[number]) ?? "all")
-    ? ((searchParams?.kind as (typeof kindFilters)[number]) ?? "all")
+  const resolvedSearchParams = (await searchParams) ?? {};
+  const selectedKind = kindFilters.includes((resolvedSearchParams.kind as (typeof kindFilters)[number]) ?? "all")
+    ? ((resolvedSearchParams.kind as (typeof kindFilters)[number]) ?? "all")
     : "all";
   const eventTypes = data.eventTypes.filter((eventType) =>
     selectedKind === "all" ? true : (eventType.kind ?? "consulta") === selectedKind,
@@ -353,9 +354,14 @@ export default async function AdminEventsPage({
                                 />
                                 <select name="status" className={selectClassName} defaultValue="pending">
                                   <option value="pending">pending</option>
+                                  <option value="awaiting_patient">awaiting_patient</option>
                                   <option value="confirmed">confirmed</option>
+                                  <option value="in_care">in_care</option>
+                                  <option value="surgery_planned">surgery_planned</option>
+                                  <option value="postop_followup">postop_followup</option>
                                   <option value="cancelled">cancelled</option>
                                   <option value="completed">completed</option>
+                                  <option value="no_show">no_show</option>
                                 </select>
                               </div>
                               {linkedAvailability ? (
@@ -431,9 +437,14 @@ export default async function AdminEventsPage({
                                                 />
                                                 <select name="status" className={selectClassName} defaultValue={reservation.status}>
                                                   <option value="pending">pending</option>
+                                                  <option value="awaiting_patient">awaiting_patient</option>
                                                   <option value="confirmed">confirmed</option>
+                                                  <option value="in_care">in_care</option>
+                                                  <option value="surgery_planned">surgery_planned</option>
+                                                  <option value="postop_followup">postop_followup</option>
                                                   <option value="cancelled">cancelled</option>
                                                   <option value="completed">completed</option>
+                                                  <option value="no_show">no_show</option>
                                                 </select>
                                               </div>
                                               <Input name="notes" defaultValue={reservation.notes ?? ""} placeholder="Observação" />

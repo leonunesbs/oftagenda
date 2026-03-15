@@ -18,6 +18,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header";
 import { Label } from "@/components/ui/label";
 import { DataTable } from "@/components/ui/data-table";
+import {
+  reservationStatusBadgeVariant,
+  reservationStatusFilterOptions,
+  reservationStatusLabel,
+  type ReservationStatus,
+} from "@/lib/reservation-status";
 import Link from "next/link";
 import {
   DropdownMenu,
@@ -28,8 +34,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
-type ReservationStatus = "pending" | "confirmed" | "completed" | "cancelled" | "no_show";
 
 type ReservationRow = {
   _id: string;
@@ -71,36 +75,18 @@ type AdminReservationsManagerProps = {
   stats: {
     total: number;
     pending: number;
+    awaitingPatient: number;
     confirmed: number;
+    inCare: number;
+    surgeryPlanned: number;
+    postopFollowup: number;
+    completed: number;
     cancelled: number;
     noShow: number;
   };
 };
 
-const statusOptions: Array<"all" | ReservationStatus> = [
-  "all",
-  "pending",
-  "confirmed",
-  "completed",
-  "cancelled",
-  "no_show",
-];
-
-const statusBadgeVariant: Record<ReservationStatus, "default" | "secondary" | "outline" | "destructive"> = {
-  pending: "secondary",
-  confirmed: "default",
-  completed: "outline",
-  cancelled: "destructive",
-  no_show: "destructive",
-};
-
-const statusLabel: Record<ReservationStatus, string> = {
-  pending: "Pendente",
-  confirmed: "Confirmado",
-  completed: "Concluído",
-  cancelled: "Cancelado",
-  no_show: "Não compareceu",
-};
+const statusOptions = reservationStatusFilterOptions;
 
 const kindClassName: Record<ReservationRow["kind"], string> = {
   consulta: "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200",
@@ -187,7 +173,11 @@ export function AdminReservationsManager({
         header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
         cell: ({ row }) => {
           const reservation = row.original;
-          return <Badge variant={statusBadgeVariant[reservation.status]}>{statusLabel[reservation.status]}</Badge>;
+          return (
+            <Badge variant={reservationStatusBadgeVariant[reservation.status]}>
+              {reservationStatusLabel[reservation.status]}
+            </Badge>
+          );
         },
       },
       {
@@ -261,12 +251,52 @@ export function AdminReservationsManager({
       helper: "Necessitam confirmação",
     },
     {
+      title: "Aguardando paciente",
+      value: stats.awaitingPatient,
+      icon: Clock3,
+      tone: "text-amber-600",
+      ratio: Math.round((stats.awaitingPatient / safeTotal) * 100),
+      helper: "Em retorno/contato",
+    },
+    {
       title: "Confirmadas",
       value: stats.confirmed,
       icon: CheckCircle2,
       tone: "text-emerald-600",
       ratio: Math.round((stats.confirmed / safeTotal) * 100),
       helper: "Prontas para atendimento",
+    },
+    {
+      title: "Em atendimento",
+      value: stats.inCare,
+      icon: CheckCircle2,
+      tone: "text-emerald-600",
+      ratio: Math.round((stats.inCare / safeTotal) * 100),
+      helper: "Paciente em acompanhamento",
+    },
+    {
+      title: "Cirurgia planejada",
+      value: stats.surgeryPlanned,
+      icon: CalendarSync,
+      tone: "text-primary",
+      ratio: Math.round((stats.surgeryPlanned / safeTotal) * 100),
+      helper: "Planejamento cirúrgico",
+    },
+    {
+      title: "Pós-operatório",
+      value: stats.postopFollowup,
+      icon: CalendarSync,
+      tone: "text-primary",
+      ratio: Math.round((stats.postopFollowup / safeTotal) * 100),
+      helper: "Acompanhamento pós-cirúrgico",
+    },
+    {
+      title: "Concluídas",
+      value: stats.completed,
+      icon: CheckCircle2,
+      tone: "text-primary",
+      ratio: Math.round((stats.completed / safeTotal) * 100),
+      helper: "Ciclo finalizado",
     },
     {
       title: "Canceladas",
@@ -334,7 +364,7 @@ export function AdminReservationsManager({
                     asChild
                   >
                     <Link href={buildFilterHref(status)}>
-                      {status === "all" ? "Todos" : statusLabel[status]}
+                      {status === "all" ? "Todos" : reservationStatusLabel[status]}
                     </Link>
                   </Button>
                 ))}

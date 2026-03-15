@@ -17,7 +17,11 @@ const availabilityStatusValidator = v.union(
 
 const reservationStatusValidator = v.union(
   v.literal("pending"),
+  v.literal("awaiting_patient"),
   v.literal("confirmed"),
+  v.literal("in_care"),
+  v.literal("surgery_planned"),
+  v.literal("postop_followup"),
   v.literal("cancelled"),
   v.literal("completed"),
   v.literal("no_show"),
@@ -74,6 +78,7 @@ export const getManagementSnapshot = query({
       appointments,
       patients,
       payments,
+      phoneLinks,
       appointmentEvents,
     ] =
       await Promise.all([
@@ -84,6 +89,7 @@ export const getManagementSnapshot = query({
         ctx.db.query("appointments").collect(),
         ctx.db.query("patients").collect(),
         ctx.db.query("payments").collect(),
+        ctx.db.query("phone_links").collect(),
         ctx.db.query("appointment_events").collect(),
       ]);
 
@@ -131,6 +137,9 @@ export const getManagementSnapshot = query({
         name?: string;
         email?: string;
         phone?: string;
+        birthDate?: string;
+        whatsapp?: string;
+        whatsappVerifiedAt?: number;
         reservationsCount: number;
         appointmentsCount: number;
         paymentsCount: number;
@@ -158,7 +167,17 @@ export const getManagementSnapshot = query({
       user.name = patient.name;
       user.email = patient.email;
       user.phone = patient.phone;
+      user.birthDate = patient.birthDate;
       user.latestActivity = Math.max(user.latestActivity, patient.updatedAt);
+    }
+
+    for (const phoneLink of phoneLinks) {
+      const user = ensureUser(phoneLink.clerkUserId);
+      if (!user.whatsappVerifiedAt || phoneLink.verifiedAt >= user.whatsappVerifiedAt) {
+        user.whatsapp = phoneLink.phone;
+        user.whatsappVerifiedAt = phoneLink.verifiedAt;
+      }
+      user.latestActivity = Math.max(user.latestActivity, phoneLink.verifiedAt, phoneLink.createdAt);
     }
 
     for (const appointment of appointments) {
@@ -191,7 +210,9 @@ export const getManagementSnapshot = query({
         availabilities: availabilities.length,
         activeAvailabilities: availabilities.filter((item) => item.status === "active").length,
         reservations: reservations.length,
-        pendingReservations: reservations.filter((item) => item.status === "pending").length,
+        pendingReservations: reservations.filter(
+          (item) => item.status === "pending" || item.status === "awaiting_patient",
+        ).length,
         confirmedReservations: reservations.filter((item) => item.status === "confirmed").length,
         appointments: appointments.length,
         patients: patients.length,
@@ -956,7 +977,12 @@ export const adminCreateAppointment = mutation({
     ).find(
       (reservation) =>
         reservation.startsAt === startsAt &&
-        (reservation.status === "confirmed" || reservation.status === "pending"),
+        (reservation.status === "confirmed" ||
+          reservation.status === "pending" ||
+          reservation.status === "awaiting_patient" ||
+          reservation.status === "in_care" ||
+          reservation.status === "surgery_planned" ||
+          reservation.status === "postop_followup"),
     );
     if (existingConflict) {
       throw new Error("Horario ja reservado para este evento");
@@ -1237,6 +1263,58 @@ export const setPaymentStatus = mutation({
   },
 });
 
+export const adminLinkWhatsappToUser = mutation({
+  args: {
+    clerkUserId: v.string(),
+    phone: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+
+    const clerkUserId = args.clerkUserId.trim();
+    if (!clerkUserId) {
+      throw new Error("Clerk ID obrigatório.");
+    }
+
+    const phone = normalizePhoneDigits(args.phone);
+    if (!phone) {
+      throw new Error("WhatsApp inválido. Informe com DDD e número.");
+    }
+
+    const now = Date.now();
+    const allLinks = await ctx.db.query("phone_links").collect();
+    const linkByPhone = allLinks.find((link) => link.phone === phone);
+    if (linkByPhone && linkByPhone.clerkUserId !== clerkUserId) {
+      throw new Error("Este WhatsApp já está vinculado a outra conta.");
+    }
+
+    const linksByUser = allLinks.filter((link) => link.clerkUserId === clerkUserId);
+    const keepLinkId = linkByPhone?._id;
+    const linksToDelete = linksByUser.filter((link) => link._id !== keepLinkId);
+    for (const link of linksToDelete) {
+      await ctx.db.delete(link._id);
+    }
+
+    if (linkByPhone) {
+      await ctx.db.patch(linkByPhone._id, {
+        phone,
+        clerkUserId,
+        verifiedAt: now,
+      });
+      return { ok: true, phone };
+    }
+
+    await ctx.db.insert("phone_links", {
+      phone,
+      clerkUserId,
+      verifiedAt: now,
+      createdAt: now,
+    });
+
+    return { ok: true, phone };
+  },
+});
+
 function formatAvailabilityLabel(
   availability:
     | {
@@ -1256,9 +1334,24 @@ function formatAvailabilityLabel(
 }
 
 function mapReservationToAppointmentStatus(
-  status: "pending" | "confirmed" | "cancelled" | "completed" | "no_show",
+  status:
+    | "pending"
+    | "awaiting_patient"
+    | "confirmed"
+    | "in_care"
+    | "surgery_planned"
+    | "postop_followup"
+    | "cancelled"
+    | "completed"
+    | "no_show",
 ) {
-  if (status === "confirmed") {
+  if (
+    status === "confirmed" ||
+    status === "awaiting_patient" ||
+    status === "in_care" ||
+    status === "surgery_planned" ||
+    status === "postop_followup"
+  ) {
     return "confirmed";
   }
   if (status === "cancelled") {
@@ -1274,11 +1367,23 @@ function mapReservationToAppointmentStatus(
 }
 
 function normalizeReservationStatusForSchedule(
-  requestedStatus: "pending" | "confirmed" | "cancelled" | "completed" | "no_show",
+  requestedStatus:
+    | "pending"
+    | "awaiting_patient"
+    | "confirmed"
+    | "in_care"
+    | "surgery_planned"
+    | "postop_followup"
+    | "cancelled"
+    | "completed"
+    | "no_show",
   startsAt: number,
   now: number,
 ) {
-  if ((requestedStatus === "pending" || requestedStatus === "confirmed") && startsAt <= now) {
+  if (
+    (requestedStatus === "pending" || requestedStatus === "awaiting_patient" || requestedStatus === "confirmed") &&
+    startsAt <= now
+  ) {
     return "no_show" as const;
   }
   return requestedStatus;
@@ -1548,6 +1653,17 @@ function normalizePriceCentsInput(value: number) {
     return value;
   }
   return value * 100;
+}
+
+function normalizePhoneDigits(rawPhone: string) {
+  const digits = rawPhone.replace(/\D/g, "");
+  if (digits.length === 10 || digits.length === 11) {
+    return `55${digits}`;
+  }
+  if (digits.length === 12 || digits.length === 13) {
+    return digits;
+  }
+  return "";
 }
 
 function buildSyntheticClerkUserId(email: string, phone: string, name: string, now: number) {

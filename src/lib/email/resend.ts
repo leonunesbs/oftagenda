@@ -3,6 +3,7 @@ import { Resend } from "resend";
 import { serverEnv } from "@/lib/env/server";
 
 const DEFAULT_FROM = "OFT Leonardo <noreply@oftleonardo.com.br>";
+const BRAND_LOGO_MIN_URL = "https://oftleonardo.com.br/mono_dark.svg";
 
 function getResendClient() {
   const apiKey = serverEnv.RESEND_API_KEY;
@@ -78,6 +79,13 @@ export async function sendReservationLifecycleEmail({
     <tr><td align="center">
       <table width="100%" style="max-width:560px;background:#ffffff;border-radius:12px;overflow:hidden">
         <tr><td style="padding:28px">
+          <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px">
+            <tr>
+              <td align="center">
+                <img src="${BRAND_LOGO_MIN_URL}" alt="OFT Leonardo" width="36" height="36" style="display:block;width:36px;height:36px;border:0;outline:none;text-decoration:none">
+              </td>
+            </tr>
+          </table>
           <h1 style="margin:0 0 8px;font-size:20px;color:#18181b">${escapeHtml(title)}</h1>
           <p style="margin:0 0 16px;font-size:14px;color:#52525b;line-height:1.5">Olá, ${escapeHtml(safeName)}.</p>
           <p style="margin:0 0 16px;font-size:15px;color:#3f3f46;line-height:1.5">${escapeHtml(summary)}</p>
@@ -126,6 +134,13 @@ function buildVerificationHtml({
     <tr><td align="center">
       <table width="100%" style="max-width:480px;background:#ffffff;border-radius:12px;overflow:hidden">
         <tr><td style="padding:32px 28px 0">
+          <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px">
+            <tr>
+              <td align="center">
+                <img src="${BRAND_LOGO_MIN_URL}" alt="OFT Leonardo" width="36" height="36" style="display:block;width:36px;height:36px;border:0;outline:none;text-decoration:none">
+              </td>
+            </tr>
+          </table>
           <h1 style="margin:0 0 8px;font-size:20px;color:#18181b">Confirmar número de WhatsApp</h1>
           <p style="margin:0 0 24px;font-size:15px;color:#52525b;line-height:1.5">
             Recebemos uma solicitação para vincular o WhatsApp <strong>${maskedPhone}</strong> à sua conta na OFT Leonardo.

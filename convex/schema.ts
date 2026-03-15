@@ -75,7 +75,11 @@ const availabilityOverrideSlotValidator = v.object({
 
 const reservationStatusValidator = v.union(
   v.literal("pending"),
+  v.literal("awaiting_patient"),
   v.literal("confirmed"),
+  v.literal("in_care"),
+  v.literal("surgery_planned"),
+  v.literal("postop_followup"),
   v.literal("cancelled"),
   v.literal("completed"),
   v.literal("no_show"),
@@ -215,6 +219,7 @@ export default defineSchema({
     name: v.string(),
     phone: v.string(),
     email: v.string(),
+    birthDate: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })

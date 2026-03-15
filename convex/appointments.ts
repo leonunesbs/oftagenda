@@ -529,7 +529,15 @@ export const cancelOwnAppointment = mutation({
 
     if (appointment.reservationId) {
       const linkedReservation = await ctx.db.get(appointment.reservationId);
-      if (linkedReservation && (linkedReservation.status === "confirmed" || linkedReservation.status === "pending")) {
+      if (
+        linkedReservation &&
+        (linkedReservation.status === "confirmed" ||
+          linkedReservation.status === "pending" ||
+          linkedReservation.status === "awaiting_patient" ||
+          linkedReservation.status === "in_care" ||
+          linkedReservation.status === "surgery_planned" ||
+          linkedReservation.status === "postop_followup")
+      ) {
         await ctx.db.patch(linkedReservation._id, {
           status: "cancelled",
           notes: "Reserva cancelada pelo paciente com antecedência mínima de 24h.",
@@ -833,7 +841,15 @@ function isReservationBlocking(
   reservation: Doc<"reservations">,
   now: number,
 ) {
-  if (reservation.status === "confirmed") {
+  if (
+    reservation.status === "confirmed" ||
+    reservation.status === "in_care" ||
+    reservation.status === "surgery_planned" ||
+    reservation.status === "postop_followup"
+  ) {
+    return true;
+  }
+  if (reservation.status === "awaiting_patient") {
     return true;
   }
   if (reservation.status !== "pending") {
@@ -885,7 +901,15 @@ async function markOverdueAppointmentsAsNoShow(
 
     if (appointment.reservationId) {
       const reservation = await ctx.db.get(appointment.reservationId);
-      if (reservation && (reservation.status === "confirmed" || reservation.status === "pending")) {
+      if (
+        reservation &&
+        (reservation.status === "confirmed" ||
+          reservation.status === "pending" ||
+          reservation.status === "awaiting_patient" ||
+          reservation.status === "in_care" ||
+          reservation.status === "surgery_planned" ||
+          reservation.status === "postop_followup")
+      ) {
         await ctx.db.patch(reservation._id, {
           status: "cancelled",
           notes:

@@ -37,6 +37,7 @@ export function AppHeader({ clerkEnabled, sessionState }: AppHeaderProps) {
   ];
   const oftleonardoContentUrl = `${siteConfig.social.oftleonardoSite}/conteudos?utm_source=oftagenda&utm_medium=referral&utm_campaign=crossdomain_seo`;
   const mobileMenuContentId = "mobile-menu-sheet-content";
+  const mobileMenuTriggerId = "mobile-menu-sheet-trigger";
 
   return (
     <header data-app-header className="border-b border-border/70 bg-background/80 backdrop-blur">
@@ -73,12 +74,23 @@ export function AppHeader({ clerkEnabled, sessionState }: AppHeaderProps) {
         <div className="flex items-center gap-2 md:hidden">
           <ColorModeToggle />
           <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="outline" size="icon-sm" aria-label="Abrir menu">
+            <SheetTrigger asChild aria-controls={mobileMenuContentId}>
+              <Button
+                id={mobileMenuTriggerId}
+                variant="outline"
+                size="icon-sm"
+                aria-label="Abrir menu"
+                aria-controls={mobileMenuContentId}
+              >
                 <HugeiconsIcon icon={MoreVerticalCircle01Icon} strokeWidth={2} />
               </Button>
             </SheetTrigger>
-            <SheetContent id={mobileMenuContentId} side="right" className="w-[84vw] max-w-xs">
+            <SheetContent
+              id={mobileMenuContentId}
+              aria-labelledby={mobileMenuTriggerId}
+              side="right"
+              className="w-[84vw] max-w-xs"
+            >
               <SheetHeader className="pb-3">
                 <SheetTitle>Menu</SheetTitle>
                 <SheetDescription>Acesse as principais páginas.</SheetDescription>

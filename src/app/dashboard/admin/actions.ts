@@ -6,6 +6,8 @@ import type { Id } from "@convex/_generated/dataModel";
 import { api } from "@convex/_generated/api";
 import { getAuthenticatedConvexHttpClient } from "@/lib/convex-server";
 import { sendReservationLifecycleEmail } from "@/lib/email/resend";
+import type { ReservationStatus } from "@/lib/reservation-status";
+import { isReservationStatus } from "@/lib/reservation-status";
 import { requireAdmin } from "@/lib/access";
 
 const ADMIN_PATH = "/dashboard/admin";
@@ -17,6 +19,11 @@ function toNumber(value: FormDataEntryValue | null, fallback = 0) {
 
 function toStringValue(value: FormDataEntryValue | null) {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function parseReservationStatus(value: FormDataEntryValue | null, fallback: ReservationStatus = "pending") {
+  const normalized = toStringValue(value);
+  return isReservationStatus(normalized) ? normalized : fallback;
 }
 
 function toCentsFromReais(value: FormDataEntryValue | null, fallback = 0) {
@@ -328,12 +335,7 @@ export async function createReservationAction(formData: FormData) {
     availabilityId: toStringValue(formData.get("availabilityId")) as Id<"availabilities">,
     date: toStringValue(formData.get("date")),
     time: toStringValue(formData.get("time")),
-    status: (toStringValue(formData.get("status")) || "pending") as
-      | "pending"
-      | "confirmed"
-      | "cancelled"
-      | "completed"
-      | "no_show",
+    status: parseReservationStatus(formData.get("status")),
     notes: toStringValue(formData.get("notes")) || undefined,
   });
   revalidatePath(ADMIN_PATH);
@@ -348,12 +350,7 @@ export async function updateReservationAction(formData: FormData) {
   const availabilityId = toStringValue(formData.get("availabilityId")) as Id<"availabilities">;
   const date = toStringValue(formData.get("date"));
   const time = toStringValue(formData.get("time"));
-  const status = (toStringValue(formData.get("status")) || "pending") as
-    | "pending"
-    | "confirmed"
-    | "cancelled"
-    | "completed"
-    | "no_show";
+  const status = parseReservationStatus(formData.get("status"));
   const notes = toStringValue(formData.get("notes")) || undefined;
 
   const result = await client.mutation(api.admin.updateReservation, {
@@ -402,12 +399,7 @@ export async function setReservationStatusAction(formData: FormData) {
   await requireAdmin(ADMIN_PATH);
   const { client } = await getAuthenticatedConvexHttpClient();
   const reservationId = toStringValue(formData.get("reservationId")) as Id<"reservations">;
-  const status = (toStringValue(formData.get("status")) || "pending") as
-    | "pending"
-    | "confirmed"
-    | "cancelled"
-    | "completed"
-    | "no_show";
+  const status = parseReservationStatus(formData.get("status"));
   const notes = toStringValue(formData.get("notes")) || undefined;
   const result = await client.mutation(api.admin.setReservationStatus, {
     reservationId,
@@ -475,6 +467,21 @@ export async function setPaymentStatusAction(formData: FormData) {
       | "refunded"
       | "failed",
     notes: toStringValue(formData.get("notes")) || undefined,
+  });
+  revalidatePath(ADMIN_PATH);
+}
+
+export async function linkWhatsappToUserAction(formData: FormData) {
+  await requireAdmin(ADMIN_PATH);
+  const { client } = await getAuthenticatedConvexHttpClient();
+  const adminLinkWhatsappToUserMutation = (api as unknown as {
+    admin: {
+      adminLinkWhatsappToUser: typeof api.admin.createEventType;
+    };
+  }).admin.adminLinkWhatsappToUser;
+  await client.mutation(adminLinkWhatsappToUserMutation, {
+    clerkUserId: toStringValue(formData.get("clerkUserId")),
+    phone: toStringValue(formData.get("phone")),
   });
   revalidatePath(ADMIN_PATH);
 }

@@ -10,13 +10,14 @@ const periodFilters = ["7d", "30d", "all"] as const;
 export default async function AdminScheduleEventsPage({
   searchParams,
 }: {
-  searchParams?: { period?: string; type?: string };
+  searchParams?: Promise<{ period?: string; type?: string }>;
 }) {
   const data = await getAdminSnapshot();
-  const selectedPeriod = periodFilters.includes((searchParams?.period as (typeof periodFilters)[number]) ?? "7d")
-    ? ((searchParams?.period as (typeof periodFilters)[number]) ?? "7d")
+  const resolvedSearchParams = (await searchParams) ?? {};
+  const selectedPeriod = periodFilters.includes((resolvedSearchParams.period as (typeof periodFilters)[number]) ?? "7d")
+    ? ((resolvedSearchParams.period as (typeof periodFilters)[number]) ?? "7d")
     : "7d";
-  const selectedType = searchParams?.type?.trim() || "all";
+  const selectedType = resolvedSearchParams.type?.trim() || "all";
 
   const now = Date.now();
   const periodStart =
@@ -41,14 +42,14 @@ export default async function AdminScheduleEventsPage({
     <Card variant="flat-mobile" className="border-border/70">
       <CardHeader>
         <CardTitle>Eventos da agenda</CardTitle>
-        <CardDescription>Monitore mudancas operacionais por tipo e janela de tempo.</CardDescription>
+        <CardDescription>Monitore mudanças operacionais por tipo e janela de tempo.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex flex-wrap gap-2">
           {periodFilters.map((period) => (
             <Button key={period} variant={selectedPeriod === period ? "default" : "outline"} size="sm" asChild>
               <Link href={`/dashboard/admin/agenda-eventos?period=${period}&type=${selectedType}`}>
-                {period === "all" ? "todo periodo" : period}
+                {period === "all" ? "todo período" : period}
               </Link>
             </Button>
           ))}

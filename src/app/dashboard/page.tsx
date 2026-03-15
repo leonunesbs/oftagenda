@@ -6,6 +6,7 @@ import { CheckoutReturnUrlCleaner } from "@/components/checkout-return-url-clean
 import { PendingReservationsList } from "@/components/pending-reservations-list";
 import { PhoneLinkCard } from "@/components/phone-link-card";
 import { RescheduleAppointmentCard } from "@/components/reschedule-appointment-card";
+import { upsertPatientBirthDateAction } from "@/app/dashboard/actions";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -14,6 +15,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { getBookingBootstrapData } from "@/lib/booking-bootstrap";
 import { getUserRoleFromClerkAuth, hasConfirmedBooking } from "@/lib/access";
 import { getAuthenticatedConvexHttpClient } from "@/lib/convex-server";
@@ -93,6 +96,7 @@ export default async function DashboardPage({
     history: [],
   };
   let phoneLinkStatus: { linked: boolean; phone?: string } = { linked: false };
+  let patientBirthDate = "";
   let rematchBootstrap: Awaited<ReturnType<typeof getBookingBootstrapData>> = {
     locations: [],
     locationsError: null,
@@ -111,6 +115,8 @@ export default async function DashboardPage({
         : phoneLinkResult.phone;
       phoneLinkStatus = { linked: true, phone: masked };
     }
+    const patient = await client.query(api.patients.getCurrentPatient, {});
+    patientBirthDate = patient?.birthDate ?? "";
     const data = await client.query(api.appointments.getDashboardState, {});
     dashboardState = {
       hasConfirmedBooking: data.hasConfirmedBooking,
@@ -334,6 +340,26 @@ export default async function DashboardPage({
           ) : null}
 
           <PhoneLinkCard linked={phoneLinkStatus.linked} maskedPhone={phoneLinkStatus.phone} />
+
+          <div className="space-y-3 rounded-xl border border-border p-4">
+            <h3 className="font-medium">Dados pessoais</h3>
+            <p className="text-sm text-muted-foreground">
+              Informe sua data de nascimento para facilitar conferência de cadastro e comunicação com a clínica.
+            </p>
+            <form action={upsertPatientBirthDateAction} className="grid gap-3 sm:max-w-xs">
+              <Label htmlFor="birthDate">Data de nascimento</Label>
+              <Input
+                id="birthDate"
+                name="birthDate"
+                type="date"
+                defaultValue={patientBirthDate}
+                max={new Date().toISOString().slice(0, 10)}
+              />
+              <Button type="submit" variant="outline">
+                Salvar data de nascimento
+              </Button>
+            </form>
+          </div>
 
           <div className="space-y-3">
             <Button variant="secondary" asChild>

@@ -14,6 +14,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+let sessionProbePromise: Promise<SessionState | null> | null = null;
+let sessionProbeCache: SessionState | null | undefined;
+
 type HeaderAuthButtonProps = {
   clerkEnabled: boolean;
   initialSessionState: SessionState;
@@ -34,6 +37,16 @@ export function HeaderAuthButton({ clerkEnabled, initialSessionState }: HeaderAu
     useState<SessionState>(initialSessionState);
 
   useEffect(() => {
+    sessionProbeCache = initialSessionState;
+    setSessionState(initialSessionState);
+  }, [
+    initialSessionState.avatarUrl,
+    initialSessionState.firstName,
+    initialSessionState.isAuthenticated,
+    initialSessionState.userId,
+  ]);
+
+  useEffect(() => {
     if (!clerkEnabled || isSigningOut) {
       return;
     }
@@ -42,31 +55,11 @@ export function HeaderAuthButton({ clerkEnabled, initialSessionState }: HeaderAu
 
     async function syncSessionState() {
       try {
-        const response = await fetch("/api/auth/session", {
-          method: "GET",
-          cache: "no-store",
-        });
-
-        if (!response.ok) {
+        const nextState = await probeSessionState();
+        if (!nextState || !isMounted) {
           return;
         }
-
-        const payload = (await response.json()) as Partial<SessionState> & {
-          clerkEnabled?: boolean;
-        };
-
-        if (!isMounted || payload.clerkEnabled === false) {
-          return;
-        }
-
-        setSessionState({
-          isAuthenticated: Boolean(payload.isAuthenticated),
-          userId: typeof payload.userId === "string" ? payload.userId : null,
-          avatarUrl:
-            typeof payload.avatarUrl === "string" ? payload.avatarUrl : null,
-          firstName:
-            typeof payload.firstName === "string" ? payload.firstName : null,
-        });
+        setSessionState(nextState);
       } catch {
         // Keep optimistic SSR state when session probe fails.
       }
@@ -110,12 +103,14 @@ export function HeaderAuthButton({ clerkEnabled, initialSessionState }: HeaderAu
         method: "POST",
       });
     } finally {
-      setSessionState({
+      const loggedOutState = {
         isAuthenticated: false,
         userId: null,
         avatarUrl: null,
         firstName: null,
-      });
+      };
+      sessionProbeCache = loggedOutState;
+      setSessionState(loggedOutState);
       window.location.href = "/";
     }
   }
@@ -163,4 +158,42 @@ export function HeaderAuthButton({ clerkEnabled, initialSessionState }: HeaderAu
       </DropdownMenuContent>
     </DropdownMenu>
   );
+}
+
+async function probeSessionState(): Promise<SessionState | null> {
+  if (sessionProbeCache !== undefined) {
+    return sessionProbeCache;
+  }
+
+  if (!sessionProbePromise) {
+    sessionProbePromise = fetch("/api/auth/session", {
+      method: "GET",
+      cache: "no-store",
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          return null;
+        }
+        const payload = (await response.json()) as Partial<SessionState> & {
+          clerkEnabled?: boolean;
+        };
+        if (payload.clerkEnabled === false) {
+          return null;
+        }
+        return {
+          isAuthenticated: Boolean(payload.isAuthenticated),
+          userId: typeof payload.userId === "string" ? payload.userId : null,
+          avatarUrl: typeof payload.avatarUrl === "string" ? payload.avatarUrl : null,
+          firstName: typeof payload.firstName === "string" ? payload.firstName : null,
+        } satisfies SessionState;
+      })
+      .catch(() => null)
+      .finally(() => {
+        sessionProbePromise = null;
+      });
+  }
+
+  const resolved = await sessionProbePromise;
+  sessionProbeCache = resolved;
+  return resolved;
 }

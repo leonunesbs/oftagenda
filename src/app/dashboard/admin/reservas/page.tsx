@@ -4,8 +4,7 @@ import {
 } from "@/app/dashboard/admin/_lib/admin-dashboard";
 import { AdminReservationsManager } from "@/components/admin-reservations-manager";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-
-const statusFilters = ["all", "pending", "confirmed", "completed", "cancelled", "no_show"] as const;
+import { reservationStatusFilterOptions } from "@/lib/reservation-status";
 
 export default async function AdminReservationsPage({
   searchParams,
@@ -19,8 +18,10 @@ export default async function AdminReservationsPage({
   const params = await searchParams;
   const rawStatus = Array.isArray(params?.status) ? params.status[0] : params?.status;
   const rawSearchQuery = Array.isArray(params?.q) ? params.q[0] : params?.q;
-  const selectedStatus = statusFilters.includes((rawStatus as (typeof statusFilters)[number]) ?? "all")
-    ? ((rawStatus as (typeof statusFilters)[number]) ?? "all")
+  const selectedStatus = reservationStatusFilterOptions.includes(
+    (rawStatus as (typeof reservationStatusFilterOptions)[number]) ?? "all",
+  )
+    ? ((rawStatus as (typeof reservationStatusFilterOptions)[number]) ?? "all")
     : "all";
   const searchQuery = (rawSearchQuery ?? "").trim().toLowerCase();
   const eventKindById = new Map(
@@ -66,7 +67,12 @@ export default async function AdminReservationsPage({
   const stats = {
     total: reservations.length,
     pending: reservations.filter((reservation) => reservation.status === "pending").length,
+    awaitingPatient: reservations.filter((reservation) => reservation.status === "awaiting_patient").length,
     confirmed: reservations.filter((reservation) => reservation.status === "confirmed").length,
+    inCare: reservations.filter((reservation) => reservation.status === "in_care").length,
+    surgeryPlanned: reservations.filter((reservation) => reservation.status === "surgery_planned").length,
+    postopFollowup: reservations.filter((reservation) => reservation.status === "postop_followup").length,
+    completed: reservations.filter((reservation) => reservation.status === "completed").length,
     cancelled: reservations.filter((reservation) => reservation.status === "cancelled").length,
     noShow: reservations.filter((reservation) => reservation.status === "no_show").length,
   };

@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 
 import { execFileSync, spawn } from "node:child_process";
-import { existsSync, rmSync } from "node:fs";
+import { existsSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import process from "node:process";
 
 const lockPath = join(process.cwd(), ".next", "dev", "lock");
+const nextPath = join(process.cwd(), ".next");
 const isWindows = process.platform === "win32";
 const nextPort = process.env.NEXT_PORT || "3001";
 
@@ -48,6 +49,42 @@ function ensureNextLockIsSafe() {
 
     console.warn(
       "Could not verify Next.js lock ownership. Continuing without lock cleanup.",
+    );
+  }
+}
+
+function cleanupAppleDoubleArtifacts(rootDir) {
+  if (!existsSync(rootDir)) {
+    return;
+  }
+
+  const stack = [rootDir];
+  let removed = 0;
+
+  while (stack.length > 0) {
+    const currentDir = stack.pop();
+    if (!currentDir) {
+      continue;
+    }
+
+    const entries = readdirSync(currentDir, { withFileTypes: true });
+    for (const entry of entries) {
+      const entryPath = join(currentDir, entry.name);
+      if (entry.isDirectory()) {
+        stack.push(entryPath);
+        continue;
+      }
+
+      if (entry.name.startsWith("._")) {
+        rmSync(entryPath, { force: true });
+        removed += 1;
+      }
+    }
+  }
+
+  if (removed > 0) {
+    console.log(
+      `${colors.yellow}Removed ${removed} macOS metadata file(s) from .next (._*)${colors.reset}`,
     );
   }
 }
@@ -162,5 +199,6 @@ function runDev() {
 }
 
 printBanner();
+cleanupAppleDoubleArtifacts(nextPath);
 ensureNextLockIsSafe();
 runDev();

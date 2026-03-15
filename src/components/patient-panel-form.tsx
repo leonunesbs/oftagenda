@@ -173,6 +173,7 @@ function toggleArrayItem<T extends string>(
 function formatStatusLabel(status: string) {
   if (status === "confirmed") return "Confirmada";
   if (status === "rescheduled") return "Reagendada";
+  if (status === "no_show") return "No-show";
   if (status === "pending") return "A confirmar";
   return status;
 }

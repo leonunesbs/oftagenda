@@ -2,8 +2,7 @@ import { v } from "convex/values";
 
 import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
-import type { MutationCtx } from "./_generated/server";
-import type { QueryCtx } from "./_generated/server";
+import type { MutationCtx, QueryCtx } from "./_generated/server";
 
 const RESERVATION_HOLD_DURATION_MS = 15 * 60_000;
 const RESCHEDULE_MIN_NOTICE_MS = 24 * 60 * 60_000;
@@ -89,7 +88,8 @@ export const hasConfirmedBooking = query({
       .withIndex("by_clerk_user_id", (q) => q.eq("clerkUserId", identity.subject))
       .collect();
 
-    return appointments.some((item) => item.status === "confirmed" || item.status === "rescheduled");
+    const now = Date.now();
+    return appointments.some((item) => isAppointmentCurrentlyActive(item, now));
   },
 });
 
@@ -338,9 +338,8 @@ export const getDashboardState = query({
     ]);
 
     const sorted = [...appointments].sort((a, b) => b.requestedAt - a.requestedAt);
-    const nextAppointment =
-      sorted.find((item) => item.status === "confirmed" || item.status === "rescheduled") ?? null;
     const now = Date.now();
+    const nextAppointment = sorted.find((item) => isAppointmentCurrentlyActive(item, now)) ?? null;
     const eventTypeById = new Map(eventTypes.map((item) => [String(item._id), item]));
     const availabilityById = new Map(availabilities.map((item) => [String(item._id), item]));
     const pendingReservations = [...reservations]
@@ -386,7 +385,10 @@ export const getDashboardState = query({
       nextAppointment,
       reschedulePolicy,
       pendingReservations,
-      history: sorted.slice(0, 8),
+      history: sorted.slice(0, 8).map((item) => ({
+        ...item,
+        status: deriveAppointmentStatus(item, now),
+      })),
     };
   },
 });
@@ -408,9 +410,9 @@ export const rescheduleOwnAppointment = mutation({
       .query("appointments")
       .withIndex("by_clerk_user_id", (q) => q.eq("clerkUserId", identity.subject))
       .collect();
+    await markOverdueAppointmentsAsNoShow(ctx, appointments, now);
     const sorted = [...appointments].sort((a, b) => b.requestedAt - a.requestedAt);
-    const appointment =
-      sorted.find((item) => item.status === "confirmed" || item.status === "rescheduled") ?? null;
+    const appointment = sorted.find((item) => isAppointmentCurrentlyActive(item, now)) ?? null;
     if (!appointment) {
       throw new Error("Nenhuma consulta ativa encontrada para remarcação.");
     }
@@ -510,9 +512,9 @@ export const cancelOwnAppointment = mutation({
       .query("appointments")
       .withIndex("by_clerk_user_id", (q) => q.eq("clerkUserId", identity.subject))
       .collect();
+    await markOverdueAppointmentsAsNoShow(ctx, appointments, now);
     const sorted = [...appointments].sort((a, b) => b.requestedAt - a.requestedAt);
-    const appointment =
-      sorted.find((item) => item.status === "confirmed" || item.status === "rescheduled") ?? null;
+    const appointment = sorted.find((item) => isAppointmentCurrentlyActive(item, now)) ?? null;
     if (!appointment) {
       throw new Error("Nenhuma consulta ativa encontrada para cancelamento.");
     }
@@ -584,10 +586,9 @@ export const getLatestActiveAppointment = query({
       .withIndex("by_clerk_user_id", (q) => q.eq("clerkUserId", identity.subject))
       .collect();
 
+    const now = Date.now();
     const sorted = [...appointments].sort((a, b) => b.requestedAt - a.requestedAt);
-    return (
-      sorted.find((item) => item.status === "confirmed" || item.status === "rescheduled") ?? null
-    );
+    return sorted.find((item) => isAppointmentCurrentlyActive(item, now)) ?? null;
   },
 });
 
@@ -642,8 +643,10 @@ async function assertCanCreateNewBooking(ctx: MutationCtx, clerkUserId: string, 
       .collect(),
   ]);
 
+  await markOverdueAppointmentsAsNoShow(ctx, appointments, now);
+
   const hasActiveAppointment = appointments.some(
-    (item) => item.status === "confirmed" || item.status === "rescheduled",
+    (item) => isAppointmentCurrentlyActive(item, now),
   );
   if (hasActiveAppointment) {
     throw new Error(
@@ -841,6 +844,66 @@ function isReservationBlocking(
 
 function getReservationHoldExpiresAt(reservation: Doc<"reservations">) {
   return reservation.holdExpiresAt ?? reservation.updatedAt + RESERVATION_HOLD_DURATION_MS;
+}
+
+function isAppointmentInActiveWindow(appointment: Doc<"appointments">) {
+  return appointment.status === "confirmed" || appointment.status === "rescheduled";
+}
+
+function hasAppointmentStarted(appointment: Doc<"appointments">, now: number) {
+  return typeof appointment.scheduledFor === "number" && appointment.scheduledFor <= now;
+}
+
+function isAppointmentCurrentlyActive(appointment: Doc<"appointments">, now: number) {
+  return isAppointmentInActiveWindow(appointment) && !hasAppointmentStarted(appointment, now);
+}
+
+function deriveAppointmentStatus(appointment: Doc<"appointments">, now: number) {
+  if (isAppointmentInActiveWindow(appointment) && hasAppointmentStarted(appointment, now)) {
+    return "no_show" as const;
+  }
+  return appointment.status;
+}
+
+async function markOverdueAppointmentsAsNoShow(
+  ctx: MutationCtx,
+  appointments: Doc<"appointments">[],
+  now: number,
+) {
+  const overdueAppointments = appointments.filter(
+    (item) => isAppointmentInActiveWindow(item) && hasAppointmentStarted(item, now),
+  );
+  if (overdueAppointments.length === 0) {
+    return;
+  }
+
+  for (const appointment of overdueAppointments) {
+    await ctx.db.patch(appointment._id, {
+      status: "no_show",
+      updatedAt: now,
+    });
+
+    if (appointment.reservationId) {
+      const reservation = await ctx.db.get(appointment.reservationId);
+      if (reservation && (reservation.status === "confirmed" || reservation.status === "pending")) {
+        await ctx.db.patch(reservation._id, {
+          status: "cancelled",
+          notes:
+            "Reserva encerrada automaticamente por no-show após ultrapassar o horário de início.",
+          updatedAt: now,
+        });
+      }
+    }
+
+    await ctx.db.insert("appointment_events", {
+      appointmentId: appointment._id,
+      clerkUserId: appointment.clerkUserId,
+      eventType: "no_show",
+      notes:
+        "Consulta marcada como no_show automaticamente após ultrapassar o horário de início.",
+      createdAt: now,
+    });
+  }
 }
 
 function isIsoDateTimeInFutureForTimezone(

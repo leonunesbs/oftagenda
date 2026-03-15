@@ -52,7 +52,7 @@ export async function GET(request: Request) {
         body: {
           appointmentId: "j57...",
           phone: "5599999999999",
-          status: "confirmed | rescheduled | cancelled | completed",
+          status: "confirmed | rescheduled | no_show | cancelled | completed",
           reason: "opcional",
         },
       },

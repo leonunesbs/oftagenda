@@ -4,7 +4,6 @@ import Link from "next/link";
 import { BookingConfirmedEvent } from "@/components/booking-confirmed-event";
 import { CheckoutReturnUrlCleaner } from "@/components/checkout-return-url-cleaner";
 import { PendingReservationsList } from "@/components/pending-reservations-list";
-import { PatientPanelForm } from "@/components/patient-panel-form";
 import { PhoneLinkCard } from "@/components/phone-link-card";
 import { RescheduleAppointmentCard } from "@/components/reschedule-appointment-card";
 import { Button } from "@/components/ui/button";
@@ -15,7 +14,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { getBookingBootstrapData } from "@/lib/booking-bootstrap";
 import { getUserRoleFromClerkAuth, hasConfirmedBooking } from "@/lib/access";
 import { getAuthenticatedConvexHttpClient } from "@/lib/convex-server";
@@ -162,6 +160,8 @@ export default async function DashboardPage({
   const bookingConfirmed = dashboardState.hasConfirmedBooking;
   const hasPendingReschedule = dashboardState.pendingReservations.length > 0;
   const nextAppointment = dashboardState.nextAppointment;
+  const latestNoShow =
+    !bookingConfirmed && dashboardState.history[0]?.status === "no_show";
   const appointmentStart = resolveAppointmentStart(nextAppointment?.scheduledFor);
   const appointmentLocation = nextAppointment?.location || "Local a confirmar";
   const calendarLinks = appointmentStart
@@ -188,7 +188,6 @@ export default async function DashboardPage({
       : "",
     consultationType:
       nextAppointment?.consultationType ?? "Consulta oftalmológica",
-    status: nextAppointment?.status ?? "pending",
   };
 
   return (
@@ -197,11 +196,11 @@ export default async function DashboardPage({
       <CheckoutReturnUrlCleaner enabled={paymentJustSucceeded} />
       <Card variant="flat-mobile" className="border-border/70">
         <CardHeader>
-          <CardTitle>Status do agendamento</CardTitle>
+          <CardTitle>Minha agenda</CardTitle>
           <CardDescription>
             {isAdmin
               ? "Você está em modo administrador. Use o atalho abaixo para gestão."
-              : "Fluxo pensado para ser rápido e sem atrito."}
+              : "Resumo rápido da sua consulta e ações principais."}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
@@ -211,9 +210,7 @@ export default async function DashboardPage({
                 Pagamento confirmado! Seja muito bem-vindo(a).
               </h3>
               <p className="text-sm text-emerald-800/90 dark:text-emerald-200/90">
-                Sua consulta foi reservada com sucesso. Agora começa a melhor
-                parte: aquela expectativa boa para chegar logo o dia de cuidar
-                da sua visão.
+                Sua consulta foi reservada com sucesso.
               </p>
               {calendarLinks ? (
                 <div className="flex flex-wrap gap-2">
@@ -247,17 +244,62 @@ export default async function DashboardPage({
           {isAdmin ? (
             <div className="space-y-3 rounded-xl border border-border p-4">
               <h3 className="font-medium">Acesso administrativo</h3>
-              <p className="text-sm text-muted-foreground">
-                Sua conta possui papel <code>admin</code> em <code>user_roles</code> no Convex.
-              </p>
               <Button variant="secondary" asChild>
                 <Link href="/dashboard/admin">Abrir painel admin</Link>
               </Button>
             </div>
           ) : null}
 
-          {bookingConfirmed ? (
-            <PatientPanelForm initialAppointment={initialPanelData} />
+          {latestNoShow ? (
+            <div className="space-y-2 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4">
+              <h3 className="font-medium text-amber-900 dark:text-amber-200">
+                Consulta marcada como no-show
+              </h3>
+              <p className="text-sm text-amber-900/90 dark:text-amber-200/90">
+                O horário de início já passou, então este agendamento foi encerrado automaticamente.
+                Você já pode criar uma nova reserva conforme regulamento.
+              </p>
+            </div>
+          ) : null}
+
+          {bookingConfirmed && nextAppointment ? (
+            <div className="space-y-4 rounded-xl border border-border p-4">
+              <h3 className="font-medium">Próxima consulta</h3>
+              <div className="grid gap-3 text-sm text-muted-foreground md:grid-cols-2">
+                <p>
+                  <span className="font-medium text-foreground">Local:</span>{" "}
+                  {initialPanelData.location || "A confirmar"}
+                </p>
+                <p>
+                  <span className="font-medium text-foreground">Tipo:</span>{" "}
+                  {initialPanelData.consultationType}
+                </p>
+                <p>
+                  <span className="font-medium text-foreground">Data:</span>{" "}
+                  {initialPanelData.date || "A confirmar"}
+                </p>
+                <p>
+                  <span className="font-medium text-foreground">Horário:</span>{" "}
+                  {initialPanelData.time || "A confirmar"}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" asChild>
+                  <Link href="/detalhes">Preencher detalhes opcionais</Link>
+                </Button>
+                {calendarLinks ? (
+                  <Button asChild>
+                    <Link
+                      href={calendarLinks.googleCalendarHref}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Salvar no Google Agenda
+                    </Link>
+                  </Button>
+                ) : null}
+              </div>
+            </div>
           ) : hasPendingReschedule ? (
             <div className="space-y-4 rounded-xl border border-amber-500/40 bg-amber-500/5 p-4">
               <h3 className="font-medium">Agendamento aguardando remarcação</h3>
@@ -281,19 +323,14 @@ export default async function DashboardPage({
             </div>
           )}
 
-          <Separator />
-
           {bookingConfirmed ? (
-            <>
-              <RescheduleAppointmentCard
-                policy={dashboardState.reschedulePolicy}
-                locations={rematchBootstrap.locations}
-                availabilityByLocation={rematchBootstrap.availabilityByLocation}
-                availabilityErrorsByLocation={rematchBootstrap.availabilityErrorsByLocation}
-                initialLocation={nextAppointment?.location}
-              />
-              <Separator />
-            </>
+            <RescheduleAppointmentCard
+              policy={dashboardState.reschedulePolicy}
+              locations={rematchBootstrap.locations}
+              availabilityByLocation={rematchBootstrap.availabilityByLocation}
+              availabilityErrorsByLocation={rematchBootstrap.availabilityErrorsByLocation}
+              initialLocation={nextAppointment?.location}
+            />
           ) : null}
 
           <PhoneLinkCard linked={phoneLinkStatus.linked} maskedPhone={phoneLinkStatus.phone} />
@@ -313,34 +350,11 @@ export default async function DashboardPage({
             </p>
           </div>
 
-          <Separator />
-
           <div id="agendamentos-pendentes" className="space-y-2">
             <h3 className="font-medium">Agendamentos pendentes</h3>
             <PendingReservationsList
               reservations={dashboardState.pendingReservations}
             />
-          </div>
-
-          <Separator />
-
-          <div className="space-y-2">
-            <h3 className="font-medium">Histórico e programação</h3>
-            {dashboardState.history.length > 0 ? (
-              <ul className="space-y-1 text-sm text-muted-foreground">
-                {dashboardState.history.map((item) => (
-                  <li key={item._id}>
-                    {item.status} -{" "}
-                    {new Date(item.requestedAt).toLocaleString("pt-BR")} -{" "}
-                    {item.location}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                Sem histórico de agendamentos ainda.
-              </p>
-            )}
           </div>
         </CardContent>
       </Card>

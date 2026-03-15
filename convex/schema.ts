@@ -17,6 +17,7 @@ const periodValidator = v.union(
 const appointmentStatusValidator = v.union(
   v.literal("confirmed"),
   v.literal("rescheduled"),
+  v.literal("no_show"),
   v.literal("cancelled"),
   v.literal("completed"),
 );
@@ -56,6 +57,7 @@ const eventTypeValidator = v.union(
   v.literal("created"),
   v.literal("confirmed"),
   v.literal("rescheduled"),
+  v.literal("no_show"),
   v.literal("cancelled"),
   v.literal("completed"),
   v.literal("details_submitted"),

@@ -19,8 +19,14 @@ export const getScheduleAndHistory = query({
       .withIndex("by_clerk_user_id_and_created_at", (q) => q.eq("clerkUserId", clerkUserId))
       .collect();
 
+    const now = Date.now();
     const upcoming = appointments
-      .filter((item) => item.status === "confirmed" || item.status === "rescheduled")
+      .filter(
+        (item) =>
+          (item.status === "confirmed" || item.status === "rescheduled") &&
+          typeof item.scheduledFor === "number" &&
+          item.scheduledFor > now,
+      )
       .sort((a, b) => b.requestedAt - a.requestedAt);
 
     const history = [...events].sort((a, b) => b.createdAt - a.createdAt).slice(0, 20);

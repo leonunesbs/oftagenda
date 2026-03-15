@@ -6,6 +6,7 @@ import { mutation, query } from "./_generated/server";
 const appointmentStatusValidator = v.union(
   v.literal("confirmed"),
   v.literal("rescheduled"),
+  v.literal("no_show"),
   v.literal("cancelled"),
   v.literal("completed"),
 );
@@ -36,17 +37,27 @@ export const getAppointmentsByPhone = query({
     });
     const sorted = [...matchedAppointments].sort((a, b) => b.requestedAt - a.requestedAt);
 
+    const now = Date.now();
     const filtered = args.includeHistory
       ? sorted
-      : sorted.filter((item) => item.status === "confirmed" || item.status === "rescheduled");
+      : sorted.filter(
+          (item) =>
+            (item.status === "confirmed" || item.status === "rescheduled") &&
+            typeof item.scheduledFor === "number" &&
+            item.scheduledFor > now,
+        );
 
     const appointments = filtered.map((appointment) =>
       mapAppointmentForResponse(appointment, reservationById),
     );
 
     const activeAppointment =
-      appointments.find((item) => item.status === "confirmed" || item.status === "rescheduled") ??
-      null;
+      appointments.find(
+        (item) =>
+          (item.status === "confirmed" || item.status === "rescheduled") &&
+          typeof item.scheduledFor === "number" &&
+          item.scheduledFor > now,
+      ) ?? null;
 
     return {
       phone: normalizedPhone,
@@ -205,9 +216,13 @@ export const getPatientContextByPhone = query({
       .filter((a) => a.clerkUserId === link.clerkUserId)
       .sort((a, b) => b.requestedAt - a.requestedAt);
 
+    const now = Date.now();
     const activeAppointment =
       userAppointments.find(
-        (a) => a.status === "confirmed" || a.status === "rescheduled",
+        (a) =>
+          (a.status === "confirmed" || a.status === "rescheduled") &&
+          typeof a.scheduledFor === "number" &&
+          a.scheduledFor > now,
       ) ?? null;
 
     const recentHistory = userAppointments.slice(0, 5).map((a) => ({
@@ -242,29 +257,6 @@ export const getPatientContextByPhone = query({
       (a) => a.status === "completed",
     );
 
-    let triageHighlights = null;
-    const appointmentIds = userAppointments.map((a) => a._id);
-    if (appointmentIds.length > 0) {
-      const allDetails = await ctx.db
-        .query("appointment_details")
-        .withIndex("by_clerk_user_id", (q) =>
-          q.eq("clerkUserId", link.clerkUserId),
-        )
-        .collect();
-      const latestDetail = allDetails.sort(
-        (a, b) => b.submittedAt - a.submittedAt,
-      )[0];
-      if (latestDetail) {
-        triageHighlights = {
-          conditions: latestDetail.conditions ?? [],
-          symptoms: latestDetail.symptoms ?? [],
-          lastReason: latestDetail.reason ?? null,
-          dilatationLevel: latestDetail.dilatationLevel,
-          oneSentenceSummary: latestDetail.oneSentenceSummary ?? null,
-        };
-      }
-    }
-
     const maskedEmail = maskEmail(patient.email);
 
     return {
@@ -292,7 +284,6 @@ export const getPatientContextByPhone = query({
           }
         : null,
       recentHistory,
-      triageHighlights,
     };
   },
 });
@@ -393,6 +384,9 @@ function mapAppointmentForResponse(
 function mapAppointmentStatusToEventType(status: Doc<"appointments">["status"]) {
   if (status === "rescheduled") {
     return "rescheduled" as const;
+  }
+  if (status === "no_show") {
+    return "no_show" as const;
   }
   if (status === "cancelled") {
     return "cancelled" as const;

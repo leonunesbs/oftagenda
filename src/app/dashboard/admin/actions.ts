@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import type { Id } from "@convex/_generated/dataModel";
 import { api } from "@convex/_generated/api";
 import { getAuthenticatedConvexHttpClient } from "@/lib/convex-server";
+import { sendReservationLifecycleEmail } from "@/lib/email/resend";
 import { requireAdmin } from "@/lib/access";
 
 const ADMIN_PATH = "/dashboard/admin";
@@ -31,6 +32,60 @@ function toCentsFromReais(value: FormDataEntryValue | null, fallback = 0) {
     return fallback;
   }
   return Math.round(reais * 100);
+}
+
+function formatDateTimeForEmail({
+  timestamp,
+  date,
+  time,
+}: {
+  timestamp?: number;
+  date?: string;
+  time?: string;
+}) {
+  if (typeof timestamp === "number" && Number.isFinite(timestamp)) {
+    return new Intl.DateTimeFormat("pt-BR", {
+      dateStyle: "full",
+      timeStyle: "short",
+      hour12: false,
+    }).format(new Date(timestamp));
+  }
+  if (date && time) {
+    return `${date} às ${time}`;
+  }
+  return "Horário indisponível";
+}
+
+async function notifyReservationUpdateEmail({
+  to,
+  patientName,
+  subject,
+  title,
+  summary,
+  details,
+}: {
+  to: string;
+  patientName?: string;
+  subject: string;
+  title: string;
+  summary: string;
+  details: string[];
+}) {
+  if (!to) {
+    return;
+  }
+  try {
+    await sendReservationLifecycleEmail({
+      to,
+      patientName,
+      subject,
+      title,
+      summary,
+      details,
+    });
+  } catch (error) {
+    console.error("Falha ao enviar email transacional de reserva", error);
+  }
 }
 
 export async function createEventTypeAction(formData: FormData) {
@@ -196,6 +251,7 @@ export async function upsertAvailabilityDaySlotsAction(formData: FormData) {
 
   await client.mutation(api.admin.upsertAvailabilityDaySlots, {
     groupName: toStringValue(formData.get("groupName")) || "Disponibilidade",
+    previousGroupName: toStringValue(formData.get("previousGroupName")) || undefined,
     weekday: toNumber(formData.get("weekday"), 1),
     timezone: toStringValue(formData.get("timezone")) || "America/Fortaleza",
     slots: parsedSlots,
@@ -285,20 +341,48 @@ export async function createReservationAction(formData: FormData) {
 export async function updateReservationAction(formData: FormData) {
   await requireAdmin(ADMIN_PATH);
   const { client } = await getAuthenticatedConvexHttpClient();
+  const reservationId = toStringValue(formData.get("reservationId")) as Id<"reservations">;
+  const clerkUserId = toStringValue(formData.get("clerkUserId"));
+  const eventTypeId = toStringValue(formData.get("eventTypeId")) as Id<"event_types">;
+  const availabilityId = toStringValue(formData.get("availabilityId")) as Id<"availabilities">;
+  const date = toStringValue(formData.get("date"));
+  const time = toStringValue(formData.get("time"));
+  const status = (toStringValue(formData.get("status")) || "pending") as
+    | "pending"
+    | "confirmed"
+    | "cancelled"
+    | "completed";
+  const notes = toStringValue(formData.get("notes")) || undefined;
+
   await client.mutation(api.admin.updateReservation, {
-    reservationId: toStringValue(formData.get("reservationId")) as Id<"reservations">,
-    clerkUserId: toStringValue(formData.get("clerkUserId")),
-    eventTypeId: toStringValue(formData.get("eventTypeId")) as Id<"event_types">,
-    availabilityId: toStringValue(formData.get("availabilityId")) as Id<"availabilities">,
-    date: toStringValue(formData.get("date")),
-    time: toStringValue(formData.get("time")),
-    status: (toStringValue(formData.get("status")) || "pending") as
-      | "pending"
-      | "confirmed"
-      | "cancelled"
-      | "completed",
-    notes: toStringValue(formData.get("notes")) || undefined,
+    reservationId,
+    clerkUserId,
+    eventTypeId,
+    availabilityId,
+    date,
+    time,
+    status,
+    notes,
   });
+
+  const notifyEmail = toStringValue(formData.get("notifyEmail"));
+  const notifyName = toStringValue(formData.get("notifyName"));
+  const eventTypeTitle = toStringValue(formData.get("eventTypeTitle")) || "Consulta oftalmológica";
+  if (notifyEmail) {
+    await notifyReservationUpdateEmail({
+      to: notifyEmail,
+      patientName: notifyName,
+      subject: "Seu agendamento foi atualizado",
+      title: "Atualização do seu agendamento",
+      summary: "Houve uma atualização no seu atendimento pela equipe administrativa.",
+      details: [
+        `Atendimento: ${eventTypeTitle}`,
+        `Novo horário: ${formatDateTimeForEmail({ date, time })}`,
+        `Status atual: ${status}`,
+        notes ? `Observações: ${notes}` : "Observações: sem observações adicionais",
+      ],
+    });
+  }
   revalidatePath(ADMIN_PATH);
 }
 
@@ -314,15 +398,39 @@ export async function deleteReservationAction(formData: FormData) {
 export async function setReservationStatusAction(formData: FormData) {
   await requireAdmin(ADMIN_PATH);
   const { client } = await getAuthenticatedConvexHttpClient();
+  const reservationId = toStringValue(formData.get("reservationId")) as Id<"reservations">;
+  const status = (toStringValue(formData.get("status")) || "pending") as
+    | "pending"
+    | "confirmed"
+    | "cancelled"
+    | "completed";
+  const notes = toStringValue(formData.get("notes")) || undefined;
   await client.mutation(api.admin.setReservationStatus, {
-    reservationId: toStringValue(formData.get("reservationId")) as Id<"reservations">,
-    status: (toStringValue(formData.get("status")) || "pending") as
-      | "pending"
-      | "confirmed"
-      | "cancelled"
-      | "completed",
-    notes: toStringValue(formData.get("notes")) || undefined,
+    reservationId,
+    status,
+    notes,
   });
+
+  const notifyEmail = toStringValue(formData.get("notifyEmail"));
+  const notifyName = toStringValue(formData.get("notifyName"));
+  const eventTypeTitle = toStringValue(formData.get("eventTypeTitle")) || "Consulta oftalmológica";
+  const scheduledAtRaw = toStringValue(formData.get("scheduledAt"));
+  const scheduledAt = scheduledAtRaw ? Number(scheduledAtRaw) : undefined;
+  if (notifyEmail) {
+    await notifyReservationUpdateEmail({
+      to: notifyEmail,
+      patientName: notifyName,
+      subject: `Status do seu agendamento: ${status}`,
+      title: "Mudança de status do agendamento",
+      summary: "Atualizamos o status do seu atendimento.",
+      details: [
+        `Atendimento: ${eventTypeTitle}`,
+        `Horário: ${formatDateTimeForEmail({ timestamp: scheduledAt })}`,
+        `Novo status: ${status}`,
+        notes ? `Observações: ${notes}` : "Observações: sem observações adicionais",
+      ],
+    });
+  }
   revalidatePath(ADMIN_PATH);
 }
 
@@ -369,23 +477,54 @@ export async function setPaymentStatusAction(formData: FormData) {
 export async function adminCreateAppointmentAction(formData: FormData) {
   await requireAdmin(ADMIN_PATH);
   const { client } = await getAuthenticatedConvexHttpClient();
+  const clerkUserId = toStringValue(formData.get("clerkUserId")) || undefined;
+  const name = toStringValue(formData.get("name"));
+  const phone = toStringValue(formData.get("phone"));
+  const email = toStringValue(formData.get("email"));
+  const eventTypeId = toStringValue(formData.get("eventTypeId")) as Id<"event_types">;
+  const availabilityId = toStringValue(formData.get("availabilityId")) as Id<"availabilities">;
+  const date = toStringValue(formData.get("date"));
+  const time = toStringValue(formData.get("time"));
+  const preferredPeriod = (toStringValue(formData.get("preferredPeriod")) || "qualquer") as
+    | "manha"
+    | "tarde"
+    | "noite"
+    | "qualquer";
+  const reason = toStringValue(formData.get("reason")) || undefined;
+  const notes = toStringValue(formData.get("notes")) || undefined;
 
   await client.mutation(api.admin.adminCreateAppointment, {
-    clerkUserId: toStringValue(formData.get("clerkUserId")) || undefined,
-    name: toStringValue(formData.get("name")),
-    phone: toStringValue(formData.get("phone")),
-    email: toStringValue(formData.get("email")),
-    eventTypeId: toStringValue(formData.get("eventTypeId")) as Id<"event_types">,
-    availabilityId: toStringValue(formData.get("availabilityId")) as Id<"availabilities">,
-    date: toStringValue(formData.get("date")),
-    time: toStringValue(formData.get("time")),
-    preferredPeriod: (toStringValue(formData.get("preferredPeriod")) || "qualquer") as
-      | "manha"
-      | "tarde"
-      | "noite"
-      | "qualquer",
-    reason: toStringValue(formData.get("reason")) || undefined,
-    notes: toStringValue(formData.get("notes")) || undefined,
+    clerkUserId,
+    name,
+    phone,
+    email,
+    eventTypeId,
+    availabilityId,
+    date,
+    time,
+    preferredPeriod,
+    reason,
+    notes,
+  });
+
+  const snapshot = await client.query(api.admin.getManagementSnapshot, {});
+  const eventTypeTitle =
+    snapshot.eventTypes.find((eventType) => String(eventType._id) === String(eventTypeId))?.name ??
+    snapshot.eventTypes.find((eventType) => String(eventType._id) === String(eventTypeId))?.title ??
+    "Consulta oftalmológica";
+
+  await notifyReservationUpdateEmail({
+    to: email,
+    patientName: name,
+    subject: "Seu agendamento foi confirmado",
+    title: "Agendamento confirmado pela clínica",
+    summary: "Sua marcação foi registrada com sucesso.",
+    details: [
+      `Atendimento: ${eventTypeTitle}`,
+      `Data e horário: ${formatDateTimeForEmail({ date, time })}`,
+      `Telefone para contato: ${phone}`,
+      reason ? `Motivo informado: ${reason}` : "Motivo informado: não informado",
+    ],
   });
 
   revalidatePath(ADMIN_PATH);

@@ -1,11 +1,11 @@
 # Minha Agenda
 
-MVP de agendamento oftalmologico com foco em **agendar primeiro, detalhes depois**.
+MVP de agendamento oftalmologico com foco em **agendar primeiro, preparar depois**.
 
 ## Filosofia do produto
 
 1. Antes da confirmacao do agendamento: coletar o minimo necessario.
-2. Depois da confirmacao: liberar triagem opcional e rapida em `/detalhes`.
+2. Depois da confirmacao: liberar triagem opcional para orientacoes de preparo em `/detalhes`, somente client-side.
 
 ## Stack
 
@@ -33,8 +33,6 @@ cp .env.example .env.local
    - `CLERK_FRONTEND_API_URL`
    - `STRIPE_SECRET_KEY`
    - `STRIPE_WEBHOOK_SECRET`
-   - `NEXT_PUBLIC_TRIAGE_E2E_PUBLIC_KEY`
-   - `NEXT_PUBLIC_TRIAGE_E2E_KEY_VERSION`
 
 4. Instale dependencias:
 
@@ -76,7 +74,7 @@ pnpm run dev:next   # apenas Next.js
 
 - `/dashboard` status do agendamento + CTA de detalhes
 - `/agendar` fluxo sem atrito para confirmar solicitacao
-- `/detalhes` triagem opcional apos agendamento confirmado
+- `/detalhes` triagem opcional para orientacoes de preparo, sem envio para API
 
 ### APIs
 
@@ -84,66 +82,11 @@ pnpm run dev:next   # apenas Next.js
   - valida payload com Zod (`name`, `phone`, `email` obrigatorios)
   - persiste agendamento no Convex e registra evento no historico
   - mantem cookie de fallback `booking_confirmed=true`
-- `POST /api/details/submit`
-  - valida envelope criptografado com Zod
-  - persiste triagem cifrada no Convex vinculada ao agendamento ativo
 - `GET /api/integrations/n8n/docs`
   - resumo dos endpoints de integração para n8n/chatbot
   - sem exigência de autenticação por header nesta versão
   - suporta link de encaminhamento para resumo pré-agendamento com local/data/horário
   - documentação completa em `docs/n8n-api.md`
-
-## Criptografia ponta a ponta da triagem
-
-Para os dados de saude da triagem de dilatacao, o cliente cifra o payload antes do envio usando `RSA-OAEP/AES-GCM-256`.
-
-### Variaveis necessarias
-
-- `NEXT_PUBLIC_TRIAGE_E2E_PUBLIC_KEY`: chave publica RSA em base64 no formato SPKI (sem headers PEM)
-- `NEXT_PUBLIC_TRIAGE_E2E_KEY_VERSION`: versao da chave para rotacao (ex.: `v1`)
-- `TRIAGE_E2E_PRIVATE_KEY`: chave privada RSA PKCS8 (PEM com `\n` ou base64 DER em linha unica) usada apenas no servidor para descriptografia autorizada
-
-### Como gerar as chaves (OpenSSL)
-
-1. Gerar chave privada RSA 4096 (guardar em local seguro):
-
-```bash
-mkdir -p .secrets/triage-e2e
-openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:4096 -out .secrets/triage-e2e/private-key.pem
-```
-
-2. Derivar chave publica:
-
-```bash
-openssl rsa -pubout -in .secrets/triage-e2e/private-key.pem -out .secrets/triage-e2e/public-key.pem
-```
-
-3. Converter a chave publica para DER/SPKI e base64 em uma linha:
-
-```bash
-openssl pkey -pubin -in .secrets/triage-e2e/public-key.pem -outform DER | base64 | tr -d '\n'
-```
-
-4. Copiar a saida do comando acima para `NEXT_PUBLIC_TRIAGE_E2E_PUBLIC_KEY`.
-
-5. Definir `NEXT_PUBLIC_TRIAGE_E2E_KEY_VERSION` (ex.: `v1`).
-
-6. Definir a chave privada no servidor (`TRIAGE_E2E_PRIVATE_KEY`) de uma destas formas:
-
-```bash
-# opcao A: PEM escapado em uma linha
-awk 'NF {sub(/\r/, ""); printf "%s\\n",$0;}' .secrets/triage-e2e/private-key.pem
-```
-
-```bash
-# opcao B: DER base64 em uma linha
-openssl pkey -in .secrets/triage-e2e/private-key.pem -outform DER | base64 | tr -d '\n'
-```
-
-### Rotacao de chave
-
-- Gere novo par de chaves e publique a nova chave publica com versao incrementada (`v2`, `v3`, ...).
-- Mantenha as chaves privadas antigas para leitura/decriptacao historica, enquanto houver dados cifrados com elas.
 
 ## Fluxo do MVP
 
@@ -154,7 +97,7 @@ openssl pkey -in .secrets/triage-e2e/private-key.pem -outform DER | base64 | tr 
    - Motivo curto opcional
 2. Apos confirmar, segue para o dashboard.
 3. Dashboard mostra proxima consulta + historico/programacao persistidos.
-4. Triagem detalhada fica em `/detalhes`, opcional, com orientacao de dilatacao conservadora.
+4. `/detalhes` exibe triagem local para orientacoes de preparo, sem persistencia de dados clinicos.
 
 ## Billing (futuro)
 

@@ -43,6 +43,68 @@ export async function sendPhoneVerificationEmail({
   return { emailId: data?.id };
 }
 
+export async function sendReservationLifecycleEmail({
+  to,
+  patientName,
+  subject,
+  title,
+  summary,
+  details,
+}: {
+  to: string;
+  patientName?: string;
+  subject: string;
+  title: string;
+  summary: string;
+  details: string[];
+}) {
+  if (!serverEnv.RESEND_API_KEY) {
+    return { skipped: true as const };
+  }
+
+  const resend = getResendClient();
+  const safeName = patientName?.trim() || "Paciente";
+  const detailsHtml = details.map((item) => `<li style="margin:0 0 8px">${escapeHtml(item)}</li>`).join("");
+
+  const { data, error } = await resend.emails.send({
+    from: getFromAddress(),
+    to,
+    subject,
+    html: `<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:40px 16px">
+    <tr><td align="center">
+      <table width="100%" style="max-width:560px;background:#ffffff;border-radius:12px;overflow:hidden">
+        <tr><td style="padding:28px">
+          <h1 style="margin:0 0 8px;font-size:20px;color:#18181b">${escapeHtml(title)}</h1>
+          <p style="margin:0 0 16px;font-size:14px;color:#52525b;line-height:1.5">Olá, ${escapeHtml(safeName)}.</p>
+          <p style="margin:0 0 16px;font-size:15px;color:#3f3f46;line-height:1.5">${escapeHtml(summary)}</p>
+          <ul style="margin:0 0 16px 18px;padding:0;font-size:14px;color:#52525b;line-height:1.5">
+            ${detailsHtml}
+          </ul>
+          <p style="margin:0;font-size:13px;color:#71717a">
+            Em caso de dúvida, responda este e-mail ou fale com nossa equipe.
+          </p>
+        </td></tr>
+        <tr><td style="padding:16px 28px;border-top:1px solid #e4e4e7">
+          <p style="margin:0;font-size:12px;color:#a1a1aa">OFT Leonardo — Oftalmologia</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`,
+  });
+
+  if (error) {
+    throw new Error(`Falha ao enviar email de atualização da reserva: ${error.message}`);
+  }
+
+  return { emailId: data?.id, skipped: false as const };
+}
+
 function maskPhone(phone: string) {
   const digits = phone.replace(/\D/g, "");
   if (digits.length < 4) return "****";
@@ -88,4 +150,13 @@ function buildVerificationHtml({
   </table>
 </body>
 </html>`;
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
 }

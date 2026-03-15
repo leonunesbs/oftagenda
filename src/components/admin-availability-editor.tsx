@@ -66,6 +66,7 @@ type OverrideInput = {
 };
 
 type GroupState = {
+  originalName: string;
   name: string;
   linkedEventsCount: number;
   timezone: string;
@@ -126,6 +127,7 @@ function buildInitialGroups(groups: GroupInput[]): GroupState[] {
     });
 
     return {
+      originalName: group.name,
       name: group.name,
       linkedEventsCount: group.linkedEventsCount,
       timezone: groupTimezone,
@@ -220,6 +222,12 @@ export function AdminAvailabilityEditor({
     );
   }
 
+  function updateGroupName(groupIndex: number, name: string) {
+    setGroupStates((previous) =>
+      previous.map((group, index) => (index === groupIndex ? { ...group, name } : group)),
+    );
+  }
+
   function setDayEnabled(groupIndex: number, weekday: number, enabled: boolean) {
     updateDay(groupIndex, weekday, (day) => {
       const currentSlots = day.slots.length > 0 ? day.slots : [createDefaultSlot()];
@@ -301,7 +309,7 @@ export function AdminAvailabilityEditor({
     startOverrideTransition(async () => {
       try {
         const formData = new FormData();
-        formData.set("groupName", group.name);
+        formData.set("groupName", group.originalName);
         formData.set("timezone", group.timezone || "America/Fortaleza");
         formData.set("allDayUnavailable", String(overrideAllDayUnavailable));
         formData.set("dates", JSON.stringify(overrideDates.map((date) => toIsoDate(date))));
@@ -351,15 +359,28 @@ export function AdminAvailabilityEditor({
     if (groupStates.length === 0) {
       return;
     }
+
+    const normalizedGroupNames = groupStates.map((group) => group.name.trim()).filter(Boolean);
+    if (normalizedGroupNames.length !== groupStates.length) {
+      setSaveFeedback({ type: "error", message: "Informe um nome para cada disponibilidade." });
+      return;
+    }
+    if (new Set(normalizedGroupNames).size !== normalizedGroupNames.length) {
+      setSaveFeedback({ type: "error", message: "Os nomes das disponibilidades devem ser únicos." });
+      return;
+    }
+
     setSaveFeedback(null);
     startTransition(async () => {
       try {
         const saveRequests: Promise<unknown>[] = [];
         let totalDays = 0;
         for (const group of groupStates) {
+          const normalizedGroupName = group.name.trim();
           group.days.forEach((day, weekday) => {
             const formData = new FormData();
-            formData.set("groupName", group.name);
+            formData.set("groupName", normalizedGroupName);
+            formData.set("previousGroupName", group.originalName);
             formData.set("weekday", String(weekday));
             formData.set("timezone", group.timezone || "America/Fortaleza");
             formData.set(
@@ -420,9 +441,21 @@ export function AdminAvailabilityEditor({
       {!hasGroups ? <p className="text-xs text-muted-foreground">Crie uma disponibilidade para começar.</p> : null}
 
       {groupStates.map((group, groupIndex) => (
-        <div key={`availability-editor-${group.name}`} className="space-y-4 rounded-lg border border-border/70 p-4">
+        <div
+          key={`availability-editor-${group.originalName}-${groupIndex}`}
+          className="space-y-4 rounded-lg border border-border/70 p-4"
+        >
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-base font-semibold">{group.name}</p>
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">Nome da disponibilidade</p>
+              <Input
+                value={group.name}
+                onChange={(event) => updateGroupName(groupIndex, event.target.value)}
+                className="h-8 w-64 max-w-full"
+                placeholder="Nome da disponibilidade"
+                aria-label={`Nome da disponibilidade ${group.originalName}`}
+              />
+            </div>
             <div className="flex flex-wrap items-center gap-2">
               <Button size="sm" variant="outline" type="button" onClick={() => openOverrideDialog(groupIndex)}>
                 Substituir datas
@@ -432,20 +465,20 @@ export function AdminAvailabilityEditor({
                 onChange={(event) => updateGroupTimezone(groupIndex, event.target.value)}
                 className="h-8 w-52"
                 placeholder="Fuso horário"
-                aria-label={`Fuso horário da disponibilidade ${group.name}`}
+                aria-label={`Fuso horário da disponibilidade ${group.originalName}`}
               />
               <p className="text-[11px] text-muted-foreground">
                 Vinculado a {group.linkedEventsCount.toString()} evento(s)
               </p>
             </div>
           </div>
-          {(overridesByGroup[group.name] ?? []).length > 0 ? (
+          {(overridesByGroup[group.originalName] ?? []).length > 0 ? (
             <div className="space-y-2 rounded-lg border border-border/70 bg-muted/10 p-3">
               <p className="text-xs font-medium">Substituições por data</p>
               <div className="flex flex-wrap gap-2">
-                {(overridesByGroup[group.name] ?? []).slice(0, 12).map((override) => (
+                {(overridesByGroup[group.originalName] ?? []).slice(0, 12).map((override) => (
                   <div
-                    key={`override-chip-${group.name}-${override._id}`}
+                    key={`override-chip-${group.originalName}-${override._id}`}
                     className="flex items-center gap-2 rounded-full border border-border/70 px-2 py-1 text-[11px] text-muted-foreground"
                   >
                     <span>
@@ -469,7 +502,7 @@ export function AdminAvailabilityEditor({
           ) : null}
           <div className="grid gap-3 lg:grid-cols-2">
             {group.days.map((day, weekday) => {
-            const dayKey = `${group.name}-${weekday}`;
+            const dayKey = `${group.originalName}-${weekday}`;
 
             return (
               <div key={dayKey} className="space-y-3 rounded-lg border border-border/70 bg-muted/10 p-3">

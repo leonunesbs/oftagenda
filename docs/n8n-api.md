@@ -268,12 +268,7 @@ Resposta quando vinculado:
     "frequentConsultationType": "retina"
   },
   "activeAppointment": { "...": "..." },
-  "recentHistory": ["..."],
-  "triageHighlights": {
-    "conditions": ["diabetes"],
-    "lastReason": "retina_follow",
-    "dilatationLevel": "ALTA"
-  }
+  "recentHistory": ["..."]
 }
 ```
 

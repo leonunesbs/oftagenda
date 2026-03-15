@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useMemo, useRef, useState } from "react";
 
-import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -13,22 +13,58 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import { calculateDilatationGuidance } from "@/domain/triage/dilatation";
 import type { TriagePayload } from "@/domain/triage/schema";
-import { triageSchema } from "@/domain/triage/schema";
-import { encryptTriagePayload } from "@/lib/triage-e2e";
+import { cn } from "@/lib/utils";
 
-const reasons: Array<{ value: TriagePayload["reason"]; label: string }> = [
-  { value: "routine", label: "Revisão de rotina" },
-  { value: "glasses", label: "Óculos" },
-  { value: "blurred", label: "Visão embaçada" },
-  { value: "pain", label: "Dor ocular" },
-  { value: "retina_follow", label: "Acompanhamento de retina" },
-  { value: "glaucoma_follow", label: "Acompanhamento de glaucoma" },
-  { value: "postop", label: "Pós-operatório" },
-  { value: "other", label: "Outro motivo" },
+const MAX_SUMMARY_LENGTH = 240;
+
+const reasons: Array<{
+  value: TriagePayload["reason"];
+  label: string;
+  description: string;
+}> = [
+  {
+    value: "routine",
+    label: "Revisão de rotina",
+    description: "Check-up geral sem queixa principal específica.",
+  },
+  {
+    value: "glasses",
+    label: "Óculos",
+    description: "Avaliar/atualizar grau para melhorar a visão no dia a dia.",
+  },
+  {
+    value: "blurred",
+    label: "Visão embaçada",
+    description: "Percepção de redução da nitidez visual.",
+  },
+  {
+    value: "pain",
+    label: "Dor ocular",
+    description: "Desconforto, ardor ou dor na região dos olhos.",
+  },
+  {
+    value: "retina_follow",
+    label: "Acompanhamento de retina",
+    description: "Retorno focado em avaliação/seguimento de retina.",
+  },
+  {
+    value: "glaucoma_follow",
+    label: "Acompanhamento de glaucoma",
+    description: "Retorno para controle de pressão ocular e nervo óptico.",
+  },
+  {
+    value: "postop",
+    label: "Pós-operatório",
+    description: "Acompanhamento após procedimento cirúrgico ocular.",
+  },
+  {
+    value: "other",
+    label: "Outro motivo",
+    description: "Motivo não contemplado nas opções anteriores.",
+  },
 ];
 
 const conditions: Array<{
@@ -60,11 +96,13 @@ const dilationMoments: Array<{
   { value: "unknown", label: "Não sei informar" },
 ];
 
-function toggleItem<T extends string>(
-  values: T[],
-  target: T,
-  checked: boolean,
-) {
+const levelConfig = {
+  ALTA: { label: "Alta", badgeVariant: "destructive" as const },
+  POSSIVEL: { label: "Possível", badgeVariant: "secondary" as const },
+  BAIXA: { label: "Baixa", badgeVariant: "outline" as const },
+};
+
+function toggleItem<T extends string>(values: T[], target: T, checked: boolean) {
   if (checked) {
     return values.includes(target) ? values : [...values, target];
   }
@@ -72,6 +110,10 @@ function toggleItem<T extends string>(
 }
 
 export function DetailsForm() {
+  const conditionsSectionRef = useRef<HTMLElement | null>(null);
+  const summarySectionRef = useRef<HTMLElement | null>(null);
+  const summaryTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+
   const [reason, setReason] = useState<TriagePayload["reason"]>("routine");
   const [selectedConditions, setSelectedConditions] = useState<
     TriagePayload["conditions"]
@@ -82,165 +124,140 @@ export function DetailsForm() {
   const [lastDilation, setLastDilation] =
     useState<TriagePayload["lastDilation"]>("unknown");
   const [oneSentenceSummary, setOneSentenceSummary] = useState("");
-  const [isSubmitting, startSubmittingTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
-  const [submittedPayload, setSubmittedPayload] =
-    useState<TriagePayload | null>(null);
-  const [serverResult, setServerResult] = useState<{
-    score: number;
-    level: "ALTA" | "POSSIVEL" | "BAIXA";
-    advisory: string;
-  } | null>(null);
-  const [hasHydratedExistingDetails, setHasHydratedExistingDetails] =
-    useState(false);
 
-  const localResult = useMemo(
-    () =>
-      submittedPayload ? calculateDilatationGuidance(submittedPayload) : null,
-    [submittedPayload],
-  );
-  const result = serverResult
-    ? {
-        ...localResult,
-        ...serverResult,
-        checklist: localResult?.checklist ?? [],
-      }
-    : localResult;
+  const selectedReason = reasons.find((item) => item.value === reason) ?? reasons[0];
+  const hasUrgentSymptom = selectedSymptoms.includes("sudden_loss");
 
-  useEffect(() => {
-    let isCancelled = false;
-
-    async function hydrateExistingDetails() {
-      try {
-        const response = await fetch("/api/details/latest", { method: "GET" });
-        if (!response.ok) {
-          return;
-        }
-
-        const data = (await response.json()) as {
-          ok: boolean;
-          details: null | {
-            payload: TriagePayload;
-            score: number;
-            level: "ALTA" | "POSSIVEL" | "BAIXA";
-          };
-        };
-
-        if (!data.ok || !data.details || isCancelled) {
-          return;
-        }
-
-        setReason(data.details.payload.reason);
-        setSelectedConditions(data.details.payload.conditions);
-        setSelectedSymptoms(data.details.payload.symptoms);
-        setLastDilation(data.details.payload.lastDilation);
-        setOneSentenceSummary(data.details.payload.oneSentenceSummary ?? "");
-        setSubmittedPayload(data.details.payload);
-        setServerResult({
-          score: data.details.score,
-          level: data.details.level,
-          advisory:
-            "A decisao final sobre dilatacao e sempre feita no consultorio.",
-        });
-        setHasHydratedExistingDetails(true);
-      } catch {
-        // Keep current form behavior if there is no previous details payload.
-      }
-    }
-
-    hydrateExistingDetails();
-    return () => {
-      isCancelled = true;
-    };
-  }, []);
-
-  async function handleSubmit() {
-    setError(null);
-
-    const payload: TriagePayload = {
+  const triagePreviewPayload = useMemo<TriagePayload>(
+    () => ({
       reason,
       conditions: selectedConditions,
       symptoms: selectedSymptoms,
       lastDilation,
       oneSentenceSummary: oneSentenceSummary.trim() || undefined,
-    };
+    }),
+    [lastDilation, oneSentenceSummary, reason, selectedConditions, selectedSymptoms],
+  );
 
-    const parsed = triageSchema.safeParse(payload);
-    if (!parsed.success) {
-      setError("Revise os campos antes de enviar.");
+  const previewResult = useMemo(
+    () => calculateDilatationGuidance(triagePreviewPayload),
+    [triagePreviewPayload],
+  );
+  const hasAnyTriageInput =
+    reason !== "routine" ||
+    selectedConditions.length > 0 ||
+    selectedSymptoms.length > 0 ||
+    lastDilation !== "unknown" ||
+    oneSentenceSummary.trim().length > 0;
+
+  const answeredSteps = useMemo(() => {
+    let total = 1;
+    if (selectedConditions.length > 0) total += 1;
+    if (selectedSymptoms.length > 0) total += 1;
+    if (lastDilation !== "unknown") total += 1;
+    if (oneSentenceSummary.trim().length > 0) total += 1;
+    return total;
+  }, [lastDilation, oneSentenceSummary, selectedConditions, selectedSymptoms]);
+
+  const progressPercentage = Math.round((answeredSteps / 5) * 100);
+  const levelLabel = levelConfig[previewResult.level].label;
+  const summaryChars = oneSentenceSummary.length;
+
+  function scrollToNextInput(target: HTMLElement | null) {
+    if (!target) {
       return;
     }
-
-    startSubmittingTransition(async () => {
-      try {
-        const encryptedPayload = await encryptTriagePayload(parsed.data);
-        const guidance = calculateDilatationGuidance(parsed.data);
-        const response = await fetch("/api/details/submit", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            encryptedPayload,
-            score: guidance.score,
-            level: guidance.level,
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error("Não foi possível salvar os detalhes.");
-        }
-        const data = (await response.json()) as {
-          result?: {
-            score: number;
-            level: "ALTA" | "POSSIVEL" | "BAIXA";
-            advisory: string;
-          };
-        };
-
-        setSubmittedPayload(parsed.data);
-        setServerResult(data.result ?? null);
-        toast("Detalhes enviados com sucesso.");
-      } catch (submitError) {
-        const message =
-          submitError instanceof Error
-            ? submitError.message
-            : "Falha ao enviar.";
-        setError(message);
-      }
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    target.scrollIntoView({
+      behavior: prefersReducedMotion ? "auto" : "smooth",
+      block: "center",
     });
+  }
+
+  function focusSummaryTextarea() {
+    if (!summaryTextareaRef.current) {
+      return;
+    }
+    try {
+      summaryTextareaRef.current.focus({ preventScroll: true });
+    } catch {
+      summaryTextareaRef.current.focus();
+    }
   }
 
   return (
     <div className="space-y-6">
       <Card className="border-border/70">
         <CardHeader>
-          <CardTitle>Detalhes da sua consulta</CardTitle>
+          <CardTitle className="flex flex-wrap items-center gap-2">
+            Triagem para previsão de dilatação
+            <Badge variant="outline">{progressPercentage}% preenchido</Badge>
+          </CardTitle>
           <CardDescription>
-            Opcional - isso ajuda a preparar sua consulta.
+            Responda com calma: as orientações aparecem na hora para te ajudar
+            a se preparar para a consulta.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          <div className="space-y-2">
+            <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full bg-primary transition-all"
+                style={{ width: `${progressPercentage}%` }}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Quanto mais campos você preencher, melhores ficam as orientações.
+            </p>
+          </div>
+
+          {hasUrgentSymptom ? (
+            <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+              Perda súbita de visão pode indicar urgência. Procure atendimento
+              imediato e, se necessário, suporte humano pelo WhatsApp.
+            </div>
+          ) : null}
+
           <fieldset className="space-y-2">
-            <Label>A) Motivo principal</Label>
+            <div className="flex items-center justify-between gap-3">
+              <Label>A) Motivo principal</Label>
+              <Badge variant="secondary">{selectedReason.label}</Badge>
+            </div>
             <RadioGroup
               name="reason"
               value={reason}
-              onValueChange={(value) =>
-                setReason(value as TriagePayload["reason"])
-              }
+              onValueChange={(value) => {
+                setReason(value as TriagePayload["reason"]);
+                requestAnimationFrame(() => {
+                  scrollToNextInput(conditionsSectionRef.current);
+                });
+              }}
             >
               {reasons.map((item) => (
                 <label
                   key={item.value}
-                  className="flex cursor-pointer items-center gap-3 rounded-xl border border-border px-4 py-3"
+                  className={cn(
+                    "flex cursor-pointer items-start gap-3 rounded-xl border px-4 py-3 transition-colors",
+                    reason === item.value
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:bg-muted/40",
+                  )}
                 >
-                  <RadioGroupItem value={item.value} />
-                  <span>{item.label}</span>
+                  <RadioGroupItem className="mt-0.5" value={item.value} />
+                  <span className="space-y-0.5">
+                    <span className="block">{item.label}</span>
+                    <span className="block text-xs text-muted-foreground">
+                      {item.description}
+                    </span>
+                  </span>
                 </label>
               ))}
             </RadioGroup>
           </fieldset>
 
-          <fieldset className="space-y-2">
+          <fieldset ref={conditionsSectionRef} className="space-y-2">
             <Label>B) Condições</Label>
             <div className="grid gap-2 md:grid-cols-2">
               {conditions.map((item) => {
@@ -248,17 +265,18 @@ export function DetailsForm() {
                 return (
                   <label
                     key={item.value}
-                    className="flex items-center gap-2 rounded-md border border-border px-3 py-2"
+                    className={cn(
+                      "flex items-center gap-2 rounded-md border px-3 py-2 transition-colors",
+                      checked
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:bg-muted/40",
+                    )}
                   >
                     <Checkbox
                       checked={checked}
                       onCheckedChange={(nextChecked) =>
                         setSelectedConditions((previous) =>
-                          toggleItem(
-                            previous,
-                            item.value,
-                            nextChecked === true,
-                          ),
+                          toggleItem(previous, item.value, nextChecked === true),
                         )
                       }
                     />
@@ -277,17 +295,18 @@ export function DetailsForm() {
                 return (
                   <label
                     key={item.value}
-                    className="flex items-center gap-2 rounded-md border border-border px-3 py-2"
+                    className={cn(
+                      "flex items-center gap-2 rounded-md border px-3 py-2 transition-colors",
+                      checked
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:bg-muted/40",
+                    )}
                   >
                     <Checkbox
                       checked={checked}
                       onCheckedChange={(nextChecked) =>
                         setSelectedSymptoms((previous) =>
-                          toggleItem(
-                            previous,
-                            item.value,
-                            nextChecked === true,
-                          ),
+                          toggleItem(previous, item.value, nextChecked === true),
                         )
                       }
                     />
@@ -303,15 +322,24 @@ export function DetailsForm() {
             <RadioGroup
               name="lastDilation"
               value={lastDilation}
-              onValueChange={(value) =>
-                setLastDilation(value as TriagePayload["lastDilation"])
-              }
+              onValueChange={(value) => {
+                setLastDilation(value as TriagePayload["lastDilation"]);
+                requestAnimationFrame(() => {
+                  scrollToNextInput(summarySectionRef.current);
+                  focusSummaryTextarea();
+                });
+              }}
               className="grid gap-2 md:grid-cols-2"
             >
               {dilationMoments.map((item) => (
                 <label
                   key={item.value}
-                  className="flex cursor-pointer items-center gap-3 rounded-md border border-border px-3 py-2"
+                  className={cn(
+                    "flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2 transition-colors",
+                    lastDilation === item.value
+                      ? "border-primary bg-primary/5"
+                      : "border-border hover:bg-muted/40",
+                  )}
                 >
                   <RadioGroupItem value={item.value} />
                   <span>{item.label}</span>
@@ -320,51 +348,74 @@ export function DetailsForm() {
             </RadioGroup>
           </fieldset>
 
-          <fieldset className="space-y-2">
+          <fieldset ref={summarySectionRef} className="space-y-2">
             <Label htmlFor="oneSentenceSummary">
               E) Conte em uma frase o que mais te incomoda (opcional)
             </Label>
             <Textarea
+              ref={summaryTextareaRef}
               id="oneSentenceSummary"
-              maxLength={240}
+              maxLength={MAX_SUMMARY_LENGTH}
               value={oneSentenceSummary}
               onChange={(event) => setOneSentenceSummary(event.target.value)}
               placeholder="Ex.: percebo embaçamento ao fim do dia."
             />
+            <p className="text-right text-xs text-muted-foreground">
+              {summaryChars}/{MAX_SUMMARY_LENGTH}
+            </p>
           </fieldset>
 
-          {error ? <p className="text-sm text-destructive">{error}</p> : null}
-          {hasHydratedExistingDetails ? (
-            <p className="text-xs text-muted-foreground">
-              Carregamos sua última triagem salva com segurança.
-            </p>
-          ) : null}
-
-          <Button onClick={handleSubmit} disabled={isSubmitting}>
-            {isSubmitting ? "Enviando..." : "Salvar detalhes"}
-          </Button>
+          <p className="text-xs text-muted-foreground">
+            Você não precisa salvar: as orientações são atualizadas
+            automaticamente durante o preenchimento.
+          </p>
         </CardContent>
       </Card>
 
-      {result ? (
-        <Card className="border-border/70">
-          <CardHeader>
-            <CardTitle>Orientação de dilatação: {result.level}</CardTitle>
-            <CardDescription>Score calculado: {result.score}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <ul className="list-inside list-disc space-y-1 text-sm text-muted-foreground">
-              {result.checklist.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-            <p className="text-xs text-muted-foreground">{result.advisory}</p>
-            <p className="text-xs text-muted-foreground">
-              Isso não substitui avaliação médica.
+      <Card className="border-border/70">
+        <CardHeader>
+          <CardTitle className="flex flex-wrap items-center gap-2">
+            {hasAnyTriageInput
+              ? "Orientações de preparo personalizadas"
+              : "Orientações de preparo para a consulta"}
+            {hasAnyTriageInput ? (
+              <Badge variant={levelConfig[previewResult.level].badgeVariant}>
+                Probabilidade {levelLabel}
+              </Badge>
+            ) : null}
+          </CardTitle>
+          <CardDescription>
+            As orientações abaixo são informativas e atualizadas em tempo real
+            conforme a triagem.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            A decisão final sobre dilatação é sempre do médico no consultório.
+          </p>
+          {hasAnyTriageInput ? (
+            <>
+              <div className="rounded-lg border border-border/70 bg-muted/30 p-3 text-sm text-muted-foreground">
+                Nível atual: <strong className="text-foreground">{levelLabel}</strong>{" "}
+                (score informativo {previewResult.score}).
+              </div>
+              <ul className="list-inside list-disc space-y-1 text-sm text-muted-foreground">
+                {previewResult.checklist.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Preencha a triagem para visualizar orientações personalizadas de
+              preparo.
             </p>
-          </CardContent>
-        </Card>
-      ) : null}
+          )}
+          <p className="text-xs text-muted-foreground">
+            Este conteúdo não substitui avaliação médica presencial.
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 }

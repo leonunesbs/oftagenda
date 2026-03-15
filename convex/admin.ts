@@ -181,9 +181,7 @@ export const getManagementSnapshot = query({
       user.latestActivity = Math.max(user.latestActivity, payment.updatedAt);
     }
 
-    const users = [...userMap.values()]
-      .sort((a, b) => b.latestActivity - a.latestActivity)
-      .slice(0, 20);
+    const users = [...userMap.values()].sort((a, b) => b.latestActivity - a.latestActivity);
 
     return {
       metrics: {
@@ -492,6 +490,7 @@ const availabilityOverrideSlotInputValidator = v.object({
 export const upsertAvailabilityDaySlots = mutation({
   args: {
     groupName: v.string(),
+    previousGroupName: v.optional(v.string()),
     weekday: v.number(),
     timezone: v.string(),
     slots: v.array(availabilityDaySlotInputValidator),
@@ -507,6 +506,7 @@ export const upsertAvailabilityDaySlots = mutation({
     if (!normalizedGroupName) {
       throw new Error("Nome do grupo de disponibilidade e obrigatorio");
     }
+    const normalizedPreviousGroupName = args.previousGroupName?.trim() || normalizedGroupName;
 
     const normalizedTimezone = args.timezone.trim();
     if (!normalizedTimezone) {
@@ -536,7 +536,7 @@ export const upsertAvailabilityDaySlots = mutation({
     const existingSlots = allAvailabilities.filter(
       (availability) =>
         availability.weekday === args.weekday &&
-        resolveAvailabilityGroupName(availability) === normalizedGroupName,
+        resolveAvailabilityGroupName(availability) === normalizedPreviousGroupName,
     );
     const existingById = new Map(existingSlots.map((slot) => [slot._id, slot]));
 
@@ -612,6 +612,19 @@ export const upsertAvailabilityDaySlots = mutation({
 
     for (const slot of toDelete) {
       await ctx.db.delete(slot._id);
+    }
+
+    if (normalizedPreviousGroupName !== normalizedGroupName) {
+      const overridesToRename = await ctx.db
+        .query("availability_overrides")
+        .withIndex("by_group_name", (q) => q.eq("groupName", normalizedPreviousGroupName))
+        .collect();
+      for (const override of overridesToRename) {
+        await ctx.db.patch(override._id, {
+          groupName: normalizedGroupName,
+          updatedAt: now,
+        });
+      }
     }
 
     return {

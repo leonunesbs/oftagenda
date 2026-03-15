@@ -30,7 +30,7 @@ export const n8nCancelAppointmentSchema = z.object({
 export const n8nUpdateAppointmentStatusSchema = z.object({
   appointmentId: z.string().trim().min(1),
   phone: z.string().trim().min(8).max(30),
-  status: z.enum(["confirmed", "rescheduled", "cancelled", "completed"]),
+  status: z.enum(["confirmed", "rescheduled", "no_show", "cancelled", "completed"]),
   reason: z.string().trim().max(240).optional(),
 });
 

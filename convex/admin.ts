@@ -20,6 +20,7 @@ const reservationStatusValidator = v.union(
   v.literal("confirmed"),
   v.literal("cancelled"),
   v.literal("completed"),
+  v.literal("no_show"),
 );
 
 const paymentStatusValidator = v.union(
@@ -1069,22 +1070,25 @@ export const updateReservation = mutation({
     const endsAt = startsAt + eventType.durationMinutes * 60_000;
     const now = Date.now();
 
+    const normalizedStatus = normalizeReservationStatusForSchedule(args.status, startsAt, now);
+
     await ctx.db.patch(args.reservationId, {
       clerkUserId: args.clerkUserId.trim(),
       eventTypeId: args.eventTypeId,
       availabilityId: matchedAvailability._id,
       startsAt,
       endsAt,
-      status: args.status,
+      status: normalizedStatus,
       notes: args.notes?.trim(),
       updatedAt: now,
     });
 
     if (reservation.appointmentId) {
-      const appointmentStatus = mapReservationToAppointmentStatus(args.status);
+      const appointmentStatus = mapReservationToAppointmentStatus(normalizedStatus);
       if (appointmentStatus) {
         await ctx.db.patch(reservation.appointmentId, {
           status: appointmentStatus,
+          scheduledFor: startsAt,
           updatedAt: now,
         });
 
@@ -1092,13 +1096,13 @@ export const updateReservation = mutation({
           appointmentId: reservation.appointmentId,
           clerkUserId: identity.subject,
           eventType: appointmentStatus === "confirmed" ? "confirmed" : appointmentStatus,
-          notes: `Reserva atualizada pelo admin para ${args.status}`,
+          notes: `Reserva atualizada pelo admin para ${normalizedStatus}`,
           createdAt: now,
         });
       }
     }
 
-    return { ok: true };
+    return { ok: true, status: normalizedStatus };
   },
 });
 
@@ -1138,14 +1142,15 @@ export const setReservationStatus = mutation({
     }
 
     const now = Date.now();
+    const normalizedStatus = normalizeReservationStatusForSchedule(args.status, reservation.startsAt, now);
     await ctx.db.patch(args.reservationId, {
-      status: args.status,
+      status: normalizedStatus,
       notes: args.notes?.trim(),
       updatedAt: now,
     });
 
     if (reservation.appointmentId) {
-      const appointmentStatus = mapReservationToAppointmentStatus(args.status);
+      const appointmentStatus = mapReservationToAppointmentStatus(normalizedStatus);
       if (appointmentStatus) {
         await ctx.db.patch(reservation.appointmentId, {
           status: appointmentStatus,
@@ -1156,13 +1161,13 @@ export const setReservationStatus = mutation({
           appointmentId: reservation.appointmentId,
           clerkUserId: identity.subject,
           eventType: appointmentStatus === "confirmed" ? "confirmed" : appointmentStatus,
-          notes: `Status alterado pelo admin para ${args.status}`,
+          notes: `Status alterado pelo admin para ${normalizedStatus}`,
           createdAt: now,
         });
       }
     }
 
-    return { ok: true };
+    return { ok: true, status: normalizedStatus };
   },
 });
 
@@ -1250,7 +1255,9 @@ function formatAvailabilityLabel(
   return `${groupName} - ${availability.weekday} ${availability.startTime}-${availability.endTime}`;
 }
 
-function mapReservationToAppointmentStatus(status: "pending" | "confirmed" | "cancelled" | "completed") {
+function mapReservationToAppointmentStatus(
+  status: "pending" | "confirmed" | "cancelled" | "completed" | "no_show",
+) {
   if (status === "confirmed") {
     return "confirmed";
   }
@@ -1260,7 +1267,21 @@ function mapReservationToAppointmentStatus(status: "pending" | "confirmed" | "ca
   if (status === "completed") {
     return "completed";
   }
+  if (status === "no_show") {
+    return "no_show";
+  }
   return null;
+}
+
+function normalizeReservationStatusForSchedule(
+  requestedStatus: "pending" | "confirmed" | "cancelled" | "completed" | "no_show",
+  startsAt: number,
+  now: number,
+) {
+  if ((requestedStatus === "pending" || requestedStatus === "confirmed") && startsAt <= now) {
+    return "no_show" as const;
+  }
+  return requestedStatus;
 }
 
 function parseIsoDateAndTimeToTimestamp(date: string, time: string, timezone: string) {

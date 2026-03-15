@@ -5,7 +5,7 @@ import {
 import { AdminReservationsManager } from "@/components/admin-reservations-manager";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-const statusFilters = ["all", "pending", "confirmed", "completed", "cancelled"] as const;
+const statusFilters = ["all", "pending", "confirmed", "completed", "cancelled", "no_show"] as const;
 
 export default async function AdminReservationsPage({
   searchParams,
@@ -68,6 +68,7 @@ export default async function AdminReservationsPage({
     pending: reservations.filter((reservation) => reservation.status === "pending").length,
     confirmed: reservations.filter((reservation) => reservation.status === "confirmed").length,
     cancelled: reservations.filter((reservation) => reservation.status === "cancelled").length,
+    noShow: reservations.filter((reservation) => reservation.status === "no_show").length,
   };
 
   return (

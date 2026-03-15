@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 
 import type { PaymentMode } from "@/lib/booking-bootstrap";
+import { closeParallelRoute } from "@/lib/parallel-route-navigation";
 
 type ResumoDialogProps = {
   locationId: string;
@@ -64,7 +65,7 @@ export function ResumoDialog({
       open
       onOpenChange={(open) => {
         if (!open) {
-          router.back();
+          closeParallelRoute(router, "/agendar");
         }
       }}
     >
@@ -234,7 +235,7 @@ export function ResumoDialog({
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => router.back()}
+                onClick={() => closeParallelRoute(router, "/agendar")}
               >
                 Editar agendamento
               </Button>

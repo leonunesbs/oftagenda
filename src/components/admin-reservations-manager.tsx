@@ -29,7 +29,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-type ReservationStatus = "pending" | "confirmed" | "completed" | "cancelled";
+type ReservationStatus = "pending" | "confirmed" | "completed" | "cancelled" | "no_show";
 
 type ReservationRow = {
   _id: string;
@@ -73,6 +73,7 @@ type AdminReservationsManagerProps = {
     pending: number;
     confirmed: number;
     cancelled: number;
+    noShow: number;
   };
 };
 
@@ -82,6 +83,7 @@ const statusOptions: Array<"all" | ReservationStatus> = [
   "confirmed",
   "completed",
   "cancelled",
+  "no_show",
 ];
 
 const statusBadgeVariant: Record<ReservationStatus, "default" | "secondary" | "outline" | "destructive"> = {
@@ -89,6 +91,15 @@ const statusBadgeVariant: Record<ReservationStatus, "default" | "secondary" | "o
   confirmed: "default",
   completed: "outline",
   cancelled: "destructive",
+  no_show: "destructive",
+};
+
+const statusLabel: Record<ReservationStatus, string> = {
+  pending: "Pendente",
+  confirmed: "Confirmado",
+  completed: "Concluído",
+  cancelled: "Cancelado",
+  no_show: "Não compareceu",
 };
 
 const kindClassName: Record<ReservationRow["kind"], string> = {
@@ -176,7 +187,7 @@ export function AdminReservationsManager({
         header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
         cell: ({ row }) => {
           const reservation = row.original;
-          return <Badge variant={statusBadgeVariant[reservation.status]}>{reservation.status}</Badge>;
+          return <Badge variant={statusBadgeVariant[reservation.status]}>{statusLabel[reservation.status]}</Badge>;
         },
       },
       {
@@ -265,6 +276,14 @@ export function AdminReservationsManager({
       ratio: Math.round((stats.cancelled / safeTotal) * 100),
       helper: "Comunicadas ao paciente",
     },
+    {
+      title: "No-show",
+      value: stats.noShow,
+      icon: XCircle,
+      tone: "text-destructive",
+      ratio: Math.round((stats.noShow / safeTotal) * 100),
+      helper: "Não compareceram",
+    },
   ] as const;
 
   return (
@@ -284,7 +303,7 @@ export function AdminReservationsManager({
               <div className="space-y-1">
                 <div className="h-1.5 rounded-full bg-muted">
                   <div
-                    className={`h-1.5 rounded-full ${item.title === "Canceladas" ? "bg-destructive/70" : "bg-primary/70"}`}
+                    className={`h-1.5 rounded-full ${item.title === "Canceladas" || item.title === "No-show" ? "bg-destructive/70" : "bg-primary/70"}`}
                     style={{ width: `${item.ratio}%` }}
                   />
                 </div>
@@ -314,7 +333,9 @@ export function AdminReservationsManager({
                     size="sm"
                     asChild
                   >
-                    <Link href={buildFilterHref(status)}>{status === "all" ? "todos" : status}</Link>
+                    <Link href={buildFilterHref(status)}>
+                      {status === "all" ? "Todos" : statusLabel[status]}
+                    </Link>
                   </Button>
                 ))}
               </div>

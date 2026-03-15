@@ -332,7 +332,8 @@ export async function createReservationAction(formData: FormData) {
       | "pending"
       | "confirmed"
       | "cancelled"
-      | "completed",
+      | "completed"
+      | "no_show",
     notes: toStringValue(formData.get("notes")) || undefined,
   });
   revalidatePath(ADMIN_PATH);
@@ -351,10 +352,11 @@ export async function updateReservationAction(formData: FormData) {
     | "pending"
     | "confirmed"
     | "cancelled"
-    | "completed";
+    | "completed"
+    | "no_show";
   const notes = toStringValue(formData.get("notes")) || undefined;
 
-  await client.mutation(api.admin.updateReservation, {
+  const result = await client.mutation(api.admin.updateReservation, {
     reservationId,
     clerkUserId,
     eventTypeId,
@@ -364,6 +366,7 @@ export async function updateReservationAction(formData: FormData) {
     status,
     notes,
   });
+  const effectiveStatus = result.status ?? status;
 
   const notifyEmail = toStringValue(formData.get("notifyEmail"));
   const notifyName = toStringValue(formData.get("notifyName"));
@@ -378,7 +381,7 @@ export async function updateReservationAction(formData: FormData) {
       details: [
         `Atendimento: ${eventTypeTitle}`,
         `Novo horário: ${formatDateTimeForEmail({ date, time })}`,
-        `Status atual: ${status}`,
+        `Status atual: ${effectiveStatus}`,
         notes ? `Observações: ${notes}` : "Observações: sem observações adicionais",
       ],
     });
@@ -403,13 +406,15 @@ export async function setReservationStatusAction(formData: FormData) {
     | "pending"
     | "confirmed"
     | "cancelled"
-    | "completed";
+    | "completed"
+    | "no_show";
   const notes = toStringValue(formData.get("notes")) || undefined;
-  await client.mutation(api.admin.setReservationStatus, {
+  const result = await client.mutation(api.admin.setReservationStatus, {
     reservationId,
     status,
     notes,
   });
+  const effectiveStatus = result.status ?? status;
 
   const notifyEmail = toStringValue(formData.get("notifyEmail"));
   const notifyName = toStringValue(formData.get("notifyName"));
@@ -420,13 +425,13 @@ export async function setReservationStatusAction(formData: FormData) {
     await notifyReservationUpdateEmail({
       to: notifyEmail,
       patientName: notifyName,
-      subject: `Status do seu agendamento: ${status}`,
+      subject: `Status do seu agendamento: ${effectiveStatus}`,
       title: "Mudança de status do agendamento",
       summary: "Atualizamos o status do seu atendimento.",
       details: [
         `Atendimento: ${eventTypeTitle}`,
         `Horário: ${formatDateTimeForEmail({ timestamp: scheduledAt })}`,
-        `Novo status: ${status}`,
+        `Novo status: ${effectiveStatus}`,
         notes ? `Observações: ${notes}` : "Observações: sem observações adicionais",
       ],
     });

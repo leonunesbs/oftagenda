@@ -78,6 +78,7 @@ const reservationStatusValidator = v.union(
   v.literal("confirmed"),
   v.literal("cancelled"),
   v.literal("completed"),
+  v.literal("no_show"),
 );
 
 const paymentStatusValidator = v.union(

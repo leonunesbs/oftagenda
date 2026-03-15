@@ -17,10 +17,13 @@ type DataTablePaginationProps<TData> = {
 };
 
 export function DataTablePagination<TData>({ table }: DataTablePaginationProps<TData>) {
+  const pageCount = table.getPageCount();
+
   return (
     <div className="flex items-center justify-between px-2">
       <div className="flex-1 text-sm text-muted-foreground">
-        {table.getFilteredRowModel().rows.length} registro(s) no resultado atual.
+        {table.getFilteredSelectedRowModel().rows.length} de {table.getFilteredRowModel().rows.length}{" "}
+        linha(s) selecionada(s).
       </div>
       <div className="flex items-center space-x-6 lg:space-x-8">
         <div className="flex items-center space-x-2">
@@ -33,7 +36,7 @@ export function DataTablePagination<TData>({ table }: DataTablePaginationProps<T
               <SelectValue placeholder={table.getState().pagination.pageSize} />
             </SelectTrigger>
             <SelectContent side="top">
-              {[10, 20, 30, 40, 50].map((pageSize) => (
+              {[10, 20, 25, 30, 40, 50].map((pageSize) => (
                 <SelectItem key={pageSize} value={`${pageSize}`}>
                   {pageSize}
                 </SelectItem>
@@ -42,7 +45,8 @@ export function DataTablePagination<TData>({ table }: DataTablePaginationProps<T
           </Select>
         </div>
         <div className="flex w-[120px] items-center justify-center text-sm font-medium">
-          Página {table.getState().pagination.pageIndex + 1} de {table.getPageCount() || 1}
+          Página {Math.min(table.getState().pagination.pageIndex + 1, Math.max(pageCount, 1))} de{" "}
+          {Math.max(pageCount, 1)}
         </div>
         <div className="flex items-center space-x-2">
           <Button
@@ -77,7 +81,7 @@ export function DataTablePagination<TData>({ table }: DataTablePaginationProps<T
             variant="outline"
             size="icon-sm"
             className="hidden lg:flex"
-            onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+            onClick={() => table.setPageIndex(Math.max(pageCount - 1, 0))}
             disabled={!table.getCanNextPage()}
           >
             <span className="sr-only">Última página</span>

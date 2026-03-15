@@ -110,8 +110,8 @@ function toggleItem<T extends string>(values: T[], target: T, checked: boolean) 
 }
 
 export function DetailsForm() {
-  const conditionsSectionRef = useRef<HTMLElement | null>(null);
-  const summarySectionRef = useRef<HTMLElement | null>(null);
+  const conditionsSectionRef = useRef<HTMLFieldSetElement | null>(null);
+  const summarySectionRef = useRef<HTMLFieldSetElement | null>(null);
   const summaryTextareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const [reason, setReason] = useState<TriagePayload["reason"]>("routine");
@@ -125,7 +125,11 @@ export function DetailsForm() {
     useState<TriagePayload["lastDilation"]>("unknown");
   const [oneSentenceSummary, setOneSentenceSummary] = useState("");
 
-  const selectedReason = reasons.find((item) => item.value === reason) ?? reasons[0];
+  const fallbackReason = reasons[0];
+  if (!fallbackReason) {
+    throw new Error("Reason options are required.");
+  }
+  const selectedReason = reasons.find((item) => item.value === reason) ?? fallbackReason;
   const hasUrgentSymptom = selectedSymptoms.includes("sudden_loss");
 
   const triagePreviewPayload = useMemo<TriagePayload>(
@@ -163,7 +167,7 @@ export function DetailsForm() {
   const levelLabel = levelConfig[previewResult.level].label;
   const summaryChars = oneSentenceSummary.length;
 
-  function scrollToNextInput(target: HTMLElement | null) {
+  function scrollToNextInput(target: Element | null) {
     if (!target) {
       return;
     }

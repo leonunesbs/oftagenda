@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 
 import { AdminAvailabilityCreateDialog } from "@/components/admin-availability-create-dialog";
+import { closeParallelRoute } from "@/lib/parallel-route-navigation";
 
 export default function AdminAvailabilityCreateModalPage() {
   const router = useRouter();
@@ -12,7 +13,7 @@ export default function AdminAvailabilityCreateModalPage() {
       open
       onOpenChange={(open) => {
         if (!open) {
-          router.back();
+          closeParallelRoute(router, "/dashboard/admin/disponibilidade");
         }
       }}
     />

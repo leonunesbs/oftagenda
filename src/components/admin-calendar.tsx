@@ -33,7 +33,7 @@ type CalendarItem = {
   reservationId: string;
   startsAt: number;
   endsAt: number;
-  status: "pending" | "confirmed" | "cancelled" | "completed";
+  status: "pending" | "confirmed" | "cancelled" | "completed" | "no_show";
   eventTypeTitle: string;
   kind: "consulta" | "procedimento" | "exame";
   clerkUserId: string;
@@ -301,7 +301,8 @@ export function AdminCalendar({ items, eventTypes, availabilityGroups }: AdminCa
           <Badge className={KIND_CLASS.procedimento}>procedimento</Badge>
           <Badge variant="outline">pending</Badge>
           <Badge variant="default">confirmed</Badge>
-          <Badge variant="outline">completed/cancelled</Badge>
+          <Badge variant="outline">completed</Badge>
+          <Badge variant="destructive">cancelled/no_show</Badge>
         </CardContent>
       </Card>
 
@@ -364,10 +365,11 @@ export function AdminCalendar({ items, eventTypes, availabilityGroups }: AdminCa
                   <div className="grid gap-1.5">
                     <Label htmlFor="manage-status">Status</Label>
                     <select id="manage-status" name="status" className="h-9 rounded-md border border-input bg-input/20 px-2 text-sm" defaultValue={selectedItem.status}>
-                      <option value="pending">pending</option>
-                      <option value="confirmed">confirmed</option>
-                      <option value="completed">completed</option>
-                      <option value="cancelled">cancelled</option>
+                      <option value="pending">Pendente</option>
+                      <option value="confirmed">Confirmado</option>
+                      <option value="completed">Concluído</option>
+                      <option value="cancelled">Cancelado</option>
+                      <option value="no_show">Não compareceu</option>
                     </select>
                   </div>
                 </div>

@@ -16,17 +16,18 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { closeParallelRoute } from "@/lib/parallel-route-navigation";
 import { useRouter } from "next/navigation";
 
-type ReservationStatus = "pending" | "confirmed" | "completed" | "cancelled";
+type ReservationStatus = "pending" | "confirmed" | "completed" | "cancelled" | "no_show";
 
 type ReservationActionMode = "reagendar" | "status" | "cancelar" | "contato";
 
@@ -75,6 +76,22 @@ function formatDateTime(timestamp: number) {
   }).format(new Date(timestamp));
 }
 
+const STATUS_LABEL: Record<ReservationStatus, string> = {
+  pending: "Pendente",
+  confirmed: "Confirmado",
+  completed: "Concluído",
+  cancelled: "Cancelado",
+  no_show: "Não compareceu",
+};
+
+const STATUS_BADGE_VARIANT: Record<ReservationStatus, "default" | "secondary" | "outline" | "destructive"> = {
+  pending: "secondary",
+  confirmed: "default",
+  completed: "outline",
+  cancelled: "destructive",
+  no_show: "destructive",
+};
+
 function normalizePhoneForWhatsapp(phone: string) {
   const digits = phone.replace(/\D+/g, "");
   if (!digits) {
@@ -119,9 +136,7 @@ function ReservationActionContent({
           {reservation.patientName ?? "Paciente"} ({reservation.clerkUserId})
         </p>
         <div className="mt-2">
-          <Badge variant={reservation.status === "cancelled" ? "destructive" : "secondary"}>
-            {reservation.status}
-          </Badge>
+          <Badge variant={STATUS_BADGE_VARIANT[reservation.status]}>{STATUS_LABEL[reservation.status]}</Badge>
         </div>
       </div>
 
@@ -179,10 +194,11 @@ function ReservationActionContent({
             className="h-9 rounded-md border border-input bg-input/20 px-2 text-sm"
             defaultValue={reservation.status}
           >
-            <option value="pending">pending</option>
-            <option value="confirmed">confirmed</option>
-            <option value="completed">completed</option>
-            <option value="cancelled">cancelled</option>
+            <option value="pending">Pendente</option>
+            <option value="confirmed">Confirmado</option>
+            <option value="completed">Concluído</option>
+            <option value="cancelled">Cancelado</option>
+            <option value="no_show">Não compareceu</option>
           </select>
           <Textarea name="notes" defaultValue={reservation.notes ?? ""} placeholder="Observações administrativas" />
           <Button type="submit">Salvar alterações</Button>
@@ -196,18 +212,22 @@ function ReservationActionContent({
           <input type="hidden" name="notifyName" value={reservation.patientName ?? ""} />
           <input type="hidden" name="eventTypeTitle" value={reservation.eventTypeTitle} />
           <input type="hidden" name="scheduledAt" value={String(reservation.startsAt)} />
-          <div className="flex flex-wrap gap-2">
-            <Button type="submit" name="status" value="pending" variant="outline">
-              Pendente
-            </Button>
-            <Button type="submit" name="status" value="confirmed" variant="outline">
-              Confirmar
-            </Button>
-            <Button type="submit" name="status" value="completed" variant="outline">
-              Concluir
-            </Button>
-          </div>
+          <select
+            name="status"
+            className="h-9 rounded-md border border-input bg-input/20 px-2 text-sm"
+            defaultValue={reservation.status}
+          >
+            <option value="pending">Pendente</option>
+            <option value="confirmed">Confirmado</option>
+            <option value="completed">Concluído</option>
+            <option value="cancelled">Cancelado</option>
+            <option value="no_show">Não compareceu</option>
+          </select>
+          <p className="text-xs text-muted-foreground">
+            Se o horário já tiver passado, status pendente ou confirmado será convertido automaticamente para no_show.
+          </p>
           <Textarea name="notes" placeholder="Observação opcional para o histórico" />
+          <Button type="submit">Confirmar atualização</Button>
         </form>
       ) : null}
 
@@ -260,17 +280,24 @@ export function AdminReservationActionView({
 
   if (asDrawer) {
     return (
-      <Sheet open onOpenChange={(open) => !open && router.push(backHref)}>
-        <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-lg">
-          <SheetHeader>
-            <SheetTitle>Gestão da reserva</SheetTitle>
-            <SheetDescription>Use ações rápidas sem sair da lista de reservas.</SheetDescription>
-          </SheetHeader>
-          <div className="px-4 pb-4">
+      <Dialog
+        open
+        onOpenChange={(open) => {
+          if (!open) {
+            closeParallelRoute(router, backHref);
+          }
+        }}
+      >
+        <DialogContent className="max-h-[90vh] w-full overflow-y-auto sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Gestão da reserva</DialogTitle>
+            <DialogDescription>Use ações rápidas sem sair da lista de reservas.</DialogDescription>
+          </DialogHeader>
+          <div>
             <ReservationActionContent mode={mode} reservation={reservation} />
           </div>
-        </SheetContent>
-      </Sheet>
+        </DialogContent>
+      </Dialog>
     );
   }
 

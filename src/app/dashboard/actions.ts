@@ -12,13 +12,7 @@ export async function upsertPatientBirthDateAction(formData: FormData) {
   const { client } = await getAuthenticatedConvexHttpClient();
   const birthDate = toDateValue(formData.get("birthDate"));
 
-  const mutationRef = (api as unknown as {
-    patients: {
-      upsertCurrentPatientBirthDate: typeof api.patients.getCurrentPatient;
-    };
-  }).patients.upsertCurrentPatientBirthDate;
-
-  await client.mutation(mutationRef, {
+  await client.mutation(api.patients.upsertCurrentPatientBirthDate, {
     birthDate: birthDate || undefined,
   });
 

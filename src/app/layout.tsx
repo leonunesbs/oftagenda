@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Noto_Sans } from "next/font/google";
 import { auth } from "@clerk/nextjs/server";
 import { GoogleTagManager } from "@next/third-parties/google";
+import { cookies } from "next/headers";
 
 import { AppHeader } from "@/components/app-header";
 import { AnalyticsConsent } from "@/components/analytics-consent";
@@ -52,6 +53,8 @@ const loggedOutHeaderState: SessionState = {
   avatarUrl: null,
   firstName: null,
 };
+
+const THEME_COOKIE_NAME = "oftagenda-theme";
 
 async function getHeaderSessionState(clerkEnabled: boolean): Promise<SessionState> {
   if (!clerkEnabled) {
@@ -148,6 +151,9 @@ export default async function RootLayout({
   const gtmId = process.env.NEXT_PUBLIC_GTM_ID;
   const shouldLoadGtm = process.env.NODE_ENV === "production" && Boolean(gtmId);
   const sessionState = await getHeaderSessionState(clerkEnabled);
+  const cookieStore = await cookies();
+  const persistedTheme = cookieStore.get(THEME_COOKIE_NAME)?.value;
+  const initialThemeClass = persistedTheme === "dark" ? "dark" : undefined;
   const legalFooter = (
     <footer data-app-legal-footer className="mx-auto w-full max-w-5xl px-4 pb-8 pt-2 text-xs text-muted-foreground md:px-6">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border/70 pt-4">
@@ -163,14 +169,8 @@ export default async function RootLayout({
   );
 
   return (
-    <html lang="pt-BR" className={cn("font-sans", notoSans.variable)}>
+    <html lang="pt-BR" className={cn("font-sans", notoSans.variable, initialThemeClass)}>
       <body>
-        <script
-          id="theme-bootstrap"
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem("oftagenda-theme");var dark=t==="dark"||((t===null||t==="system")&&window.matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.classList.toggle("dark",dark);}catch{}})();`,
-          }}
-        />
         <script
           id="gtm-consent-bootstrap"
           dangerouslySetInnerHTML={{

@@ -7,6 +7,7 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 
 const THEME_STORAGE_KEY = "oftagenda-theme";
+const THEME_COOKIE_NAME = "oftagenda-theme";
 type ThemeMode = "light" | "dark" | "system";
 
 const CYCLE: ThemeMode[] = ["light", "dark", "system"];
@@ -29,6 +30,11 @@ function getStoredTheme(): ThemeMode {
   return "system";
 }
 
+function persistTheme(mode: ThemeMode) {
+  window.localStorage.setItem(THEME_STORAGE_KEY, mode);
+  document.cookie = `${THEME_COOKIE_NAME}=${mode}; Path=/; Max-Age=31536000; SameSite=Lax`;
+}
+
 const LABELS: Record<ThemeMode, string> = {
   light: "Tema claro",
   dark: "Tema escuro",
@@ -42,6 +48,7 @@ export function ColorModeToggle() {
     const stored = getStoredTheme();
     setMode(stored);
     applyTheme(stored);
+    persistTheme(stored);
   }, []);
 
   React.useEffect(() => {
@@ -57,7 +64,7 @@ export function ColorModeToggle() {
     const next = CYCLE[(idx + 1) % CYCLE.length] ?? "system";
     setMode(next);
     applyTheme(next);
-    window.localStorage.setItem(THEME_STORAGE_KEY, next);
+    persistTheme(next);
   }
 
   const visible = "scale-100 opacity-100";
